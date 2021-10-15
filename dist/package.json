@@ -1,8 +1,25 @@
 {
-    "name": "@kyve/node",
-    "version": "1.0.0",
+    "name": "@kyve/core",
+    "description": "🚀 The base KYVE node implementation.",
+    "version": "0.0.1",
     "main": "./dist/src/index.js",
     "types": "./dist/src/index.d.ts",
+    "homepage": "https://github.com/KYVENetwork/core#readme",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/KYVENetwork/core"
+    },
+    "keywords": [
+        "KYVE",
+        "Arweave",
+        "Blockchain",
+        "PoS"
+    ],
+    "author": "John Letey <john@kyve.network>, Troy Kessler <troy@kyve.network>",
+    "license": "MIT",
+    "publishConfig": {
+        "access": "public"
+    },
     "scripts": {
         "build": "prettier --write . && tsc",
         "format": "prettier --write ."
