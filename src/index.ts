@@ -177,6 +177,17 @@ class KYVE {
         transaction.addTag("Content-Type", "application/json");
 
         await this.client.transactions.sign(transaction, this.keyfile);
+
+        const balance = await this.client.wallets.getBalance(
+          await this.client.wallets.getAddress(this.keyfile)
+        );
+        if (+transaction.reward > +balance) {
+          uploaderLogger.error(
+            "❌ You do not have enough funds in your Arweave wallet."
+          );
+          process.exit();
+        }
+
         await this.client.transactions.post(transaction);
 
         uploaderLogger.info(
