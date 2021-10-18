@@ -134,25 +134,27 @@ var KYVE = /** @class */ (function () {
                     case 4:
                         _a.sent();
                         _uploader = this._settings._uploader;
-                        if (this.wallet.address === _uploader) {
-                            if (this.keyfile) {
-                                if (this._settings._paused) {
-                                    logger_1["default"].warn("⚠️  Pool is paused. Exiting ...");
-                                    process.exit();
-                                }
-                                else {
-                                    this.uploader(uploadFunction, config);
-                                }
-                            }
-                            else {
-                                logger_1["default"].error("❌ You need to specify your Arweave keyfile.");
-                                process.exit(1);
-                            }
+                        if (!(this.wallet.address === _uploader)) return [3 /*break*/, 8];
+                        if (!this.keyfile) return [3 /*break*/, 6];
+                        return [4 /*yield*/, this.pool.paused()];
+                    case 5:
+                        if (_a.sent()) {
+                            logger_1["default"].warn("⚠️  Pool is paused. Exiting ...");
+                            process.exit();
                         }
                         else {
-                            this.validator(validateFunction, config);
+                            this.uploader(uploadFunction, config);
                         }
-                        return [2 /*return*/];
+                        return [3 /*break*/, 7];
+                    case 6:
+                        logger_1["default"].error("❌ You need to specify your Arweave keyfile.");
+                        process.exit(1);
+                        _a.label = 7;
+                    case 7: return [3 /*break*/, 9];
+                    case 8:
+                        this.validator(validateFunction, config);
+                        _a.label = 9;
+                    case 9: return [2 /*return*/];
                 }
             });
         });
@@ -169,13 +171,13 @@ var KYVE = /** @class */ (function () {
                     uploadFunction(subscriber, config, uploaderLogger);
                 });
                 node.subscribe(function (item) { return __awaiter(_this, void 0, void 0, function () {
-                    var i, tempBuffer, transaction, registerTransaction, error_1;
-                    return __generator(this, function (_a) {
-                        switch (_a.label) {
+                    var i, tempBuffer, transaction, balance, _a, _b, registerTransaction, error_1;
+                    return __generator(this, function (_c) {
+                        switch (_c.label) {
                             case 0:
                                 i = this.buffer.push(item);
                                 uploaderLogger.debug("Received a new data item (" + i + " / " + this._bundleSize + ").");
-                                if (!(this.buffer.length >= this._bundleSize)) return [3 /*break*/, 7];
+                                if (!(this.buffer.length >= this._bundleSize)) return [3 /*break*/, 9];
                                 uploaderLogger.info("📦 Creating bundle ...");
                                 tempBuffer = this.buffer;
                                 this.buffer = [];
@@ -185,34 +187,43 @@ var KYVE = /** @class */ (function () {
                                         data: JSON.stringify(tempBuffer)
                                     })];
                             case 1:
-                                transaction = _a.sent();
+                                transaction = _c.sent();
                                 transaction.addTag("Application", "KYVE - Testnet");
                                 transaction.addTag("Version", package_json_1.version);
                                 transaction.addTag("Pool", this.pool.address);
                                 transaction.addTag("Content-Type", "application/json");
                                 return [4 /*yield*/, this.client.transactions.sign(transaction, this.keyfile)];
                             case 2:
-                                _a.sent();
+                                _c.sent();
+                                _b = (_a = this.client.wallets).getBalance;
+                                return [4 /*yield*/, this.client.wallets.getAddress(this.keyfile)];
+                            case 3: return [4 /*yield*/, _b.apply(_a, [_c.sent()])];
+                            case 4:
+                                balance = _c.sent();
+                                if (+transaction.reward > +balance) {
+                                    uploaderLogger.error("❌ You do not have enough funds in your Arweave wallet.");
+                                    process.exit();
+                                }
                                 return [4 /*yield*/, this.client.transactions.post(transaction)];
-                            case 3:
-                                _a.sent();
+                            case 5:
+                                _c.sent();
                                 uploaderLogger.info("\uD83D\uDCBE Uploaded bundle to Arweave. Transaction = " + transaction.id);
                                 // Create a new vote.
                                 uploaderLogger.debug("Attempting to register a bundle.");
-                                _a.label = 4;
-                            case 4:
-                                _a.trys.push([4, 6, , 7]);
-                                return [4 /*yield*/, this.pool.register((0, arweave_2.toBytes)(transaction.id), +transaction.data_size)];
-                            case 5:
-                                registerTransaction = (_a.sent());
-                                uploaderLogger.info("\u2B06\uFE0F  Creating a new proposal. Transaction = " + registerTransaction.hash);
-                                return [3 /*break*/, 7];
+                                _c.label = 6;
                             case 6:
-                                error_1 = _a.sent();
+                                _c.trys.push([6, 8, , 9]);
+                                return [4 /*yield*/, this.pool.register((0, arweave_2.toBytes)(transaction.id), +transaction.data_size)];
+                            case 7:
+                                registerTransaction = (_c.sent());
+                                uploaderLogger.info("\u2B06\uFE0F  Creating a new proposal. Transaction = " + registerTransaction.hash);
+                                return [3 /*break*/, 9];
+                            case 8:
+                                error_1 = _c.sent();
                                 uploaderLogger.error("❌ Received an error while trying to register a bundle:", error_1);
                                 process.exit(1);
-                                return [3 /*break*/, 7];
-                            case 7: return [2 /*return*/];
+                                return [3 /*break*/, 9];
+                            case 9: return [2 /*return*/];
                         }
                     });
                 }); });

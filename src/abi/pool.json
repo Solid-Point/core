@@ -177,6 +177,25 @@
     "anonymous": false,
     "inputs": [
       {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "previous",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "current",
+        "type": "uint256"
+      }
+    ],
+    "name": "IdleCostChanged",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
         "indexed": true,
         "internalType": "address",
         "name": "nodeIndexed",
@@ -202,6 +221,25 @@
       }
     ],
     "name": "IncreasePoints",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "previous",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "current",
+        "type": "uint256"
+      }
+    ],
+    "name": "KyvePerByteChanged",
     "type": "event"
   },
   {
@@ -263,7 +301,14 @@
   },
   {
     "anonymous": false,
-    "inputs": [],
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
     "name": "Paused",
     "type": "event"
   },
@@ -346,12 +391,6 @@
       }
     ],
     "name": "ProposalStart",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [],
-    "name": "Resumed",
     "type": "event"
   },
   {
@@ -502,6 +541,19 @@
       }
     ],
     "name": "Staked",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "Unpaused",
     "type": "event"
   },
   {
@@ -731,11 +783,6 @@
         "type": "uint256"
       },
       {
-        "internalType": "bool",
-        "name": "_paused",
-        "type": "bool"
-      },
-      {
         "internalType": "address",
         "name": "_uploader",
         "type": "address"
@@ -826,13 +873,6 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "claim",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "internalType": "uint256",
@@ -840,13 +880,6 @@
         "type": "uint256"
       }
     ],
-    "name": "defund",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "defund",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -998,6 +1031,19 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "paused",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "bytes32",
@@ -1029,13 +1075,6 @@
       }
     ],
     "name": "renounceRole",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "resume",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1105,7 +1144,7 @@
   },
   {
     "inputs": [],
-    "name": "unstake",
+    "name": "unpause",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1145,6 +1184,32 @@
       }
     ],
     "name": "updateGracePeriod",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "idleCost",
+        "type": "uint256"
+      }
+    ],
+    "name": "updateIdleCost",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "kyvePerByte",
+        "type": "uint256"
+      }
+    ],
+    "name": "updateKyvePerByte",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
