@@ -134,25 +134,27 @@ var KYVE = /** @class */ (function () {
                     case 4:
                         _a.sent();
                         _uploader = this._settings._uploader;
-                        if (this.wallet.address === _uploader) {
-                            if (this.keyfile) {
-                                if (this._settings._paused) {
-                                    logger_1["default"].warn("⚠️  Pool is paused. Exiting ...");
-                                    process.exit();
-                                }
-                                else {
-                                    this.uploader(uploadFunction, config);
-                                }
-                            }
-                            else {
-                                logger_1["default"].error("❌ You need to specify your Arweave keyfile.");
-                                process.exit(1);
-                            }
+                        if (!(this.wallet.address === _uploader)) return [3 /*break*/, 8];
+                        if (!this.keyfile) return [3 /*break*/, 6];
+                        return [4 /*yield*/, this.pool.paused()];
+                    case 5:
+                        if (_a.sent()) {
+                            logger_1["default"].warn("⚠️  Pool is paused. Exiting ...");
+                            process.exit();
                         }
                         else {
-                            this.validator(validateFunction, config);
+                            this.uploader(uploadFunction, config);
                         }
-                        return [2 /*return*/];
+                        return [3 /*break*/, 7];
+                    case 6:
+                        logger_1["default"].error("❌ You need to specify your Arweave keyfile.");
+                        process.exit(1);
+                        _a.label = 7;
+                    case 7: return [3 /*break*/, 9];
+                    case 8:
+                        this.validator(validateFunction, config);
+                        _a.label = 9;
+                    case 9: return [2 /*return*/];
                 }
             });
         });

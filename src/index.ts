@@ -122,7 +122,7 @@ class KYVE {
 
     if (this.wallet.address === _uploader) {
       if (this.keyfile) {
-        if (this._settings._paused) {
+        if (await this.pool.paused()) {
           logger.warn("⚠️  Pool is paused. Exiting ...");
           process.exit();
         } else {
