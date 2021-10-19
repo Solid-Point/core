@@ -70,7 +70,7 @@ var pool_1 = __importStar(require("./utils/pool"));
 var sleep_1 = __importDefault(require("./utils/sleep"));
 var package_json_1 = require("../package.json");
 var KYVE = /** @class */ (function () {
-    function KYVE(poolAddress, stakeAmount, privateKey, keyfile, name) {
+    function KYVE(poolAddress, runtime, stakeAmount, privateKey, keyfile, name) {
         var _this = this;
         this.buffer = [];
         this.votes = [];
@@ -83,6 +83,7 @@ var KYVE = /** @class */ (function () {
             name: "moonbase-alphanet"
         }));
         this.pool = (0, pool_1["default"])(poolAddress, this.wallet);
+        this.runtime = runtime;
         this.stake = stakeAmount;
         this.keyfile = keyfile;
         if (name) {
@@ -124,20 +125,24 @@ var KYVE = /** @class */ (function () {
                         return [4 /*yield*/, this.sync()];
                     case 1:
                         _a.sent();
-                        return [4 /*yield*/, this.fetchSettings()];
-                    case 2:
-                        _a.sent();
                         return [4 /*yield*/, this.fetchConfig()];
-                    case 3:
+                    case 2:
                         config = _a.sent();
+                        if (this._metadata.runtime === this.runtime) {
+                            logger_1["default"].info("\uD83D\uDCBB Running node on runtime " + this.runtime + ".");
+                        }
+                        else {
+                            logger_1["default"].error("❌ Specified pool does not match the integration runtime.");
+                            process.exit(1);
+                        }
                         return [4 /*yield*/, (0, pool_1.stake)(this.stake, this.pool, this._settings)];
-                    case 4:
+                    case 3:
                         _a.sent();
                         _uploader = this._settings._uploader;
-                        if (!(this.wallet.address === _uploader)) return [3 /*break*/, 8];
-                        if (!this.keyfile) return [3 /*break*/, 6];
+                        if (!(this.wallet.address === _uploader)) return [3 /*break*/, 7];
+                        if (!this.keyfile) return [3 /*break*/, 5];
                         return [4 /*yield*/, this.pool.paused()];
-                    case 5:
+                    case 4:
                         if (_a.sent()) {
                             logger_1["default"].warn("⚠️  Pool is paused. Exiting ...");
                             process.exit();
@@ -145,16 +150,16 @@ var KYVE = /** @class */ (function () {
                         else {
                             this.uploader(uploadFunction, config);
                         }
-                        return [3 /*break*/, 7];
-                    case 6:
+                        return [3 /*break*/, 6];
+                    case 5:
                         logger_1["default"].error("❌ You need to specify your Arweave keyfile.");
                         process.exit(1);
-                        _a.label = 7;
-                    case 7: return [3 /*break*/, 9];
-                    case 8:
+                        _a.label = 6;
+                    case 6: return [3 /*break*/, 8];
+                    case 7:
                         this.validator(validateFunction, config);
-                        _a.label = 9;
-                    case 9: return [2 /*return*/];
+                        _a.label = 8;
+                    case 8: return [2 /*return*/];
                 }
             });
         });
@@ -176,8 +181,8 @@ var KYVE = /** @class */ (function () {
                         switch (_c.label) {
                             case 0:
                                 i = this.buffer.push(item);
-                                uploaderLogger.debug("Received a new data item (" + i + " / " + this._bundleSize + ").");
-                                if (!(this.buffer.length >= this._bundleSize)) return [3 /*break*/, 9];
+                                uploaderLogger.debug("Received a new data item (" + i + " / " + this._metadata.bundleSize + ").");
+                                if (!(this.buffer.length >= this._metadata.bundleSize)) return [3 /*break*/, 9];
                                 uploaderLogger.info("📦 Creating bundle ...");
                                 tempBuffer = this.buffer;
                                 this.buffer = [];
@@ -354,11 +359,11 @@ var KYVE = /** @class */ (function () {
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: 
-                    // Fetch the latest bundle size.
-                    return [4 /*yield*/, this.fetchBundleSize()];
+                    case 0: return [4 /*yield*/, this.fetchMetadata()];
                     case 1:
-                        // Fetch the latest bundle size.
+                        _a.sent();
+                        return [4 /*yield*/, this.fetchSettings()];
+                    case 2:
                         _a.sent();
                         // Listen to new contract changes.
                         this.pool.on("ConfigChanged", function () {
@@ -368,7 +373,7 @@ var KYVE = /** @class */ (function () {
                         this.pool.on("MetadataChanged", function () { return __awaiter(_this, void 0, void 0, function () {
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
-                                    case 0: return [4 /*yield*/, this.fetchBundleSize()];
+                                    case 0: return [4 /*yield*/, this.fetchMetadata()];
                                     case 1:
                                         _a.sent();
                                         return [2 /*return*/];
@@ -417,33 +422,6 @@ var KYVE = /** @class */ (function () {
             });
         });
     };
-    KYVE.prototype.fetchBundleSize = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var bundleSizeLogger, _metadata, metadata;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        bundleSizeLogger = logger_1["default"].getChildLogger({
-                            name: "BundleSize"
-                        });
-                        bundleSizeLogger.debug("Attempting to fetch the bundle size.");
-                        return [4 /*yield*/, this.pool._metadata()];
-                    case 1:
-                        _metadata = (_a.sent());
-                        try {
-                            metadata = JSON.parse(_metadata);
-                            this._bundleSize = metadata.bundleSize;
-                        }
-                        catch (error) {
-                            bundleSizeLogger.error("❌ Received an error while trying to fetch the bundle size:", error);
-                            process.exit(1);
-                        }
-                        bundleSizeLogger.debug("Successfully fetched the bundle size.");
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
     KYVE.prototype.fetchConfig = function () {
         return __awaiter(this, void 0, void 0, function () {
             var configLogger, _config, config;
@@ -464,6 +442,32 @@ var KYVE = /** @class */ (function () {
                         }
                         catch (error) {
                             configLogger.error("❌ Received an error while trying to fetch the config:", error);
+                            process.exit(1);
+                        }
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    KYVE.prototype.fetchMetadata = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var metadataLogger, _metadata;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        metadataLogger = logger_1["default"].getChildLogger({
+                            name: "Metadata"
+                        });
+                        metadataLogger.debug("Attempting to fetch the metadata.");
+                        return [4 /*yield*/, this.pool._metadata()];
+                    case 1:
+                        _metadata = (_a.sent());
+                        try {
+                            this._metadata = JSON.parse(_metadata);
+                            metadataLogger.debug("Successfully fetched the metadata.");
+                        }
+                        catch (error) {
+                            metadataLogger.error("❌ Received an error while trying to fetch the metadata:", error);
                             process.exit(1);
                         }
                         return [2 /*return*/];

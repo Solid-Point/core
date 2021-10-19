@@ -32,6 +32,7 @@ import { version } from "../package.json";
 
 class KYVE {
   private pool: Contract;
+  private runtime: string;
   private stake: number;
   private wallet: Wallet;
   private keyfile?: JWKInterface;
@@ -42,7 +43,7 @@ class KYVE {
     transaction: string;
     valid: boolean;
   }[] = [];
-  private _bundleSize?: number;
+  private _metadata: any;
   private _settings: any;
 
   private client = new Arweave({
@@ -52,6 +53,7 @@ class KYVE {
 
   constructor(
     poolAddress: string,
+    runtime: string,
     stakeAmount: number,
     privateKey: string,
     keyfile?: JWKInterface,
@@ -69,6 +71,7 @@ class KYVE {
     );
 
     this.pool = Pool(poolAddress, this.wallet);
+    this.runtime = runtime;
     this.stake = stakeAmount;
     this.keyfile = keyfile;
 
@@ -114,8 +117,14 @@ class KYVE {
     );
 
     await this.sync();
-    await this.fetchSettings();
     const config = await this.fetchConfig();
+
+    if (this._metadata.runtime === this.runtime) {
+      logger.info(`💻 Running node on runtime ${this.runtime}.`);
+    } else {
+      logger.error("❌ Specified pool does not match the integration runtime.");
+      process.exit(1);
+    }
 
     await stake(this.stake, this.pool, this._settings);
     const _uploader = this._settings._uploader;
@@ -153,11 +162,11 @@ class KYVE {
       // Push item to buffer.
       const i = this.buffer.push(item);
       uploaderLogger.debug(
-        `Received a new data item (${i} / ${this._bundleSize!}).`
+        `Received a new data item (${i} / ${this._metadata.bundleSize}).`
       );
 
       // Check buffer length.
-      if (this.buffer.length >= this._bundleSize!) {
+      if (this.buffer.length >= this._metadata.bundleSize) {
         uploaderLogger.info("📦 Creating bundle ...");
 
         // Clear the buffer.
@@ -321,8 +330,8 @@ class KYVE {
   }
 
   private async sync() {
-    // Fetch the latest bundle size.
-    await this.fetchBundleSize();
+    await this.fetchMetadata();
+    await this.fetchSettings();
 
     // Listen to new contract changes.
     this.pool.on("ConfigChanged", () => {
@@ -330,7 +339,7 @@ class KYVE {
       process.exit();
     });
     this.pool.on("MetadataChanged", async () => {
-      await this.fetchBundleSize();
+      await this.fetchMetadata();
     });
     this.pool.on("UploaderChanged", (previous: string) => {
       if (this.wallet.address === previous) {
@@ -400,28 +409,6 @@ class KYVE {
     );
   }
 
-  private async fetchBundleSize() {
-    const bundleSizeLogger = logger.getChildLogger({
-      name: "BundleSize",
-    });
-    bundleSizeLogger.debug("Attempting to fetch the bundle size.");
-
-    const _metadata = (await this.pool._metadata()) as string;
-
-    try {
-      const metadata = JSON.parse(_metadata);
-      this._bundleSize = metadata.bundleSize as number;
-    } catch (error) {
-      bundleSizeLogger.error(
-        "❌ Received an error while trying to fetch the bundle size:",
-        error
-      );
-      process.exit(1);
-    }
-
-    bundleSizeLogger.debug("Successfully fetched the bundle size.");
-  }
-
   private async fetchConfig(): Promise<any> {
     const configLogger = logger.getChildLogger({
       name: "Config",
@@ -438,6 +425,27 @@ class KYVE {
     } catch (error) {
       configLogger.error(
         "❌ Received an error while trying to fetch the config:",
+        error
+      );
+      process.exit(1);
+    }
+  }
+
+  private async fetchMetadata() {
+    const metadataLogger = logger.getChildLogger({
+      name: "Metadata",
+    });
+    metadataLogger.debug("Attempting to fetch the metadata.");
+
+    const _metadata = (await this.pool._metadata()) as string;
+
+    try {
+      this._metadata = JSON.parse(_metadata);
+
+      metadataLogger.debug("Successfully fetched the metadata.");
+    } catch (error) {
+      metadataLogger.error(
+        "❌ Received an error while trying to fetch the metadata:",
         error
       );
       process.exit(1);
