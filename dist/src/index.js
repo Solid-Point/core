@@ -119,11 +119,18 @@ var KYVE = /** @class */ (function () {
     }
     KYVE.prototype.run = function (uploadFunction, validateFunction) {
         return __awaiter(this, void 0, void 0, function () {
-            var config, _uploader;
+            var format, config, _uploader;
+            var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        logger_1["default"].info("\uD83D\uDE80 Starting node ...\n\tName          = " + this.name + "\n\tAddress       = " + this.wallet.address + "\n\tPool          = " + this.pool.address + "\n\tDesired Stake = " + this.stake + " $KYVE\n\tVersion       = v" + package_json_1.version);
+                        format = function (input) {
+                            var length = Math.max(13, _this.runtime.length);
+                            return "" + input + Array(length - input.length)
+                                .fill(" ")
+                                .join("");
+                        };
+                        logger_1["default"].info("\uD83D\uDE80 Starting node ...\n\t" + format("Name") + " = " + this.name + "\n\t" + format("Address") + " = " + this.wallet.address + "\n\t" + format("Pool") + " = " + this.pool.address + "\n\t" + format("Desired Stake") + " = " + this.stake + " $KYVE\n\n\t" + format("@kyve/core") + " = v" + package_json_1.version + "\n\t" + format(this.runtime) + " = v" + this.version);
                         return [4 /*yield*/, this.sync()];
                     case 1:
                         _a.sent();
@@ -131,7 +138,7 @@ var KYVE = /** @class */ (function () {
                     case 2:
                         config = _a.sent();
                         if (!(0, semver_1.satisfies)(this.version, this._metadata.versions || this.version)) return [3 /*break*/, 3];
-                        logger_1["default"].info("⏱ Pool version requirements met.");
+                        logger_1["default"].info("⏱  Pool version requirements met.");
                         return [3 /*break*/, 5];
                     case 3:
                         logger_1["default"].error("\u274C Running an invalid version for the specified pool. Version requirements are " + this._metadata.versions + ".");
@@ -486,7 +493,7 @@ var KYVE = /** @class */ (function () {
                             this._metadata.versions &&
                             oldMetadata.versions !== this._metadata.versions)) return [3 /*break*/, 4];
                         logger_1["default"].warn("⚠️  Version requirements changed. Unstaking and exiting ...");
-                        logger_1["default"].info("\u23F1 New version requirements are " + this._metadata.versions + ".");
+                        logger_1["default"].info("\u23F1  New version requirements are " + this._metadata.versions + ".");
                         return [4 /*yield*/, (0, pool_1.unstakeAll)(this.pool)];
                     case 3:
                         _a.sent();

@@ -116,15 +116,27 @@ class KYVE {
     uploadFunction: UploadFunction<ConfigType>,
     validateFunction: ValidateFunction<ConfigType>
   ) {
+    const format = (input: string) => {
+      const length = Math.max(13, this.runtime.length);
+      return `${input}${Array(length - input.length)
+        .fill(" ")
+        .join("")}`;
+    };
     logger.info(
-      `🚀 Starting node ...\n\tName          = ${this.name}\n\tAddress       = ${this.wallet.address}\n\tPool          = ${this.pool.address}\n\tDesired Stake = ${this.stake} $KYVE\n\tVersion       = v${version}`
+      `🚀 Starting node ...\n\t${format("Name")} = ${this.name}\n\t${format(
+        "Address"
+      )} = ${this.wallet.address}\n\t${format("Pool")} = ${
+        this.pool.address
+      }\n\t${format("Desired Stake")} = ${this.stake} $KYVE\n\n\t${format(
+        "@kyve/core"
+      )} = v${version}\n\t${format(this.runtime)} = v${this.version}`
     );
 
     await this.sync();
     const config = await this.fetchConfig();
 
     if (satisfies(this.version, this._metadata.versions || this.version)) {
-      logger.info("⏱ Pool version requirements met.");
+      logger.info("⏱  Pool version requirements met.");
     } else {
       logger.error(
         `❌ Running an invalid version for the specified pool. Version requirements are ${this._metadata.versions}.`
@@ -473,7 +485,7 @@ class KYVE {
           "⚠️  Version requirements changed. Unstaking and exiting ..."
         );
         logger.info(
-          `⏱ New version requirements are ${this._metadata.versions}.`
+          `⏱  New version requirements are ${this._metadata.versions}.`
         );
         await unstakeAll(this.pool);
         process.exit();
