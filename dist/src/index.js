@@ -63,6 +63,7 @@ var ethers_1 = require("ethers");
 var fs_1 = require("fs");
 var prando_1 = __importDefault(require("prando"));
 var rxjs_1 = require("rxjs");
+var semver_1 = require("semver");
 var unique_names_generator_1 = require("unique-names-generator");
 var arweave_2 = require("./utils/arweave");
 var logger_1 = __importDefault(require("./utils/logger"));
@@ -70,7 +71,7 @@ var pool_1 = __importStar(require("./utils/pool"));
 var sleep_1 = __importDefault(require("./utils/sleep"));
 var package_json_1 = require("../package.json");
 var KYVE = /** @class */ (function () {
-    function KYVE(poolAddress, runtime, stakeAmount, privateKey, keyfile, name) {
+    function KYVE(poolAddress, runtime, version, stakeAmount, privateKey, keyfile, name) {
         var _this = this;
         this.buffer = [];
         this.votes = [];
@@ -84,6 +85,7 @@ var KYVE = /** @class */ (function () {
         }));
         this.pool = (0, pool_1["default"])(poolAddress, this.wallet);
         this.runtime = runtime;
+        this.version = version;
         this.stake = stakeAmount;
         this.keyfile = keyfile;
         if (name) {
@@ -128,6 +130,13 @@ var KYVE = /** @class */ (function () {
                         return [4 /*yield*/, this.fetchConfig()];
                     case 2:
                         config = _a.sent();
+                        if ((0, semver_1.satisfies)(this.version, this._metadata.versions)) {
+                            logger_1["default"].info("⏱ Pool version requirements met.");
+                        }
+                        else {
+                            logger_1["default"].error("❌ Running an invalid version for the specified pool.");
+                            process.exit(1);
+                        }
                         if (this._metadata.runtime === this.runtime) {
                             logger_1["default"].info("\uD83D\uDCBB Running node on runtime " + this.runtime + ".");
                         }
@@ -451,7 +460,7 @@ var KYVE = /** @class */ (function () {
     };
     KYVE.prototype.fetchMetadata = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var metadataLogger, _metadata;
+            var metadataLogger, _metadata, oldMetadata;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -463,7 +472,12 @@ var KYVE = /** @class */ (function () {
                     case 1:
                         _metadata = (_a.sent());
                         try {
+                            oldMetadata = this._metadata;
                             this._metadata = JSON.parse(_metadata);
+                            if (oldMetadata && oldMetadata.versions !== this._metadata.versions) {
+                                logger_1["default"].warn("⚠️  Version requirements changed. Exiting ...");
+                                process.exit();
+                            }
                             metadataLogger.debug("Successfully fetched the metadata.");
                         }
                         catch (error) {

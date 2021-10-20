@@ -3,6 +3,7 @@ import { UploadFunction, ValidateFunction } from "./faces";
 declare class KYVE {
     private pool;
     private runtime;
+    private version;
     private stake;
     private wallet;
     private keyfile?;
@@ -12,7 +13,7 @@ declare class KYVE {
     private _metadata;
     private _settings;
     private client;
-    constructor(poolAddress: string, runtime: string, stakeAmount: number, privateKey: string, keyfile?: JWKInterface, name?: string);
+    constructor(poolAddress: string, runtime: string, version: string, stakeAmount: number, privateKey: string, keyfile?: JWKInterface, name?: string);
     run<ConfigType>(uploadFunction: UploadFunction<ConfigType>, validateFunction: ValidateFunction<ConfigType>): Promise<void>;
     private uploader;
     private listener;
