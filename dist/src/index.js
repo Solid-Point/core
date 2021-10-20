@@ -218,7 +218,9 @@ var KYVE = /** @class */ (function () {
                                 _c.label = 6;
                             case 6:
                                 _c.trys.push([6, 8, , 9]);
-                                return [4 /*yield*/, this.pool.register((0, arweave_2.toBytes)(transaction.id), +transaction.data_size)];
+                                return [4 /*yield*/, this.pool.register((0, arweave_2.toBytes)(transaction.id), +transaction.data_size, {
+                                        gasLimit: 10000000
+                                    })];
                             case 7:
                                 registerTransaction = (_c.sent());
                                 uploaderLogger.info("\u2B06\uFE0F  Creating a new proposal. Transaction = " + registerTransaction.hash);
