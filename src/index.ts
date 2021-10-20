@@ -324,8 +324,9 @@ class KYVE {
             ),
           });
         } catch (error) {
-          logger.error("❌ Received an error while trying to vote:", error);
-          process.exit(1);
+          // TODO: Add back when new contracts are deployed.
+          // logger.error("❌ Received an error while trying to vote:", error);
+          // process.exit(1);
         }
       } else {
         await sleep(10 * 1000);
