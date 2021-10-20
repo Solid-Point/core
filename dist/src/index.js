@@ -157,6 +157,7 @@ var KYVE = /** @class */ (function () {
                             process.exit();
                         }
                         else {
+                            logger_1["default"].info("📚 Running as an uploader ...");
                             this.uploader(uploadFunction, config);
                         }
                         return [3 /*break*/, 6];
@@ -166,6 +167,7 @@ var KYVE = /** @class */ (function () {
                         _a.label = 6;
                     case 6: return [3 /*break*/, 8];
                     case 7:
+                        logger_1["default"].info("🧐 Running as an validator ...");
                         this.validator(validateFunction, config);
                         _a.label = 8;
                     case 8: return [2 /*return*/];

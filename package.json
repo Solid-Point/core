@@ -23,7 +23,7 @@
   "scripts": {
     "build": "prettier --write . && tsc",
     "format": "prettier --write .",
-    "deploy": "yarn build && npm publish"
+    "deploy": "yarn build && yarn npm publish"
   },
   "dependencies": {
     "arweave": "^1.10.17",

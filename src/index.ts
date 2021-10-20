@@ -146,6 +146,7 @@ class KYVE {
           logger.warn("⚠️  Pool is paused. Exiting ...");
           process.exit();
         } else {
+          logger.info("📚 Running as an uploader ...");
           this.uploader<ConfigType>(uploadFunction, config);
         }
       } else {
@@ -153,6 +154,7 @@ class KYVE {
         process.exit(1);
       }
     } else {
+      logger.info("🧐 Running as an validator ...");
       this.validator<ConfigType>(validateFunction, config);
     }
   }
