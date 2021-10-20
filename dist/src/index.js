@@ -134,7 +134,7 @@ var KYVE = /** @class */ (function () {
                         logger_1["default"].info("⏱ Pool version requirements met.");
                         return [3 /*break*/, 5];
                     case 3:
-                        logger_1["default"].error("\u274C Running an invalid version for the specified pool. Required versions are " + this._metadata.versions + ".");
+                        logger_1["default"].error("\u274C Running an invalid version for the specified pool. Version requirements are " + this._metadata.versions + ".");
                         return [4 /*yield*/, (0, pool_1.unstakeAll)(this.pool)];
                     case 4:
                         _a.sent();

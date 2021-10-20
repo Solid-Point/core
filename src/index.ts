@@ -127,7 +127,7 @@ class KYVE {
       logger.info("⏱ Pool version requirements met.");
     } else {
       logger.error(
-        `❌ Running an invalid version for the specified pool. Required versions are ${this._metadata.versions}.`
+        `❌ Running an invalid version for the specified pool. Version requirements are ${this._metadata.versions}.`
       );
       await unstakeAll(this.pool);
       process.exit(1);
