@@ -207,9 +207,13 @@ class KYVE {
         uploaderLogger.debug(`Attempting to register a bundle.`);
 
         try {
+          // manual gas limit for resources exhausted error
           const registerTransaction = (await this.pool.register(
             toBytes(transaction.id),
-            +transaction.data_size
+            +transaction.data_size,
+            {
+              gasLimit: 10000000,
+            }
           )) as ContractTransaction;
 
           uploaderLogger.info(
