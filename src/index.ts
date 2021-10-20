@@ -27,7 +27,7 @@ import {
 } from "./faces";
 import { fromBytes, toBytes } from "./utils/arweave";
 import logger from "./utils/logger";
-import Pool, { decimals, stake } from "./utils/pool";
+import Pool, { decimals, stake, unstakeAll } from "./utils/pool";
 import sleep from "./utils/sleep";
 import { version } from "../package.json";
 
@@ -126,7 +126,10 @@ class KYVE {
     if (satisfies(this.version, this._metadata.versions || this.version)) {
       logger.info("⏱ Pool version requirements met.");
     } else {
-      logger.error("❌ Running an invalid version for the specified pool.");
+      logger.error(
+        `❌ Running an invalid version for the specified pool. Required versions are ${this._metadata.versions}.`
+      );
+      await unstakeAll(this.pool);
       process.exit(1);
     }
 
@@ -466,7 +469,13 @@ class KYVE {
         this._metadata.versions &&
         oldMetadata.versions !== this._metadata.versions
       ) {
-        logger.warn("⚠️  Version requirements changed. Exiting ...");
+        logger.warn(
+          "⚠️  Version requirements changed. Unstaking and exiting ..."
+        );
+        logger.info(
+          `⏱ New version requirements are ${this._metadata.versions}.`
+        );
+        await unstakeAll(this.pool);
         process.exit();
       }
 

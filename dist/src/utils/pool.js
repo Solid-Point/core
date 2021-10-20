@@ -39,7 +39,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 exports.__esModule = true;
-exports.stake = exports.decimals = void 0;
+exports.unstakeAll = exports.stake = exports.decimals = void 0;
 var ethers_1 = require("ethers");
 var pool_json_1 = __importDefault(require("../abi/pool.json"));
 var token_json_1 = __importDefault(require("../abi/token.json"));
@@ -90,10 +90,10 @@ var stake = function (stake, pool, settings) { return __awaiter(void 0, void 0, 
                 _o.label = 4;
             case 4:
                 _o.trys.push([4, 8, , 9]);
-                _b = (_a = pool)["unstake(uint256)"];
+                _b = (_a = pool).unstake;
                 _c = [diff];
                 _k = {};
-                return [4 /*yield*/, pool.estimateGas["unstake(uint256)"](diff)];
+                return [4 /*yield*/, pool.estimateGas.unstake(diff)];
             case 5: return [4 /*yield*/, _b.apply(_a, _c.concat([(_k.gasLimit = _o.sent(),
                         _k)]))];
             case 6:
@@ -168,4 +168,54 @@ var stake = function (stake, pool, settings) { return __awaiter(void 0, void 0, 
     });
 }); };
 exports.stake = stake;
+var unstakeAll = function (pool) { return __awaiter(void 0, void 0, void 0, function () {
+    var unstakeLogger, address, currentStake, transaction, _a, _b, _c, error_3;
+    var _d;
+    return __generator(this, function (_e) {
+        switch (_e.label) {
+            case 0:
+                unstakeLogger = logger_1["default"].getChildLogger({
+                    name: "Unstake"
+                });
+                return [4 /*yield*/, pool.signer.getAddress()];
+            case 1:
+                address = _e.sent();
+                return [4 /*yield*/, pool._stakingAmounts(address)];
+            case 2:
+                currentStake = (_e.sent());
+                if (!currentStake.gt(0)) return [3 /*break*/, 9];
+                unstakeLogger.debug("Attempting to unstake " + currentStake.div(exports.decimals).toString() + " $KYVE.");
+                _e.label = 3;
+            case 3:
+                _e.trys.push([3, 7, , 8]);
+                _b = (_a = pool).unstake;
+                _c = [currentStake];
+                _d = {};
+                return [4 /*yield*/, pool.estimateGas.unstake(currentStake)];
+            case 4: return [4 /*yield*/, _b.apply(_a, _c.concat([(_d.gasLimit = _e.sent(),
+                        _d)]))];
+            case 5:
+                transaction = (_e.sent());
+                unstakeLogger.debug("Unstaking " + currentStake
+                    .div(exports.decimals)
+                    .toString() + " $KYVE. Transaction = " + transaction.hash);
+                return [4 /*yield*/, transaction.wait()];
+            case 6:
+                _e.sent();
+                unstakeLogger.info("📉 Successfully unstaked.");
+                return [3 /*break*/, 8];
+            case 7:
+                error_3 = _e.sent();
+                unstakeLogger.error("❌ Received an error while trying to unstake:", error_3);
+                process.exit(1);
+                return [3 /*break*/, 8];
+            case 8: return [3 /*break*/, 10];
+            case 9:
+                unstakeLogger.debug("Nothing to unstake.");
+                _e.label = 10;
+            case 10: return [2 /*return*/];
+        }
+    });
+}); };
+exports.unstakeAll = unstakeAll;
 exports["default"] = Pool;
