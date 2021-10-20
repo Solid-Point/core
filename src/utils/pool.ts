@@ -45,8 +45,8 @@ export const stake = async (
     );
 
     try {
-      const transaction = (await pool["unstake(uint256)"](diff, {
-        gasLimit: await pool.estimateGas["unstake(uint256)"](diff),
+      const transaction = (await pool.unstake(diff, {
+        gasLimit: await pool.estimateGas.unstake(diff),
       })) as ContractTransaction;
       stakeLogger.debug(
         `Unstaking ${diff.div(decimals).toString()} $KYVE. Transaction = ${
@@ -108,6 +108,43 @@ export const stake = async (
   } else {
     // Already staked with the correct amount.
     stakeLogger.info("👌 Already staked with the correct amount.");
+  }
+};
+
+export const unstakeAll = async (pool: Contract): Promise<void> => {
+  const unstakeLogger = logger.getChildLogger({
+    name: "Unstake",
+  });
+
+  const address = await pool.signer.getAddress();
+  const currentStake = (await pool._stakingAmounts(address)) as BigNumber;
+
+  if (currentStake.gt(0)) {
+    unstakeLogger.debug(
+      `Attempting to unstake ${currentStake.div(decimals).toString()} $KYVE.`
+    );
+
+    try {
+      const transaction = (await pool.unstake(currentStake, {
+        gasLimit: await pool.estimateGas.unstake(currentStake),
+      })) as ContractTransaction;
+      unstakeLogger.debug(
+        `Unstaking ${currentStake
+          .div(decimals)
+          .toString()} $KYVE. Transaction = ${transaction.hash}`
+      );
+
+      await transaction.wait();
+      unstakeLogger.info("📉 Successfully unstaked.");
+    } catch (error) {
+      unstakeLogger.error(
+        "❌ Received an error while trying to unstake:",
+        error
+      );
+      process.exit(1);
+    }
+  } else {
+    unstakeLogger.debug("Nothing to unstake.");
   }
 };
 

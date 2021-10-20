@@ -10,6 +10,7 @@ import {
 import { appendFileSync, existsSync, mkdirSync } from "fs";
 import Prando from "prando";
 import { Observable } from "rxjs";
+import { satisfies } from "semver";
 import { ILogObject, Logger } from "tslog";
 import {
   adjectives,
@@ -26,13 +27,14 @@ import {
 } from "./faces";
 import { fromBytes, toBytes } from "./utils/arweave";
 import logger from "./utils/logger";
-import Pool, { decimals, stake } from "./utils/pool";
+import Pool, { decimals, stake, unstakeAll } from "./utils/pool";
 import sleep from "./utils/sleep";
 import { version } from "../package.json";
 
 class KYVE {
   private pool: Contract;
   private runtime: string;
+  private version: string;
   private stake: number;
   private wallet: Wallet;
   private keyfile?: JWKInterface;
@@ -54,6 +56,7 @@ class KYVE {
   constructor(
     poolAddress: string,
     runtime: string,
+    version: string,
     stakeAmount: number,
     privateKey: string,
     keyfile?: JWKInterface,
@@ -72,6 +75,7 @@ class KYVE {
 
     this.pool = Pool(poolAddress, this.wallet);
     this.runtime = runtime;
+    this.version = version;
     this.stake = stakeAmount;
     this.keyfile = keyfile;
 
@@ -119,6 +123,16 @@ class KYVE {
     await this.sync();
     const config = await this.fetchConfig();
 
+    if (satisfies(this.version, this._metadata.versions || this.version)) {
+      logger.info("⏱ Pool version requirements met.");
+    } else {
+      logger.error(
+        `❌ Running an invalid version for the specified pool. Version requirements are ${this._metadata.versions}.`
+      );
+      await unstakeAll(this.pool);
+      process.exit(1);
+    }
+
     if (this._metadata.runtime === this.runtime) {
       logger.info(`💻 Running node on runtime ${this.runtime}.`);
     } else {
@@ -135,6 +149,7 @@ class KYVE {
           logger.warn("⚠️  Pool is paused. Exiting ...");
           process.exit();
         } else {
+          logger.info("📚 Running as an uploader ...");
           this.uploader<ConfigType>(uploadFunction, config);
         }
       } else {
@@ -142,6 +157,7 @@ class KYVE {
         process.exit(1);
       }
     } else {
+      logger.info("🧐 Running as an validator ...");
       this.validator<ConfigType>(validateFunction, config);
     }
   }
@@ -445,7 +461,23 @@ class KYVE {
     const _metadata = (await this.pool._metadata()) as string;
 
     try {
+      const oldMetadata = this._metadata;
       this._metadata = JSON.parse(_metadata);
+
+      if (
+        oldMetadata &&
+        this._metadata.versions &&
+        oldMetadata.versions !== this._metadata.versions
+      ) {
+        logger.warn(
+          "⚠️  Version requirements changed. Unstaking and exiting ..."
+        );
+        logger.info(
+          `⏱ New version requirements are ${this._metadata.versions}.`
+        );
+        await unstakeAll(this.pool);
+        process.exit();
+      }
 
       metadataLogger.debug("Successfully fetched the metadata.");
     } catch (error) {

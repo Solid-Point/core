@@ -63,6 +63,7 @@ var ethers_1 = require("ethers");
 var fs_1 = require("fs");
 var prando_1 = __importDefault(require("prando"));
 var rxjs_1 = require("rxjs");
+var semver_1 = require("semver");
 var unique_names_generator_1 = require("unique-names-generator");
 var arweave_2 = require("./utils/arweave");
 var logger_1 = __importDefault(require("./utils/logger"));
@@ -70,7 +71,7 @@ var pool_1 = __importStar(require("./utils/pool"));
 var sleep_1 = __importDefault(require("./utils/sleep"));
 var package_json_1 = require("../package.json");
 var KYVE = /** @class */ (function () {
-    function KYVE(poolAddress, runtime, stakeAmount, privateKey, keyfile, name) {
+    function KYVE(poolAddress, runtime, version, stakeAmount, privateKey, keyfile, name) {
         var _this = this;
         this.buffer = [];
         this.votes = [];
@@ -84,6 +85,7 @@ var KYVE = /** @class */ (function () {
         }));
         this.pool = (0, pool_1["default"])(poolAddress, this.wallet);
         this.runtime = runtime;
+        this.version = version;
         this.stake = stakeAmount;
         this.keyfile = keyfile;
         if (name) {
@@ -128,6 +130,17 @@ var KYVE = /** @class */ (function () {
                         return [4 /*yield*/, this.fetchConfig()];
                     case 2:
                         config = _a.sent();
+                        if (!(0, semver_1.satisfies)(this.version, this._metadata.versions || this.version)) return [3 /*break*/, 3];
+                        logger_1["default"].info("⏱ Pool version requirements met.");
+                        return [3 /*break*/, 5];
+                    case 3:
+                        logger_1["default"].error("\u274C Running an invalid version for the specified pool. Version requirements are " + this._metadata.versions + ".");
+                        return [4 /*yield*/, (0, pool_1.unstakeAll)(this.pool)];
+                    case 4:
+                        _a.sent();
+                        process.exit(1);
+                        _a.label = 5;
+                    case 5:
                         if (this._metadata.runtime === this.runtime) {
                             logger_1["default"].info("\uD83D\uDCBB Running node on runtime " + this.runtime + ".");
                         }
@@ -136,30 +149,32 @@ var KYVE = /** @class */ (function () {
                             process.exit(1);
                         }
                         return [4 /*yield*/, (0, pool_1.stake)(this.stake, this.pool, this._settings)];
-                    case 3:
+                    case 6:
                         _a.sent();
                         _uploader = this._settings._uploader;
-                        if (!(this.wallet.address === _uploader)) return [3 /*break*/, 7];
-                        if (!this.keyfile) return [3 /*break*/, 5];
+                        if (!(this.wallet.address === _uploader)) return [3 /*break*/, 10];
+                        if (!this.keyfile) return [3 /*break*/, 8];
                         return [4 /*yield*/, this.pool.paused()];
-                    case 4:
+                    case 7:
                         if (_a.sent()) {
                             logger_1["default"].warn("⚠️  Pool is paused. Exiting ...");
                             process.exit();
                         }
                         else {
+                            logger_1["default"].info("📚 Running as an uploader ...");
                             this.uploader(uploadFunction, config);
                         }
-                        return [3 /*break*/, 6];
-                    case 5:
+                        return [3 /*break*/, 9];
+                    case 8:
                         logger_1["default"].error("❌ You need to specify your Arweave keyfile.");
                         process.exit(1);
-                        _a.label = 6;
-                    case 6: return [3 /*break*/, 8];
-                    case 7:
+                        _a.label = 9;
+                    case 9: return [3 /*break*/, 11];
+                    case 10:
+                        logger_1["default"].info("🧐 Running as an validator ...");
                         this.validator(validateFunction, config);
-                        _a.label = 8;
-                    case 8: return [2 /*return*/];
+                        _a.label = 11;
+                    case 11: return [2 /*return*/];
                 }
             });
         });
@@ -451,7 +466,7 @@ var KYVE = /** @class */ (function () {
     };
     KYVE.prototype.fetchMetadata = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var metadataLogger, _metadata;
+            var metadataLogger, _metadata, oldMetadata, error_3;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -462,15 +477,30 @@ var KYVE = /** @class */ (function () {
                         return [4 /*yield*/, this.pool._metadata()];
                     case 1:
                         _metadata = (_a.sent());
-                        try {
-                            this._metadata = JSON.parse(_metadata);
-                            metadataLogger.debug("Successfully fetched the metadata.");
-                        }
-                        catch (error) {
-                            metadataLogger.error("❌ Received an error while trying to fetch the metadata:", error);
-                            process.exit(1);
-                        }
-                        return [2 /*return*/];
+                        _a.label = 2;
+                    case 2:
+                        _a.trys.push([2, 5, , 6]);
+                        oldMetadata = this._metadata;
+                        this._metadata = JSON.parse(_metadata);
+                        if (!(oldMetadata &&
+                            this._metadata.versions &&
+                            oldMetadata.versions !== this._metadata.versions)) return [3 /*break*/, 4];
+                        logger_1["default"].warn("⚠️  Version requirements changed. Unstaking and exiting ...");
+                        logger_1["default"].info("\u23F1 New version requirements are " + this._metadata.versions + ".");
+                        return [4 /*yield*/, (0, pool_1.unstakeAll)(this.pool)];
+                    case 3:
+                        _a.sent();
+                        process.exit();
+                        _a.label = 4;
+                    case 4:
+                        metadataLogger.debug("Successfully fetched the metadata.");
+                        return [3 /*break*/, 6];
+                    case 5:
+                        error_3 = _a.sent();
+                        metadataLogger.error("❌ Received an error while trying to fetch the metadata:", error_3);
+                        process.exit(1);
+                        return [3 /*break*/, 6];
+                    case 6: return [2 /*return*/];
                 }
             });
         });
