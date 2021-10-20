@@ -123,7 +123,7 @@ class KYVE {
     await this.sync();
     const config = await this.fetchConfig();
 
-    if (satisfies(this.version, this._metadata.versions)) {
+    if (satisfies(this.version, this._metadata.versions || this.version)) {
       logger.info("⏱ Pool version requirements met.");
     } else {
       logger.error("❌ Running an invalid version for the specified pool.");
@@ -459,7 +459,11 @@ class KYVE {
       const oldMetadata = this._metadata;
       this._metadata = JSON.parse(_metadata);
 
-      if (oldMetadata && oldMetadata.versions !== this._metadata.versions) {
+      if (
+        oldMetadata &&
+        this._metadata.versions &&
+        oldMetadata.versions !== this._metadata.versions
+      ) {
         logger.warn("⚠️  Version requirements changed. Exiting ...");
         process.exit();
       }

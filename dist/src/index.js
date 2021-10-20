@@ -130,7 +130,7 @@ var KYVE = /** @class */ (function () {
                         return [4 /*yield*/, this.fetchConfig()];
                     case 2:
                         config = _a.sent();
-                        if ((0, semver_1.satisfies)(this.version, this._metadata.versions)) {
+                        if ((0, semver_1.satisfies)(this.version, this._metadata.versions || this.version)) {
                             logger_1["default"].info("⏱ Pool version requirements met.");
                         }
                         else {
@@ -474,7 +474,9 @@ var KYVE = /** @class */ (function () {
                         try {
                             oldMetadata = this._metadata;
                             this._metadata = JSON.parse(_metadata);
-                            if (oldMetadata && oldMetadata.versions !== this._metadata.versions) {
+                            if (oldMetadata &&
+                                this._metadata.versions &&
+                                oldMetadata.versions !== this._metadata.versions) {
                                 logger_1["default"].warn("⚠️  Version requirements changed. Exiting ...");
                                 process.exit();
                             }
