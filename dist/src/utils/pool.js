@@ -80,9 +80,10 @@ var stake = function (stake, pool, settings) { return __awaiter(void 0, void 0, 
                 currentStake = (_o.sent());
                 minimumStake = settings._minimumStake;
                 if (parsedStake.lt(minimumStake)) {
-                    stakeLogger.warn("\u26A0\uFE0F  Minimum stake is " + minimumStake
+                    stakeLogger.error("\u274C Minimum stake is " + minimumStake
                         .div(exports.decimals)
                         .toString() + " $KYVE. You will not be able to register / vote.");
+                    process.exit();
                 }
                 if (!currentStake.gt(parsedStake)) return [3 /*break*/, 10];
                 diff = currentStake.sub(parsedStake);

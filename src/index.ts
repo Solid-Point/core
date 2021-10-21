@@ -9,7 +9,7 @@ import {
 } from "ethers";
 import { appendFileSync, existsSync, mkdirSync } from "fs";
 import Prando from "prando";
-import { Observable } from "rxjs";
+import { min, Observable } from "rxjs";
 import { satisfies } from "semver";
 import { ILogObject, Logger } from "tslog";
 import {
@@ -374,15 +374,29 @@ class KYVE {
     this.pool.on("MetadataChanged", async () => {
       await this.fetchMetadata();
     });
-    this.pool.on("UploaderChanged", (previous: string) => {
-      if (this.wallet.address === previous) {
-        logger.warn("⚠️  Uploader changed. Exiting ...");
+    this.pool.on("MinimumStakeChanged", async (_, minimum: BigNumber) => {
+      const stake = (await this.pool._stakingAmounts(
+        this.wallet.address
+      )) as BigNumber;
+
+      if (stake.lt(minimum)) {
+        logger.error(
+          `❌ Minimum stake is ${minimum
+            .div(decimals)
+            .toString()} $KYVE. You will not be able to register / vote.`
+        );
         process.exit();
       }
     });
     this.pool.on("Paused", () => {
       if (this.wallet.address === this._settings._uploader) {
         logger.warn("⚠️  Pool is now paused. Exiting ...");
+        process.exit();
+      }
+    });
+    this.pool.on("UploaderChanged", (previous: string) => {
+      if (this.wallet.address === previous) {
+        logger.warn("⚠️  Uploader changed. Exiting ...");
         process.exit();
       }
     });

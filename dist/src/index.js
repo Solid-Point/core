@@ -402,15 +402,32 @@ var KYVE = /** @class */ (function () {
                                 }
                             });
                         }); });
-                        this.pool.on("UploaderChanged", function (previous) {
-                            if (_this.wallet.address === previous) {
-                                logger_1["default"].warn("⚠️  Uploader changed. Exiting ...");
-                                process.exit();
-                            }
-                        });
+                        this.pool.on("MinimumStakeChanged", function (_, minimum) { return __awaiter(_this, void 0, void 0, function () {
+                            var stake;
+                            return __generator(this, function (_a) {
+                                switch (_a.label) {
+                                    case 0: return [4 /*yield*/, this.pool._stakingAmounts(this.wallet.address)];
+                                    case 1:
+                                        stake = (_a.sent());
+                                        if (stake.lt(minimum)) {
+                                            logger_1["default"].error("\u274C Minimum stake is " + minimum
+                                                .div(pool_1.decimals)
+                                                .toString() + " $KYVE. You will not be able to register / vote.");
+                                            process.exit();
+                                        }
+                                        return [2 /*return*/];
+                                }
+                            });
+                        }); });
                         this.pool.on("Paused", function () {
                             if (_this.wallet.address === _this._settings._uploader) {
                                 logger_1["default"].warn("⚠️  Pool is now paused. Exiting ...");
+                                process.exit();
+                            }
+                        });
+                        this.pool.on("UploaderChanged", function (previous) {
+                            if (_this.wallet.address === previous) {
+                                logger_1["default"].warn("⚠️  Uploader changed. Exiting ...");
                                 process.exit();
                             }
                         });

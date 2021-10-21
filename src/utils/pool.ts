@@ -30,11 +30,12 @@ export const stake = async (
   const minimumStake = settings._minimumStake as BigNumber;
 
   if (parsedStake.lt(minimumStake)) {
-    stakeLogger.warn(
-      `⚠️  Minimum stake is ${minimumStake
+    stakeLogger.error(
+      `❌ Minimum stake is ${minimumStake
         .div(decimals)
         .toString()} $KYVE. You will not be able to register / vote.`
     );
+    process.exit();
   }
 
   if (currentStake.gt(parsedStake)) {
