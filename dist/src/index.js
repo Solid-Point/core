@@ -59,7 +59,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 exports.__esModule = true;
 var arweave_1 = __importDefault(require("arweave"));
-var ethers_1 = require("ethers");
+var ethers_1 = __importStar(require("ethers"));
 var fs_1 = require("fs");
 var prando_1 = __importDefault(require("prando"));
 var rxjs_1 = require("rxjs");
@@ -79,7 +79,7 @@ var KYVE = /** @class */ (function () {
             host: "arweave.net",
             protocol: "https"
         });
-        this.wallet = new ethers_1.Wallet(privateKey, new ethers_1.ethers.providers.StaticJsonRpcProvider("https://moonbeam-alpha.api.onfinality.io/public", {
+        this.wallet = new ethers_1.Wallet(privateKey, new ethers_1["default"].providers.StaticJsonRpcProvider("https://moonbeam-alpha.api.onfinality.io/public", {
             chainId: 1287,
             name: "moonbase-alphanet"
         }));
@@ -410,9 +410,7 @@ var KYVE = /** @class */ (function () {
                                     case 1:
                                         stake = (_a.sent());
                                         if (stake.lt(minimum)) {
-                                            logger_1["default"].error("\u274C Minimum stake is " + minimum
-                                                .div(pool_1.decimals)
-                                                .toString() + " $KYVE. You will not be able to register / vote.");
+                                            logger_1["default"].error("\u274C Minimum stake is " + (0, pool_1.toHumanReadable)((0, pool_1.toBN)(minimum)) + " $KYVE. You will not be able to register / vote.");
                                             process.exit();
                                         }
                                         return [2 /*return*/];
@@ -435,9 +433,8 @@ var KYVE = /** @class */ (function () {
                             name: "Payout"
                         });
                         this.pool.on(this.pool.filters.Payout(this.wallet.address), function (_, __, _amount, _transaction) {
-                            var amount = _amount.mul(1000000).div(pool_1.decimals).toNumber() / 1000000;
                             var transaction = (0, arweave_2.fromBytes)(_transaction);
-                            payoutLogger.info("\uD83D\uDCB8 Received a reward of " + amount + " $KYVE. Bundle = " + transaction);
+                            payoutLogger.info("\uD83D\uDCB8 Received a reward of " + (0, pool_1.toHumanReadable)((0, pool_1.toBN)(_amount)) + " $KYVE. Bundle = " + transaction);
                         });
                         pointsLogger = logger_1["default"].getChildLogger({
                             name: "Points"
@@ -451,9 +448,7 @@ var KYVE = /** @class */ (function () {
                         });
                         this.pool.on(this.pool.filters.Slash(this.wallet.address), function (_, __, _amount, _transaction) {
                             var transaction = (0, arweave_2.fromBytes)(_transaction);
-                            slashLogger.warn("\uD83D\uDEAB Node has been slashed. Lost " + _amount
-                                .div(pool_1.decimals)
-                                .toString() + " $KYVE. Bundle = " + transaction);
+                            slashLogger.warn("\uD83D\uDEAB Node has been slashed. Lost " + (0, pool_1.toHumanReadable)((0, pool_1.toBN)(_amount)) + " $KYVE. Bundle = " + transaction);
                             process.exit();
                         });
                         return [2 /*return*/];

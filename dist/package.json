@@ -28,6 +28,7 @@
     "dependencies": {
         "arweave": "^1.10.17",
         "base64url": "^3.0.1",
+        "bignumber.js": "^9.0.1",
         "ethers": "^5.4.7",
         "prando": "^6.0.1",
         "rxjs": "^7.4.0",
