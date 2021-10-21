@@ -1,15 +1,9 @@
 import Arweave from "arweave";
 import { JWKInterface } from "arweave/node/lib/wallet";
-import {
-  BigNumber,
-  Contract,
-  ContractTransaction,
-  ethers,
-  Wallet,
-} from "ethers";
+import ethers, { Contract, ContractTransaction, Wallet } from "ethers";
 import { appendFileSync, existsSync, mkdirSync } from "fs";
 import Prando from "prando";
-import { min, Observable } from "rxjs";
+import { Observable } from "rxjs";
 import { satisfies } from "semver";
 import { ILogObject, Logger } from "tslog";
 import {
@@ -27,7 +21,7 @@ import {
 } from "./faces";
 import { fromBytes, toBytes } from "./utils/arweave";
 import logger from "./utils/logger";
-import Pool, { decimals, stake, unstakeAll } from "./utils/pool";
+import Pool, { stake, toBN, toHumanReadable, unstakeAll } from "./utils/pool";
 import sleep from "./utils/sleep";
 import { version } from "../package.json";
 
@@ -35,7 +29,7 @@ class KYVE {
   private pool: Contract;
   private runtime: string;
   private version: string;
-  private stake: number;
+  private stake: string;
   private wallet: Wallet;
   private keyfile?: JWKInterface;
   private name: string;
@@ -57,7 +51,7 @@ class KYVE {
     poolAddress: string,
     runtime: string,
     version: string,
-    stakeAmount: number,
+    stakeAmount: string,
     privateKey: string,
     keyfile?: JWKInterface,
     name?: string
@@ -374,20 +368,23 @@ class KYVE {
     this.pool.on("MetadataChanged", async () => {
       await this.fetchMetadata();
     });
-    this.pool.on("MinimumStakeChanged", async (_, minimum: BigNumber) => {
-      const stake = (await this.pool._stakingAmounts(
-        this.wallet.address
-      )) as BigNumber;
+    this.pool.on(
+      "MinimumStakeChanged",
+      async (_, minimum: ethers.BigNumber) => {
+        const stake = (await this.pool._stakingAmounts(
+          this.wallet.address
+        )) as ethers.BigNumber;
 
-      if (stake.lt(minimum)) {
-        logger.error(
-          `❌ Minimum stake is ${minimum
-            .div(decimals)
-            .toString()} $KYVE. You will not be able to register / vote.`
-        );
-        process.exit();
+        if (stake.lt(minimum)) {
+          logger.error(
+            `❌ Minimum stake is ${toHumanReadable(
+              toBN(minimum)
+            )} $KYVE. You will not be able to register / vote.`
+          );
+          process.exit();
+        }
       }
-    });
+    );
     this.pool.on("Paused", () => {
       if (this.wallet.address === this._settings._uploader) {
         logger.warn("⚠️  Pool is now paused. Exiting ...");
@@ -408,12 +405,13 @@ class KYVE {
 
     this.pool.on(
       this.pool.filters.Payout(this.wallet.address),
-      (_, __, _amount: BigNumber, _transaction: string) => {
-        const amount = _amount.mul(1000000).div(decimals).toNumber() / 1000000;
+      (_, __, _amount: ethers.BigNumber, _transaction: string) => {
         const transaction = fromBytes(_transaction);
 
         payoutLogger.info(
-          `💸 Received a reward of ${amount} $KYVE. Bundle = ${transaction}`
+          `💸 Received a reward of ${toHumanReadable(
+            toBN(_amount)
+          )} $KYVE. Bundle = ${transaction}`
         );
       }
     );
@@ -425,7 +423,7 @@ class KYVE {
 
     this.pool.on(
       this.pool.filters.IncreasePoints(this.wallet.address),
-      (_, __, _points: BigNumber, _transaction: string) => {
+      (_, __, _points: ethers.BigNumber, _transaction: string) => {
         const transaction = fromBytes(_transaction);
 
         pointsLogger.warn(
@@ -443,13 +441,13 @@ class KYVE {
 
     this.pool.on(
       this.pool.filters.Slash(this.wallet.address),
-      (_, __, _amount: BigNumber, _transaction: string) => {
+      (_, __, _amount: ethers.BigNumber, _transaction: string) => {
         const transaction = fromBytes(_transaction);
 
         slashLogger.warn(
-          `🚫 Node has been slashed. Lost ${_amount
-            .div(decimals)
-            .toString()} $KYVE. Bundle = ${transaction}`
+          `🚫 Node has been slashed. Lost ${toHumanReadable(
+            toBN(_amount)
+          )} $KYVE. Bundle = ${transaction}`
         );
         process.exit();
       }
