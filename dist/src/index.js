@@ -126,9 +126,7 @@ var KYVE = /** @class */ (function () {
                     case 0:
                         format = function (input) {
                             var length = Math.max(13, _this.runtime.length);
-                            return "" + input + Array(length - input.length)
-                                .fill(" ")
-                                .join("");
+                            return input.padEnd(length, " ");
                         };
                         logger_1["default"].info("\uD83D\uDE80 Starting node ...\n\t" + format("Name") + " = " + this.name + "\n\t" + format("Address") + " = " + this.wallet.address + "\n\t" + format("Pool") + " = " + this.pool.address + "\n\t" + format("Desired Stake") + " = " + this.stake + " $KYVE\n\n\t" + format("@kyve/core") + " = v" + package_json_1.version + "\n\t" + format(this.runtime) + " = v" + this.version);
                         return [4 /*yield*/, this.sync()];

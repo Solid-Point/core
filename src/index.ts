@@ -118,9 +118,7 @@ class KYVE {
   ) {
     const format = (input: string) => {
       const length = Math.max(13, this.runtime.length);
-      return `${input}${Array(length - input.length)
-        .fill(" ")
-        .join("")}`;
+      return input.padEnd(length, " ");
     };
     logger.info(
       `🚀 Starting node ...\n\t${format("Name")} = ${this.name}\n\t${format(
