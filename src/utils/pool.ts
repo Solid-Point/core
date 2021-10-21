@@ -1,7 +1,8 @@
-import { BigNumber, Contract, ContractTransaction, Wallet } from "ethers";
+import ethers, { Contract, ContractTransaction, Wallet } from "ethers";
 import PoolABI from "../abi/pool.json";
 import TokenABI from "../abi/token.json";
 import logger from "../utils/logger";
+import { BigNumber } from "bignumber.js";
 
 const Token = async (pool: Contract): Promise<Contract> => {
   return new Contract((await pool._token()) as string, TokenABI, pool.signer);
@@ -11,10 +12,20 @@ const Pool = (address: string, wallet: Wallet): Contract => {
   return new Contract(address, PoolABI, wallet);
 };
 
-export const decimals = BigNumber.from(10).pow(18);
+export const toHumanReadable = (amount: BigNumber) => {
+  return amount.dividedBy(new BigNumber(10).exponentiatedBy(18)).toFixed(5);
+};
+
+export const toEthersBN = (amount: BigNumber) => {
+  return ethers.BigNumber.from(amount.toPrecision());
+};
+
+export const toBN = (amount: ethers.BigNumber) => {
+  return new BigNumber(amount.toString());
+};
 
 export const stake = async (
-  stake: number,
+  stake: string,
   pool: Contract,
   settings: any
 ): Promise<void> => {
@@ -25,31 +36,42 @@ export const stake = async (
   const address = await pool.signer.getAddress();
   const token = await Token(pool);
 
-  const parsedStake = BigNumber.from(stake).mul(decimals);
-  const currentStake = (await pool._stakingAmounts(address)) as BigNumber;
-  const minimumStake = settings._minimumStake as BigNumber;
+  let parsedStake: BigNumber;
+
+  try {
+    parsedStake = new BigNumber(stake).multipliedBy(
+      new BigNumber(10).exponentiatedBy(18)
+    );
+  } catch (error) {
+    stakeLogger.error("❌ Provided invalid staking amount:", error);
+    process.exit(1);
+  }
+
+  const currentStake = new BigNumber(
+    (await pool._stakingAmounts(address)).toString()
+  );
+  const minimumStake = toBN(settings._minimumStake as ethers.BigNumber);
 
   if (parsedStake.lt(minimumStake)) {
-    stakeLogger.warn(
-      `⚠️  Minimum stake is ${minimumStake
-        .div(decimals)
-        .toString()} $KYVE. You will not be able to register / vote.`
+    stakeLogger.error(
+      `❌ Minimum stake is ${toHumanReadable(
+        minimumStake
+      )} $KYVE. You will not be able to register / vote.`
     );
+    process.exit();
   }
 
   if (currentStake.gt(parsedStake)) {
     // Need to unstake the difference.
-    const diff = currentStake.sub(parsedStake);
-    stakeLogger.debug(
-      `Attempting to unstake ${diff.div(decimals).toString()} $KYVE.`
-    );
+    const diff = currentStake.minus(parsedStake);
+    stakeLogger.debug(`Attempting to unstake ${toHumanReadable(diff)} $KYVE.`);
 
     try {
-      const transaction = (await pool.unstake(diff, {
-        gasLimit: await pool.estimateGas.unstake(diff),
+      const transaction = (await pool.unstake(toEthersBN(diff), {
+        gasLimit: await pool.estimateGas.unstake(toEthersBN(diff)),
       })) as ContractTransaction;
       stakeLogger.debug(
-        `Unstaking ${diff.div(decimals).toString()} $KYVE. Transaction = ${
+        `Unstaking ${toHumanReadable(diff)} $KYVE. Transaction = ${
           transaction.hash
         }`
       );
@@ -62,12 +84,10 @@ export const stake = async (
     }
   } else if (currentStake.lt(parsedStake)) {
     // Need to stake the difference.
-    const diff = parsedStake.sub(currentStake);
-    stakeLogger.debug(
-      `Attempting to stake ${diff.div(decimals).toString()} $KYVE.`
-    );
+    const diff = parsedStake.minus(currentStake);
+    stakeLogger.debug(`Attempting to stake ${toHumanReadable(diff)} $KYVE.`);
 
-    const balance = (await token.balanceOf(address)) as BigNumber;
+    const balance = toBN((await token.balanceOf(address)) as ethers.BigNumber);
     if (balance.lt(diff)) {
       stakeLogger.error(
         "❌ Supplied wallet does not have enough $KYVE to stake."
@@ -77,23 +97,26 @@ export const stake = async (
       try {
         let transaction: ContractTransaction;
 
-        transaction = await token.approve(pool.address, diff, {
-          gasLimit: await token.estimateGas.approve(pool.address, diff),
+        transaction = await token.approve(pool.address, toEthersBN(diff), {
+          gasLimit: await token.estimateGas.approve(
+            pool.address,
+            toEthersBN(diff)
+          ),
         });
         stakeLogger.debug(
-          `Approving ${diff
-            .div(decimals)
-            .toString()} $KYVE to be spent. Transaction = ${transaction.hash}`
+          `Approving ${toHumanReadable(
+            diff
+          )} $KYVE to be spent. Transaction = ${transaction.hash}`
         );
 
         await transaction.wait();
         stakeLogger.info("👍 Successfully approved.");
 
-        transaction = await pool.stake(diff, {
-          gasLimit: await pool.estimateGas.stake(diff),
+        transaction = await pool.stake(toEthersBN(diff), {
+          gasLimit: await pool.estimateGas.stake(toEthersBN(diff)),
         });
         stakeLogger.debug(
-          `Staking ${diff.div(decimals).toString()} $KYVE. Transaction = ${
+          `Staking ${toHumanReadable(diff)} $KYVE. Transaction = ${
             transaction.hash
           }`
         );
@@ -117,21 +140,23 @@ export const unstakeAll = async (pool: Contract): Promise<void> => {
   });
 
   const address = await pool.signer.getAddress();
-  const currentStake = (await pool._stakingAmounts(address)) as BigNumber;
+  const currentStake = new BigNumber(
+    (await pool._stakingAmounts(address)).toString()
+  );
 
   if (currentStake.gt(0)) {
     unstakeLogger.debug(
-      `Attempting to unstake ${currentStake.div(decimals).toString()} $KYVE.`
+      `Attempting to unstake ${toHumanReadable(currentStake)} $KYVE.`
     );
 
     try {
-      const transaction = (await pool.unstake(currentStake, {
-        gasLimit: await pool.estimateGas.unstake(currentStake),
+      const transaction = (await pool.unstake(toEthersBN(currentStake), {
+        gasLimit: await pool.estimateGas.unstake(toEthersBN(currentStake)),
       })) as ContractTransaction;
       unstakeLogger.debug(
-        `Unstaking ${currentStake
-          .div(decimals)
-          .toString()} $KYVE. Transaction = ${transaction.hash}`
+        `Unstaking ${toHumanReadable(currentStake)} $KYVE. Transaction = ${
+          transaction.hash
+        }`
       );
 
       await transaction.wait();

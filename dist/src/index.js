@@ -59,7 +59,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 exports.__esModule = true;
 var arweave_1 = __importDefault(require("arweave"));
-var ethers_1 = require("ethers");
+var ethers_1 = __importStar(require("ethers"));
 var fs_1 = require("fs");
 var prando_1 = __importDefault(require("prando"));
 var rxjs_1 = require("rxjs");
@@ -79,7 +79,7 @@ var KYVE = /** @class */ (function () {
             host: "arweave.net",
             protocol: "https"
         });
-        this.wallet = new ethers_1.Wallet(privateKey, new ethers_1.ethers.providers.StaticJsonRpcProvider("https://moonbeam-alpha.api.onfinality.io/public", {
+        this.wallet = new ethers_1.Wallet(privateKey, new ethers_1["default"].providers.StaticJsonRpcProvider("https://moonbeam-alpha.api.onfinality.io/public", {
             chainId: 1287,
             name: "moonbase-alphanet"
         }));
@@ -119,11 +119,16 @@ var KYVE = /** @class */ (function () {
     }
     KYVE.prototype.run = function (uploadFunction, validateFunction) {
         return __awaiter(this, void 0, void 0, function () {
-            var config, _uploader;
+            var format, config, _uploader;
+            var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        logger_1["default"].info("\uD83D\uDE80 Starting node ...\n\tName          = " + this.name + "\n\tAddress       = " + this.wallet.address + "\n\tPool          = " + this.pool.address + "\n\tDesired Stake = " + this.stake + " $KYVE\n\tVersion       = v" + package_json_1.version);
+                        format = function (input) {
+                            var length = Math.max(13, _this.runtime.length);
+                            return input.padEnd(length, " ");
+                        };
+                        logger_1["default"].info("\uD83D\uDE80 Starting node ...\n\t" + format("Name") + " = " + this.name + "\n\t" + format("Address") + " = " + this.wallet.address + "\n\t" + format("Pool") + " = " + this.pool.address + "\n\t" + format("Desired Stake") + " = " + this.stake + " $KYVE\n\n\t" + format("@kyve/core") + " = v" + package_json_1.version + "\n\t" + format(this.runtime) + " = v" + this.version);
                         return [4 /*yield*/, this.sync()];
                     case 1:
                         _a.sent();
@@ -131,7 +136,7 @@ var KYVE = /** @class */ (function () {
                     case 2:
                         config = _a.sent();
                         if (!(0, semver_1.satisfies)(this.version, this._metadata.versions || this.version)) return [3 /*break*/, 3];
-                        logger_1["default"].info("⏱ Pool version requirements met.");
+                        logger_1["default"].info("⏱  Pool version requirements met.");
                         return [3 /*break*/, 5];
                     case 3:
                         logger_1["default"].error("\u274C Running an invalid version for the specified pool. Version requirements are " + this._metadata.versions + ".");
@@ -209,8 +214,10 @@ var KYVE = /** @class */ (function () {
                             case 1:
                                 transaction = _c.sent();
                                 transaction.addTag("Application", "KYVE - Testnet");
-                                transaction.addTag("Version", package_json_1.version);
                                 transaction.addTag("Pool", this.pool.address);
+                                transaction.addTag("@kyve/core", package_json_1.version);
+                                transaction.addTag(this.runtime, this.version);
+                                transaction.addTag("Bundle-Size", this._metadata.bundleSize);
                                 transaction.addTag("Content-Type", "application/json");
                                 return [4 /*yield*/, this.client.transactions.sign(transaction, this.keyfile)];
                             case 2:
@@ -395,15 +402,30 @@ var KYVE = /** @class */ (function () {
                                 }
                             });
                         }); });
-                        this.pool.on("UploaderChanged", function (previous) {
-                            if (_this.wallet.address === previous) {
-                                logger_1["default"].warn("⚠️  Uploader changed. Exiting ...");
-                                process.exit();
-                            }
-                        });
+                        this.pool.on("MinimumStakeChanged", function (_, minimum) { return __awaiter(_this, void 0, void 0, function () {
+                            var stake;
+                            return __generator(this, function (_a) {
+                                switch (_a.label) {
+                                    case 0: return [4 /*yield*/, this.pool._stakingAmounts(this.wallet.address)];
+                                    case 1:
+                                        stake = (_a.sent());
+                                        if (stake.lt(minimum)) {
+                                            logger_1["default"].error("\u274C Minimum stake is " + (0, pool_1.toHumanReadable)((0, pool_1.toBN)(minimum)) + " $KYVE. You will not be able to register / vote.");
+                                            process.exit();
+                                        }
+                                        return [2 /*return*/];
+                                }
+                            });
+                        }); });
                         this.pool.on("Paused", function () {
                             if (_this.wallet.address === _this._settings._uploader) {
                                 logger_1["default"].warn("⚠️  Pool is now paused. Exiting ...");
+                                process.exit();
+                            }
+                        });
+                        this.pool.on("UploaderChanged", function (previous) {
+                            if (_this.wallet.address === previous) {
+                                logger_1["default"].warn("⚠️  Uploader changed. Exiting ...");
                                 process.exit();
                             }
                         });
@@ -411,9 +433,8 @@ var KYVE = /** @class */ (function () {
                             name: "Payout"
                         });
                         this.pool.on(this.pool.filters.Payout(this.wallet.address), function (_, __, _amount, _transaction) {
-                            var amount = _amount.mul(1000000).div(pool_1.decimals).toNumber() / 1000000;
                             var transaction = (0, arweave_2.fromBytes)(_transaction);
-                            payoutLogger.info("\uD83D\uDCB8 Received a reward of " + amount + " $KYVE. Bundle = " + transaction);
+                            payoutLogger.info("\uD83D\uDCB8 Received a reward of " + (0, pool_1.toHumanReadable)((0, pool_1.toBN)(_amount)) + " $KYVE. Bundle = " + transaction);
                         });
                         pointsLogger = logger_1["default"].getChildLogger({
                             name: "Points"
@@ -427,9 +448,7 @@ var KYVE = /** @class */ (function () {
                         });
                         this.pool.on(this.pool.filters.Slash(this.wallet.address), function (_, __, _amount, _transaction) {
                             var transaction = (0, arweave_2.fromBytes)(_transaction);
-                            slashLogger.warn("\uD83D\uDEAB Node has been slashed. Lost " + _amount
-                                .div(pool_1.decimals)
-                                .toString() + " $KYVE. Bundle = " + transaction);
+                            slashLogger.warn("\uD83D\uDEAB Node has been slashed. Lost " + (0, pool_1.toHumanReadable)((0, pool_1.toBN)(_amount)) + " $KYVE. Bundle = " + transaction);
                             process.exit();
                         });
                         return [2 /*return*/];
@@ -486,7 +505,7 @@ var KYVE = /** @class */ (function () {
                             this._metadata.versions &&
                             oldMetadata.versions !== this._metadata.versions)) return [3 /*break*/, 4];
                         logger_1["default"].warn("⚠️  Version requirements changed. Unstaking and exiting ...");
-                        logger_1["default"].info("\u23F1 New version requirements are " + this._metadata.versions + ".");
+                        logger_1["default"].info("\u23F1  New version requirements are " + this._metadata.versions + ".");
                         return [4 /*yield*/, (0, pool_1.unstakeAll)(this.pool)];
                     case 3:
                         _a.sent();
