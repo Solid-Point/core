@@ -207,8 +207,10 @@ class KYVE {
         });
 
         transaction.addTag("Application", "KYVE - Testnet");
-        transaction.addTag("Version", version);
         transaction.addTag("Pool", this.pool.address);
+        transaction.addTag("@kyve/core", version);
+        transaction.addTag(this.runtime, this.version);
+        transaction.addTag("Bundle-Size", this._metadata.bundleSize);
         transaction.addTag("Content-Type", "application/json");
 
         await this.client.transactions.sign(transaction, this.keyfile);

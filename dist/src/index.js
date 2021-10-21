@@ -214,8 +214,10 @@ var KYVE = /** @class */ (function () {
                             case 1:
                                 transaction = _c.sent();
                                 transaction.addTag("Application", "KYVE - Testnet");
-                                transaction.addTag("Version", package_json_1.version);
                                 transaction.addTag("Pool", this.pool.address);
+                                transaction.addTag("@kyve/core", package_json_1.version);
+                                transaction.addTag(this.runtime, this.version);
+                                transaction.addTag("Bundle-Size", this._metadata.bundleSize);
                                 transaction.addTag("Content-Type", "application/json");
                                 return [4 /*yield*/, this.client.transactions.sign(transaction, this.keyfile)];
                             case 2:
