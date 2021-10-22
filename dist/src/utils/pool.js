@@ -64,7 +64,7 @@ var toHumanReadable = function (amount) {
 };
 exports.toHumanReadable = toHumanReadable;
 var toEthersBN = function (amount) {
-    return ethers_1.ethers.BigNumber.from(amount.toPrecision());
+    return ethers_1.ethers.BigNumber.from(amount.toFixed());
 };
 exports.toEthersBN = toEthersBN;
 var toBN = function (amount) {

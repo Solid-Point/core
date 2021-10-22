@@ -341,7 +341,6 @@ class KYVE {
       });
     } catch (error) {
       voteLogger.error("❌ Received an error while trying to vote:", error);
-      process.exit(1);
     }
   }
 
