@@ -5,7 +5,7 @@ import TokenABI from "../abi/token.json";
 import logger from "../utils/logger";
 
 const Token = async (pool: Contract): Promise<Contract> => {
-  return new Contract((await pool._token()) as string, TokenABI, pool.signer);
+  return new Contract((await pool.token()) as string, TokenABI, pool.signer);
 };
 
 const Pool = (address: string, wallet: Wallet): Contract => {

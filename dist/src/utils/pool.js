@@ -51,7 +51,7 @@ var Token = function (pool) { return __awaiter(void 0, void 0, void 0, function 
         switch (_b.label) {
             case 0:
                 _a = ethers_1.Contract.bind;
-                return [4 /*yield*/, pool._token()];
+                return [4 /*yield*/, pool.token()];
             case 1: return [2 /*return*/, new (_a.apply(ethers_1.Contract, [void 0, (_b.sent()), token_json_1["default"], pool.signer]))()];
         }
     });
