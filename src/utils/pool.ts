@@ -1,11 +1,11 @@
-import ethers, { Contract, ContractTransaction, Wallet } from "ethers";
+import { BigNumber } from "bignumber.js";
+import { Contract, ContractTransaction, ethers, Wallet } from "ethers";
 import PoolABI from "../abi/pool.json";
 import TokenABI from "../abi/token.json";
 import logger from "../utils/logger";
-import { BigNumber } from "bignumber.js";
 
 const Token = async (pool: Contract): Promise<Contract> => {
-  return new Contract((await pool._token()) as string, TokenABI, pool.signer);
+  return new Contract((await pool.token()) as string, TokenABI, pool.signer);
 };
 
 const Pool = (address: string, wallet: Wallet): Contract => {
