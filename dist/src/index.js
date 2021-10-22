@@ -68,13 +68,11 @@ var unique_names_generator_1 = require("unique-names-generator");
 var arweave_2 = require("./utils/arweave");
 var logger_1 = __importDefault(require("./utils/logger"));
 var pool_1 = __importStar(require("./utils/pool"));
-var sleep_1 = __importDefault(require("./utils/sleep"));
 var package_json_1 = require("../package.json");
 var KYVE = /** @class */ (function () {
     function KYVE(poolAddress, runtime, version, stakeAmount, privateKey, keyfile, name) {
         var _this = this;
         this.buffer = [];
-        this.votes = [];
         this.client = new arweave_1["default"]({
             host: "arweave.net",
             protocol: "https"
@@ -298,7 +296,7 @@ var KYVE = /** @class */ (function () {
                                         }
                                         else {
                                             listenerLogger.debug("Bytes don't match (" + _bytes + " vs " + bytes + ").");
-                                            this.votes.push({
+                                            this.vote({
                                                 transaction: transaction,
                                                 valid: false
                                             });
@@ -325,37 +323,36 @@ var KYVE = /** @class */ (function () {
                         validatorLogger = logger_1["default"].getChildLogger({
                             name: "Validator"
                         });
-                        this.vote(validatorLogger);
                         return [4 /*yield*/, this.listener()];
                     case 1:
                         listener = _a.sent();
                         node = new rxjs_1.Observable(function (subscriber) {
                             validateFunction(listener, subscriber, config, validatorLogger);
                         });
-                        node.subscribe(function (item) { return _this.votes.push(item); });
+                        node.subscribe(function (item) { return _this.vote(item); });
                         return [2 /*return*/];
                 }
             });
         });
     };
-    KYVE.prototype.vote = function (logger) {
+    KYVE.prototype.vote = function (input) {
         return __awaiter(this, void 0, void 0, function () {
-            var vote, _a, _b, _c, error_2;
+            var voteLogger, _a, _b, _c, error_2;
             var _d;
             return __generator(this, function (_e) {
                 switch (_e.label) {
                     case 0:
-                        if (!true) return [3 /*break*/, 9];
-                        if (!this.votes.length) return [3 /*break*/, 6];
-                        vote = this.votes.shift();
-                        logger.info("\uD83D\uDDF3  Voting \"" + (vote.valid ? "valid" : "invalid") + "\" on bundle " + vote.transaction + ".");
+                        voteLogger = logger_1["default"].getChildLogger({
+                            name: "Vote"
+                        });
+                        voteLogger.info("\uD83D\uDDF3  Voting \"" + (input.valid ? "valid" : "invalid") + "\" on bundle " + input.transaction + ".");
                         _e.label = 1;
                     case 1:
                         _e.trys.push([1, 4, , 5]);
                         _b = (_a = this.pool).vote;
-                        _c = [(0, arweave_2.toBytes)(vote.transaction), vote.valid];
+                        _c = [(0, arweave_2.toBytes)(input.transaction), input.valid];
                         _d = {};
-                        return [4 /*yield*/, this.pool.estimateGas.vote((0, arweave_2.toBytes)(vote.transaction), vote.valid)];
+                        return [4 /*yield*/, this.pool.estimateGas.vote((0, arweave_2.toBytes)(input.transaction), input.valid)];
                     case 2: return [4 /*yield*/, _b.apply(_a, _c.concat([(_d.gasLimit = _e.sent(),
                                 _d)]))];
                     case 3:
@@ -363,14 +360,10 @@ var KYVE = /** @class */ (function () {
                         return [3 /*break*/, 5];
                     case 4:
                         error_2 = _e.sent();
+                        voteLogger.error("❌ Received an error while trying to vote:", error_2);
+                        process.exit(1);
                         return [3 /*break*/, 5];
-                    case 5: return [3 /*break*/, 8];
-                    case 6: return [4 /*yield*/, (0, sleep_1["default"])(10 * 1000)];
-                    case 7:
-                        _e.sent();
-                        _e.label = 8;
-                    case 8: return [3 /*break*/, 0];
-                    case 9: return [2 /*return*/];
+                    case 5: return [2 /*return*/];
                 }
             });
         });

@@ -5,7 +5,7 @@ import { appendFileSync, existsSync, mkdirSync } from "fs";
 import Prando from "prando";
 import { Observable } from "rxjs";
 import { satisfies } from "semver";
-import { ILogObject, Logger } from "tslog";
+import { ILogObject } from "tslog";
 import {
   adjectives,
   starWars,
@@ -22,7 +22,6 @@ import {
 import { fromBytes, toBytes } from "./utils/arweave";
 import logger from "./utils/logger";
 import Pool, { stake, toBN, toHumanReadable, unstakeAll } from "./utils/pool";
-import sleep from "./utils/sleep";
 import { version } from "../package.json";
 
 class KYVE {
@@ -35,10 +34,6 @@ class KYVE {
   private name: string;
 
   private buffer: Bundle = [];
-  private votes: {
-    transaction: string;
-    valid: boolean;
-  }[] = [];
   private _metadata: any;
   private _settings: any;
 
@@ -296,7 +291,7 @@ class KYVE {
                 `Bytes don't match (${_bytes} vs ${bytes}).`
               );
 
-              this.votes.push({
+              this.vote({
                 transaction,
                 valid: false,
               });
@@ -317,42 +312,36 @@ class KYVE {
       name: "Validator",
     });
 
-    this.vote(validatorLogger);
     const listener = await this.listener();
 
     const node = new Observable<ValidateFunctionReturn>((subscriber) => {
       validateFunction(listener, subscriber, config, validatorLogger);
     });
 
-    node.subscribe((item) => this.votes.push(item));
+    node.subscribe((item) => this.vote(item));
   }
 
-  private async vote(logger: Logger) {
-    while (true) {
-      if (this.votes.length) {
-        const vote = this.votes.shift()!;
+  private async vote(input: ValidateFunctionReturn) {
+    const voteLogger = logger.getChildLogger({
+      name: "Vote",
+    });
 
-        logger.info(
-          `🗳  Voting "${vote.valid ? "valid" : "invalid"}" on bundle ${
-            vote.transaction
-          }.`
-        );
+    voteLogger.info(
+      `🗳  Voting "${input.valid ? "valid" : "invalid"}" on bundle ${
+        input.transaction
+      }.`
+    );
 
-        try {
-          await this.pool.vote(toBytes(vote.transaction), vote.valid, {
-            gasLimit: await this.pool.estimateGas.vote(
-              toBytes(vote.transaction),
-              vote.valid
-            ),
-          });
-        } catch (error) {
-          // TODO: Add back when new contracts are deployed.
-          // logger.error("❌ Received an error while trying to vote:", error);
-          // process.exit(1);
-        }
-      } else {
-        await sleep(10 * 1000);
-      }
+    try {
+      await this.pool.vote(toBytes(input.transaction), input.valid, {
+        gasLimit: await this.pool.estimateGas.vote(
+          toBytes(input.transaction),
+          input.valid
+        ),
+      });
+    } catch (error) {
+      voteLogger.error("❌ Received an error while trying to vote:", error);
+      process.exit(1);
     }
   }
 
