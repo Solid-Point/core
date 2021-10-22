@@ -361,7 +361,6 @@ var KYVE = /** @class */ (function () {
                     case 4:
                         error_2 = _e.sent();
                         voteLogger.error("❌ Received an error while trying to vote:", error_2);
-                        process.exit(1);
                         return [3 /*break*/, 5];
                     case 5: return [2 /*return*/];
                 }

@@ -17,7 +17,7 @@ export const toHumanReadable = (amount: BigNumber) => {
 };
 
 export const toEthersBN = (amount: BigNumber) => {
-  return ethers.BigNumber.from(amount.toPrecision());
+  return ethers.BigNumber.from(amount.toFixed());
 };
 
 export const toBN = (amount: ethers.BigNumber) => {
