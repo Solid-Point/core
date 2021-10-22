@@ -9,7 +9,6 @@ declare class KYVE {
     private keyfile?;
     private name;
     private buffer;
-    private votes;
     private _metadata;
     private _settings;
     private client;
