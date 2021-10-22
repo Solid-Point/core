@@ -59,7 +59,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 exports.__esModule = true;
 var arweave_1 = __importDefault(require("arweave"));
-var ethers_1 = __importStar(require("ethers"));
+var ethers_1 = require("ethers");
 var fs_1 = require("fs");
 var prando_1 = __importDefault(require("prando"));
 var rxjs_1 = require("rxjs");
@@ -79,7 +79,7 @@ var KYVE = /** @class */ (function () {
             host: "arweave.net",
             protocol: "https"
         });
-        this.wallet = new ethers_1.Wallet(privateKey, new ethers_1["default"].providers.StaticJsonRpcProvider("https://moonbeam-alpha.api.onfinality.io/public", {
+        this.wallet = new ethers_1.Wallet(privateKey, new ethers_1.ethers.providers.StaticJsonRpcProvider("https://moonbeam-alpha.api.onfinality.io/public", {
             chainId: 1287,
             name: "moonbase-alphanet"
         }));

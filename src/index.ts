@@ -1,6 +1,6 @@
 import Arweave from "arweave";
 import { JWKInterface } from "arweave/node/lib/wallet";
-import ethers, { Contract, ContractTransaction, Wallet } from "ethers";
+import { Contract, ContractTransaction, ethers, Wallet } from "ethers";
 import { appendFileSync, existsSync, mkdirSync } from "fs";
 import Prando from "prando";
 import { Observable } from "rxjs";
