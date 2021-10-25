@@ -70,14 +70,14 @@ var logger_1 = __importDefault(require("./utils/logger"));
 var pool_1 = __importStar(require("./utils/pool"));
 var package_json_1 = require("../package.json");
 var KYVE = /** @class */ (function () {
-    function KYVE(poolAddress, runtime, version, stakeAmount, privateKey, keyfile, name) {
+    function KYVE(poolAddress, runtime, version, stakeAmount, privateKey, keyfile, name, endpoint) {
         var _this = this;
         this.buffer = [];
         this.client = new arweave_1["default"]({
             host: "arweave.net",
             protocol: "https"
         });
-        this.wallet = new ethers_1.Wallet(privateKey, new ethers_1.ethers.providers.StaticJsonRpcProvider("https://moonbeam-alpha.api.onfinality.io/public", {
+        this.wallet = new ethers_1.Wallet(privateKey, new ethers_1.ethers.providers.StaticJsonRpcProvider(endpoint || "https://moonbeam-alpha.api.onfinality.io/public", {
             chainId: 1287,
             name: "moonbase-alphanet"
         }));

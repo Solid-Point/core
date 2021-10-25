@@ -12,7 +12,7 @@ declare class KYVE {
     private _metadata;
     private _settings;
     private client;
-    constructor(poolAddress: string, runtime: string, version: string, stakeAmount: string, privateKey: string, keyfile?: JWKInterface, name?: string);
+    constructor(poolAddress: string, runtime: string, version: string, stakeAmount: string, privateKey: string, keyfile?: JWKInterface, name?: string, endpoint?: string);
     run<ConfigType>(uploadFunction: UploadFunction<ConfigType>, validateFunction: ValidateFunction<ConfigType>): Promise<void>;
     private uploader;
     private listener;
