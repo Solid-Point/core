@@ -49,12 +49,13 @@ class KYVE {
     stakeAmount: string,
     privateKey: string,
     keyfile?: JWKInterface,
-    name?: string
+    name?: string,
+    endpoint?: string
   ) {
     this.wallet = new Wallet(
       privateKey,
       new ethers.providers.StaticJsonRpcProvider(
-        "https://moonbeam-alpha.api.onfinality.io/public",
+        endpoint || "https://moonbeam-alpha.api.onfinality.io/public",
         {
           chainId: 1287,
           name: "moonbase-alphanet",
