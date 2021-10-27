@@ -27,7 +27,8 @@ export const toBN = (amount: ethers.BigNumber) => {
 export const stake = async (
   stake: string,
   pool: Contract,
-  settings: any
+  settings: any,
+  gasMultiplier: string
 ): Promise<void> => {
   const stakeLogger = logger.getChildLogger({
     name: "Stake",
@@ -69,6 +70,9 @@ export const stake = async (
     try {
       const transaction = (await pool.unstake(toEthersBN(diff), {
         gasLimit: await pool.estimateGas.unstake(toEthersBN(diff)),
+        gasPrice: (
+          await pool.provider.getGasPrice()
+        ).mul(toEthersBN(new BigNumber(gasMultiplier))),
       })) as ContractTransaction;
       stakeLogger.debug(
         `Unstaking ${toHumanReadable(diff)} $KYVE. Transaction = ${
@@ -102,6 +106,9 @@ export const stake = async (
             pool.address,
             toEthersBN(diff)
           ),
+          gasPrice: (
+            await pool.provider.getGasPrice()
+          ).mul(toEthersBN(new BigNumber(gasMultiplier))),
         });
         stakeLogger.debug(
           `Approving ${toHumanReadable(
@@ -114,6 +121,9 @@ export const stake = async (
 
         transaction = await pool.stake(toEthersBN(diff), {
           gasLimit: await pool.estimateGas.stake(toEthersBN(diff)),
+          gasPrice: (
+            await pool.provider.getGasPrice()
+          ).mul(toEthersBN(new BigNumber(gasMultiplier))),
         });
         stakeLogger.debug(
           `Staking ${toHumanReadable(diff)} $KYVE. Transaction = ${
@@ -134,7 +144,10 @@ export const stake = async (
   }
 };
 
-export const unstakeAll = async (pool: Contract): Promise<void> => {
+export const unstakeAll = async (
+  pool: Contract,
+  gasMultiplier: string
+): Promise<void> => {
   const unstakeLogger = logger.getChildLogger({
     name: "Unstake",
   });
@@ -152,6 +165,9 @@ export const unstakeAll = async (pool: Contract): Promise<void> => {
     try {
       const transaction = (await pool.unstake(toEthersBN(currentStake), {
         gasLimit: await pool.estimateGas.unstake(toEthersBN(currentStake)),
+        gasPrice: (
+          await pool.provider.getGasPrice()
+        ).mul(toEthersBN(new BigNumber(gasMultiplier))),
       })) as ContractTransaction;
       unstakeLogger.debug(
         `Unstaking ${toHumanReadable(currentStake)} $KYVE. Transaction = ${
