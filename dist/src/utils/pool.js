@@ -71,7 +71,7 @@ var toBN = function (amount) {
     return new bignumber_js_1.BigNumber(amount.toString());
 };
 exports.toBN = toBN;
-var stake = function (stake, pool, settings) { return __awaiter(void 0, void 0, void 0, function () {
+var stake = function (stake, pool, settings, gasMultiplier) { return __awaiter(void 0, void 0, void 0, function () {
     var stakeLogger, address, token, parsedStake, currentStake, _a, minimumStake, diff, transaction, _b, _c, _d, error_1, diff, balance, _e, transaction, _f, _g, _h, _j, _k, _l, error_2;
     var _m, _o, _p;
     return __generator(this, function (_q) {
@@ -102,90 +102,99 @@ var stake = function (stake, pool, settings) { return __awaiter(void 0, void 0, 
                     stakeLogger.error("\u274C Minimum stake is " + (0, exports.toHumanReadable)(minimumStake) + " $KYVE. You will not be able to register / vote.");
                     process.exit();
                 }
-                if (!currentStake.gt(parsedStake)) return [3 /*break*/, 10];
+                if (!currentStake.gt(parsedStake)) return [3 /*break*/, 11];
                 diff = currentStake.minus(parsedStake);
                 stakeLogger.debug("Attempting to unstake " + (0, exports.toHumanReadable)(diff) + " $KYVE.");
                 _q.label = 4;
             case 4:
-                _q.trys.push([4, 8, , 9]);
+                _q.trys.push([4, 9, , 10]);
                 _c = (_b = pool).unstake;
                 _d = [(0, exports.toEthersBN)(diff)];
                 _m = {};
                 return [4 /*yield*/, pool.estimateGas.unstake((0, exports.toEthersBN)(diff))];
-            case 5: return [4 /*yield*/, _c.apply(_b, _d.concat([(_m.gasLimit = _q.sent(),
+            case 5:
+                _m.gasLimit = _q.sent();
+                return [4 /*yield*/, pool.provider.getGasPrice()];
+            case 6: return [4 /*yield*/, _c.apply(_b, _d.concat([(_m.gasPrice = (_q.sent()).mul((0, exports.toEthersBN)(new bignumber_js_1.BigNumber(gasMultiplier))),
                         _m)]))];
-            case 6:
+            case 7:
                 transaction = (_q.sent());
                 stakeLogger.debug("Unstaking " + (0, exports.toHumanReadable)(diff) + " $KYVE. Transaction = " + transaction.hash);
                 return [4 /*yield*/, transaction.wait()];
-            case 7:
+            case 8:
                 _q.sent();
                 stakeLogger.info("📉 Successfully unstaked.");
-                return [3 /*break*/, 9];
-            case 8:
+                return [3 /*break*/, 10];
+            case 9:
                 error_1 = _q.sent();
                 stakeLogger.error("❌ Received an error while trying to unstake:", error_1);
                 process.exit(1);
-                return [3 /*break*/, 9];
-            case 9: return [3 /*break*/, 22];
-            case 10:
-                if (!currentStake.lt(parsedStake)) return [3 /*break*/, 21];
+                return [3 /*break*/, 10];
+            case 10: return [3 /*break*/, 25];
+            case 11:
+                if (!currentStake.lt(parsedStake)) return [3 /*break*/, 24];
                 diff = parsedStake.minus(currentStake);
                 stakeLogger.debug("Attempting to stake " + (0, exports.toHumanReadable)(diff) + " $KYVE.");
                 _e = exports.toBN;
                 return [4 /*yield*/, token.balanceOf(address)];
-            case 11:
+            case 12:
                 balance = _e.apply(void 0, [(_q.sent())]);
-                if (!balance.lt(diff)) return [3 /*break*/, 12];
+                if (!balance.lt(diff)) return [3 /*break*/, 13];
                 stakeLogger.error("❌ Supplied wallet does not have enough $KYVE to stake.");
                 process.exit(1);
-                return [3 /*break*/, 20];
-            case 12:
-                _q.trys.push([12, 19, , 20]);
+                return [3 /*break*/, 23];
+            case 13:
+                _q.trys.push([13, 22, , 23]);
                 transaction = void 0;
                 _g = (_f = token).approve;
                 _h = [pool.address, (0, exports.toEthersBN)(diff)];
                 _o = {};
                 return [4 /*yield*/, token.estimateGas.approve(pool.address, (0, exports.toEthersBN)(diff))];
-            case 13: return [4 /*yield*/, _g.apply(_f, _h.concat([(_o.gasLimit = _q.sent(),
-                        _o)]))];
             case 14:
+                _o.gasLimit = _q.sent();
+                return [4 /*yield*/, pool.provider.getGasPrice()];
+            case 15: return [4 /*yield*/, _g.apply(_f, _h.concat([(_o.gasPrice = (_q.sent()).mul((0, exports.toEthersBN)(new bignumber_js_1.BigNumber(gasMultiplier))),
+                        _o)]))];
+            case 16:
                 transaction = _q.sent();
                 stakeLogger.debug("Approving " + (0, exports.toHumanReadable)(diff) + " $KYVE to be spent. Transaction = " + transaction.hash);
                 return [4 /*yield*/, transaction.wait()];
-            case 15:
+            case 17:
                 _q.sent();
                 stakeLogger.info("👍 Successfully approved.");
                 _k = (_j = pool).stake;
                 _l = [(0, exports.toEthersBN)(diff)];
                 _p = {};
                 return [4 /*yield*/, pool.estimateGas.stake((0, exports.toEthersBN)(diff))];
-            case 16: return [4 /*yield*/, _k.apply(_j, _l.concat([(_p.gasLimit = _q.sent(),
+            case 18:
+                _p.gasLimit = _q.sent();
+                return [4 /*yield*/, pool.provider.getGasPrice()];
+            case 19: return [4 /*yield*/, _k.apply(_j, _l.concat([(_p.gasPrice = (_q.sent()).mul((0, exports.toEthersBN)(new bignumber_js_1.BigNumber(gasMultiplier))),
                         _p)]))];
-            case 17:
+            case 20:
                 transaction = _q.sent();
                 stakeLogger.debug("Staking " + (0, exports.toHumanReadable)(diff) + " $KYVE. Transaction = " + transaction.hash);
                 return [4 /*yield*/, transaction.wait()];
-            case 18:
+            case 21:
                 _q.sent();
                 stakeLogger.info("📈 Successfully staked.");
-                return [3 /*break*/, 20];
-            case 19:
+                return [3 /*break*/, 23];
+            case 22:
                 error_2 = _q.sent();
                 stakeLogger.error("❌ Received an error while trying to stake:", error_2);
                 process.exit(1);
-                return [3 /*break*/, 20];
-            case 20: return [3 /*break*/, 22];
-            case 21:
+                return [3 /*break*/, 23];
+            case 23: return [3 /*break*/, 25];
+            case 24:
                 // Already staked with the correct amount.
                 stakeLogger.info("👌 Already staked with the correct amount.");
-                _q.label = 22;
-            case 22: return [2 /*return*/];
+                _q.label = 25;
+            case 25: return [2 /*return*/];
         }
     });
 }); };
 exports.stake = stake;
-var unstakeAll = function (pool) { return __awaiter(void 0, void 0, void 0, function () {
+var unstakeAll = function (pool, gasMultiplier) { return __awaiter(void 0, void 0, void 0, function () {
     var unstakeLogger, address, currentStake, _a, transaction, _b, _c, _d, error_3;
     var _e;
     return __generator(this, function (_f) {
@@ -201,35 +210,38 @@ var unstakeAll = function (pool) { return __awaiter(void 0, void 0, void 0, func
                 return [4 /*yield*/, pool._stakingAmounts(address)];
             case 2:
                 currentStake = new (_a.apply(bignumber_js_1.BigNumber, [void 0, (_f.sent()).toString()]))();
-                if (!currentStake.gt(0)) return [3 /*break*/, 9];
+                if (!currentStake.gt(0)) return [3 /*break*/, 10];
                 unstakeLogger.debug("Attempting to unstake " + (0, exports.toHumanReadable)(currentStake) + " $KYVE.");
                 _f.label = 3;
             case 3:
-                _f.trys.push([3, 7, , 8]);
+                _f.trys.push([3, 8, , 9]);
                 _c = (_b = pool).unstake;
                 _d = [(0, exports.toEthersBN)(currentStake)];
                 _e = {};
                 return [4 /*yield*/, pool.estimateGas.unstake((0, exports.toEthersBN)(currentStake))];
-            case 4: return [4 /*yield*/, _c.apply(_b, _d.concat([(_e.gasLimit = _f.sent(),
+            case 4:
+                _e.gasLimit = _f.sent();
+                return [4 /*yield*/, pool.provider.getGasPrice()];
+            case 5: return [4 /*yield*/, _c.apply(_b, _d.concat([(_e.gasPrice = (_f.sent()).mul((0, exports.toEthersBN)(new bignumber_js_1.BigNumber(gasMultiplier))),
                         _e)]))];
-            case 5:
+            case 6:
                 transaction = (_f.sent());
                 unstakeLogger.debug("Unstaking " + (0, exports.toHumanReadable)(currentStake) + " $KYVE. Transaction = " + transaction.hash);
                 return [4 /*yield*/, transaction.wait()];
-            case 6:
+            case 7:
                 _f.sent();
                 unstakeLogger.info("📉 Successfully unstaked.");
-                return [3 /*break*/, 8];
-            case 7:
+                return [3 /*break*/, 9];
+            case 8:
                 error_3 = _f.sent();
                 unstakeLogger.error("❌ Received an error while trying to unstake:", error_3);
                 process.exit(1);
-                return [3 /*break*/, 8];
-            case 8: return [3 /*break*/, 10];
-            case 9:
+                return [3 /*break*/, 9];
+            case 9: return [3 /*break*/, 11];
+            case 10:
                 unstakeLogger.debug("Nothing to unstake.");
-                _f.label = 10;
-            case 10: return [2 /*return*/];
+                _f.label = 11;
+            case 11: return [2 /*return*/];
         }
     });
 }); };

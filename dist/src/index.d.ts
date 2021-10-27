@@ -8,11 +8,12 @@ declare class KYVE {
     private wallet;
     private keyfile?;
     private name;
+    private gasMultiplier;
     private buffer;
     private _metadata;
     private _settings;
     private client;
-    constructor(poolAddress: string, runtime: string, version: string, stakeAmount: string, privateKey: string, keyfile?: JWKInterface, name?: string, endpoint?: string);
+    constructor(poolAddress: string, runtime: string, version: string, stakeAmount: string, privateKey: string, keyfile?: JWKInterface, name?: string, endpoint?: string, gasMultiplier?: string);
     run<ConfigType>(uploadFunction: UploadFunction<ConfigType>, validateFunction: ValidateFunction<ConfigType>): Promise<void>;
     private uploader;
     private listener;

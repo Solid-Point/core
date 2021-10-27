@@ -69,9 +69,11 @@ var arweave_2 = require("./utils/arweave");
 var logger_1 = __importDefault(require("./utils/logger"));
 var pool_1 = __importStar(require("./utils/pool"));
 var package_json_1 = require("../package.json");
+var bignumber_js_1 = require("bignumber.js");
 var KYVE = /** @class */ (function () {
-    function KYVE(poolAddress, runtime, version, stakeAmount, privateKey, keyfile, name, endpoint) {
+    function KYVE(poolAddress, runtime, version, stakeAmount, privateKey, keyfile, name, endpoint, gasMultiplier) {
         var _this = this;
+        if (gasMultiplier === void 0) { gasMultiplier = "1"; }
         this.buffer = [];
         this.client = new arweave_1["default"]({
             host: "arweave.net",
@@ -86,6 +88,7 @@ var KYVE = /** @class */ (function () {
         this.version = version;
         this.stake = stakeAmount;
         this.keyfile = keyfile;
+        this.gasMultiplier = gasMultiplier;
         if (name) {
             this.name = name;
         }
@@ -138,7 +141,7 @@ var KYVE = /** @class */ (function () {
                         return [3 /*break*/, 5];
                     case 3:
                         logger_1["default"].error("\u274C Running an invalid version for the specified pool. Version requirements are " + this._metadata.versions + ".");
-                        return [4 /*yield*/, (0, pool_1.unstakeAll)(this.pool)];
+                        return [4 /*yield*/, (0, pool_1.unstakeAll)(this.pool, this.gasMultiplier)];
                     case 4:
                         _a.sent();
                         process.exit(1);
@@ -151,7 +154,7 @@ var KYVE = /** @class */ (function () {
                             logger_1["default"].error("❌ Specified pool does not match the integration runtime.");
                             process.exit(1);
                         }
-                        return [4 /*yield*/, (0, pool_1.stake)(this.stake, this.pool, this._settings)];
+                        return [4 /*yield*/, (0, pool_1.stake)(this.stake, this.pool, this._settings, this.gasMultiplier)];
                     case 6:
                         _a.sent();
                         _uploader = this._settings._uploader;
@@ -194,13 +197,14 @@ var KYVE = /** @class */ (function () {
                     uploadFunction(subscriber, config, uploaderLogger);
                 });
                 node.subscribe(function (item) { return __awaiter(_this, void 0, void 0, function () {
-                    var i, tempBuffer, transaction, balance, _a, _b, registerTransaction, error_1;
-                    return __generator(this, function (_c) {
-                        switch (_c.label) {
+                    var i, tempBuffer, transaction, balance, _a, _b, registerTransaction, _c, _d, _e, error_1;
+                    var _f;
+                    return __generator(this, function (_g) {
+                        switch (_g.label) {
                             case 0:
                                 i = this.buffer.push(item);
                                 uploaderLogger.debug("Received a new data item (" + i + " / " + this._metadata.bundleSize + ").");
-                                if (!(this.buffer.length >= this._metadata.bundleSize)) return [3 /*break*/, 9];
+                                if (!(this.buffer.length >= this._metadata.bundleSize)) return [3 /*break*/, 10];
                                 uploaderLogger.info("📦 Creating bundle ...");
                                 tempBuffer = this.buffer;
                                 this.buffer = [];
@@ -210,7 +214,7 @@ var KYVE = /** @class */ (function () {
                                         data: JSON.stringify(tempBuffer)
                                     })];
                             case 1:
-                                transaction = _c.sent();
+                                transaction = _g.sent();
                                 transaction.addTag("Application", "KYVE - Testnet");
                                 transaction.addTag("Pool", this.pool.address);
                                 transaction.addTag("@kyve/core", package_json_1.version);
@@ -219,38 +223,44 @@ var KYVE = /** @class */ (function () {
                                 transaction.addTag("Content-Type", "application/json");
                                 return [4 /*yield*/, this.client.transactions.sign(transaction, this.keyfile)];
                             case 2:
-                                _c.sent();
+                                _g.sent();
                                 _b = (_a = this.client.wallets).getBalance;
                                 return [4 /*yield*/, this.client.wallets.getAddress(this.keyfile)];
-                            case 3: return [4 /*yield*/, _b.apply(_a, [_c.sent()])];
+                            case 3: return [4 /*yield*/, _b.apply(_a, [_g.sent()])];
                             case 4:
-                                balance = _c.sent();
+                                balance = _g.sent();
                                 if (+transaction.reward > +balance) {
                                     uploaderLogger.error("❌ You do not have enough funds in your Arweave wallet.");
                                     process.exit();
                                 }
                                 return [4 /*yield*/, this.client.transactions.post(transaction)];
                             case 5:
-                                _c.sent();
+                                _g.sent();
                                 uploaderLogger.info("\uD83D\uDCBE Uploaded bundle to Arweave. Transaction = " + transaction.id);
                                 // Create a new vote.
                                 uploaderLogger.debug("Attempting to register a bundle.");
-                                _c.label = 6;
+                                _g.label = 6;
                             case 6:
-                                _c.trys.push([6, 8, , 9]);
-                                return [4 /*yield*/, this.pool.register((0, arweave_2.toBytes)(transaction.id), +transaction.data_size, {
-                                        gasLimit: 10000000
-                                    })];
-                            case 7:
-                                registerTransaction = (_c.sent());
-                                uploaderLogger.info("\u2B06\uFE0F  Creating a new proposal. Transaction = " + registerTransaction.hash);
-                                return [3 /*break*/, 9];
+                                _g.trys.push([6, 9, , 10]);
+                                _d = (_c = this.pool).register;
+                                _e = [(0, arweave_2.toBytes)(transaction.id),
+                                    +transaction.data_size];
+                                _f = {
+                                    gasLimit: 10000000
+                                };
+                                return [4 /*yield*/, this.pool.provider.getGasPrice()];
+                            case 7: return [4 /*yield*/, _d.apply(_c, _e.concat([(_f.gasPrice = (_g.sent()).mul((0, pool_1.toEthersBN)(new bignumber_js_1.BigNumber(this.gasMultiplier))),
+                                        _f)]))];
                             case 8:
-                                error_1 = _c.sent();
+                                registerTransaction = (_g.sent());
+                                uploaderLogger.info("\u2B06\uFE0F  Creating a new proposal. Transaction = " + registerTransaction.hash);
+                                return [3 /*break*/, 10];
+                            case 9:
+                                error_1 = _g.sent();
                                 uploaderLogger.error("❌ Received an error while trying to register a bundle:", error_1);
                                 process.exit(1);
-                                return [3 /*break*/, 9];
-                            case 9: return [2 /*return*/];
+                                return [3 /*break*/, 10];
+                            case 10: return [2 /*return*/];
                         }
                     });
                 }); });
@@ -348,21 +358,24 @@ var KYVE = /** @class */ (function () {
                         voteLogger.info("\uD83D\uDDF3  Voting \"" + (input.valid ? "valid" : "invalid") + "\" on bundle " + input.transaction + ".");
                         _e.label = 1;
                     case 1:
-                        _e.trys.push([1, 4, , 5]);
+                        _e.trys.push([1, 5, , 6]);
                         _b = (_a = this.pool).vote;
                         _c = [(0, arweave_2.toBytes)(input.transaction), input.valid];
                         _d = {};
                         return [4 /*yield*/, this.pool.estimateGas.vote((0, arweave_2.toBytes)(input.transaction), input.valid)];
-                    case 2: return [4 /*yield*/, _b.apply(_a, _c.concat([(_d.gasLimit = _e.sent(),
+                    case 2:
+                        _d.gasLimit = _e.sent();
+                        return [4 /*yield*/, this.pool.provider.getGasPrice()];
+                    case 3: return [4 /*yield*/, _b.apply(_a, _c.concat([(_d.gasPrice = (_e.sent()).mul((0, pool_1.toEthersBN)(new bignumber_js_1.BigNumber(this.gasMultiplier))),
                                 _d)]))];
-                    case 3:
-                        _e.sent();
-                        return [3 /*break*/, 5];
                     case 4:
+                        _e.sent();
+                        return [3 /*break*/, 6];
+                    case 5:
                         error_2 = _e.sent();
                         voteLogger.error("❌ Received an error while trying to vote:", error_2);
-                        return [3 /*break*/, 5];
-                    case 5: return [2 /*return*/];
+                        return [3 /*break*/, 6];
+                    case 6: return [2 /*return*/];
                 }
             });
         });
@@ -498,7 +511,7 @@ var KYVE = /** @class */ (function () {
                             oldMetadata.versions !== this._metadata.versions)) return [3 /*break*/, 4];
                         logger_1["default"].warn("⚠️  Version requirements changed. Unstaking and exiting ...");
                         logger_1["default"].info("\u23F1  New version requirements are " + this._metadata.versions + ".");
-                        return [4 /*yield*/, (0, pool_1.unstakeAll)(this.pool)];
+                        return [4 /*yield*/, (0, pool_1.unstakeAll)(this.pool, this.gasMultiplier)];
                     case 3:
                         _a.sent();
                         process.exit();
