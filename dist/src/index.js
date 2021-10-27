@@ -69,7 +69,6 @@ var arweave_2 = require("./utils/arweave");
 var logger_1 = __importDefault(require("./utils/logger"));
 var pool_1 = __importStar(require("./utils/pool"));
 var package_json_1 = require("../package.json");
-var bignumber_js_1 = require("bignumber.js");
 var KYVE = /** @class */ (function () {
     function KYVE(poolAddress, runtime, version, stakeAmount, privateKey, keyfile, name, endpoint, gasMultiplier) {
         var _this = this;
@@ -248,8 +247,8 @@ var KYVE = /** @class */ (function () {
                                 _f = {
                                     gasLimit: 10000000
                                 };
-                                return [4 /*yield*/, this.pool.provider.getGasPrice()];
-                            case 7: return [4 /*yield*/, _d.apply(_c, _e.concat([(_f.gasPrice = (_g.sent()).mul((0, pool_1.toEthersBN)(new bignumber_js_1.BigNumber(this.gasMultiplier))),
+                                return [4 /*yield*/, (0, pool_1.getGasPrice)(this.pool, this.gasMultiplier)];
+                            case 7: return [4 /*yield*/, _d.apply(_c, _e.concat([(_f.gasPrice = _g.sent(),
                                         _f)]))];
                             case 8:
                                 registerTransaction = (_g.sent());
@@ -365,8 +364,8 @@ var KYVE = /** @class */ (function () {
                         return [4 /*yield*/, this.pool.estimateGas.vote((0, arweave_2.toBytes)(input.transaction), input.valid)];
                     case 2:
                         _d.gasLimit = _e.sent();
-                        return [4 /*yield*/, this.pool.provider.getGasPrice()];
-                    case 3: return [4 /*yield*/, _b.apply(_a, _c.concat([(_d.gasPrice = (_e.sent()).mul((0, pool_1.toEthersBN)(new bignumber_js_1.BigNumber(this.gasMultiplier))),
+                        return [4 /*yield*/, (0, pool_1.getGasPrice)(this.pool, this.gasMultiplier)];
+                    case 3: return [4 /*yield*/, _b.apply(_a, _c.concat([(_d.gasPrice = _e.sent(),
                                 _d)]))];
                     case 4:
                         _e.sent();

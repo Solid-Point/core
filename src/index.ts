@@ -22,14 +22,13 @@ import {
 import { fromBytes, toBytes } from "./utils/arweave";
 import logger from "./utils/logger";
 import Pool, {
+  getGasPrice,
   stake,
   toBN,
-  toEthersBN,
   toHumanReadable,
   unstakeAll,
 } from "./utils/pool";
 import { version } from "../package.json";
-import { BigNumber } from "bignumber.js";
 
 class KYVE {
   private pool: Contract;
@@ -241,9 +240,7 @@ class KYVE {
             +transaction.data_size,
             {
               gasLimit: 10000000,
-              gasPrice: (
-                await this.pool.provider.getGasPrice()
-              ).mul(toEthersBN(new BigNumber(this.gasMultiplier))),
+              gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
             }
           )) as ContractTransaction;
 
@@ -352,9 +349,7 @@ class KYVE {
           toBytes(input.transaction),
           input.valid
         ),
-        gasPrice: (
-          await this.pool.provider.getGasPrice()
-        ).mul(toEthersBN(new BigNumber(this.gasMultiplier))),
+        gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
       });
     } catch (error) {
       voteLogger.error("❌ Received an error while trying to vote:", error);

@@ -39,7 +39,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 exports.__esModule = true;
-exports.unstakeAll = exports.stake = exports.toBN = exports.toEthersBN = exports.toHumanReadable = void 0;
+exports.unstakeAll = exports.stake = exports.getGasPrice = exports.toBN = exports.toEthersBN = exports.toHumanReadable = void 0;
 var bignumber_js_1 = require("bignumber.js");
 var ethers_1 = require("ethers");
 var pool_json_1 = __importDefault(require("../abi/pool.json"));
@@ -71,6 +71,19 @@ var toBN = function (amount) {
     return new bignumber_js_1.BigNumber(amount.toString());
 };
 exports.toBN = toBN;
+var getGasPrice = function (pool, gasMultiplier) { return __awaiter(void 0, void 0, void 0, function () {
+    var _a, _b;
+    return __generator(this, function (_c) {
+        switch (_c.label) {
+            case 0:
+                _a = exports.toEthersBN;
+                _b = exports.toBN;
+                return [4 /*yield*/, pool.provider.getGasPrice()];
+            case 1: return [2 /*return*/, _a.apply(void 0, [_b.apply(void 0, [_c.sent()]).multipliedBy(new bignumber_js_1.BigNumber(gasMultiplier).toFixed(2))])];
+        }
+    });
+}); };
+exports.getGasPrice = getGasPrice;
 var stake = function (stake, pool, settings, gasMultiplier) { return __awaiter(void 0, void 0, void 0, function () {
     var stakeLogger, address, token, parsedStake, currentStake, _a, minimumStake, diff, transaction, _b, _c, _d, error_1, diff, balance, _e, transaction, _f, _g, _h, _j, _k, _l, error_2;
     var _m, _o, _p;
@@ -114,8 +127,8 @@ var stake = function (stake, pool, settings, gasMultiplier) { return __awaiter(v
                 return [4 /*yield*/, pool.estimateGas.unstake((0, exports.toEthersBN)(diff))];
             case 5:
                 _m.gasLimit = _q.sent();
-                return [4 /*yield*/, pool.provider.getGasPrice()];
-            case 6: return [4 /*yield*/, _c.apply(_b, _d.concat([(_m.gasPrice = (_q.sent()).mul((0, exports.toEthersBN)(new bignumber_js_1.BigNumber(gasMultiplier))),
+                return [4 /*yield*/, (0, exports.getGasPrice)(pool, gasMultiplier)];
+            case 6: return [4 /*yield*/, _c.apply(_b, _d.concat([(_m.gasPrice = _q.sent(),
                         _m)]))];
             case 7:
                 transaction = (_q.sent());
@@ -152,8 +165,8 @@ var stake = function (stake, pool, settings, gasMultiplier) { return __awaiter(v
                 return [4 /*yield*/, token.estimateGas.approve(pool.address, (0, exports.toEthersBN)(diff))];
             case 14:
                 _o.gasLimit = _q.sent();
-                return [4 /*yield*/, pool.provider.getGasPrice()];
-            case 15: return [4 /*yield*/, _g.apply(_f, _h.concat([(_o.gasPrice = (_q.sent()).mul((0, exports.toEthersBN)(new bignumber_js_1.BigNumber(gasMultiplier))),
+                return [4 /*yield*/, (0, exports.getGasPrice)(pool, gasMultiplier)];
+            case 15: return [4 /*yield*/, _g.apply(_f, _h.concat([(_o.gasPrice = _q.sent(),
                         _o)]))];
             case 16:
                 transaction = _q.sent();
@@ -168,8 +181,8 @@ var stake = function (stake, pool, settings, gasMultiplier) { return __awaiter(v
                 return [4 /*yield*/, pool.estimateGas.stake((0, exports.toEthersBN)(diff))];
             case 18:
                 _p.gasLimit = _q.sent();
-                return [4 /*yield*/, pool.provider.getGasPrice()];
-            case 19: return [4 /*yield*/, _k.apply(_j, _l.concat([(_p.gasPrice = (_q.sent()).mul((0, exports.toEthersBN)(new bignumber_js_1.BigNumber(gasMultiplier))),
+                return [4 /*yield*/, (0, exports.getGasPrice)(pool, gasMultiplier)];
+            case 19: return [4 /*yield*/, _k.apply(_j, _l.concat([(_p.gasPrice = _q.sent(),
                         _p)]))];
             case 20:
                 transaction = _q.sent();
@@ -221,8 +234,8 @@ var unstakeAll = function (pool, gasMultiplier) { return __awaiter(void 0, void 
                 return [4 /*yield*/, pool.estimateGas.unstake((0, exports.toEthersBN)(currentStake))];
             case 4:
                 _e.gasLimit = _f.sent();
-                return [4 /*yield*/, pool.provider.getGasPrice()];
-            case 5: return [4 /*yield*/, _c.apply(_b, _d.concat([(_e.gasPrice = (_f.sent()).mul((0, exports.toEthersBN)(new bignumber_js_1.BigNumber(gasMultiplier))),
+                return [4 /*yield*/, (0, exports.getGasPrice)(pool, gasMultiplier)];
+            case 5: return [4 /*yield*/, _c.apply(_b, _d.concat([(_e.gasPrice = _f.sent(),
                         _e)]))];
             case 6:
                 transaction = (_f.sent());
