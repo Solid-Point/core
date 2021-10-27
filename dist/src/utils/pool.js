@@ -79,7 +79,7 @@ var getGasPrice = function (pool, gasMultiplier) { return __awaiter(void 0, void
                 _a = exports.toEthersBN;
                 _b = exports.toBN;
                 return [4 /*yield*/, pool.provider.getGasPrice()];
-            case 1: return [2 /*return*/, _a.apply(void 0, [_b.apply(void 0, [_c.sent()]).multipliedBy(gasMultiplier)])];
+            case 1: return [2 /*return*/, _a.apply(void 0, [_b.apply(void 0, [_c.sent()]).multipliedBy(new bignumber_js_1.BigNumber(gasMultiplier).toFixed(2))])];
         }
     });
 }); };

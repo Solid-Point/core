@@ -26,7 +26,9 @@ export const toBN = (amount: ethers.BigNumber) => {
 
 export const getGasPrice = async (pool: Contract, gasMultiplier: string) => {
   return toEthersBN(
-    toBN(await pool.provider.getGasPrice()).multipliedBy(gasMultiplier)
+    toBN(await pool.provider.getGasPrice()).multipliedBy(
+      new BigNumber(gasMultiplier).toFixed(2)
+    )
   );
 };
 
