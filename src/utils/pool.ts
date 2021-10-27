@@ -76,9 +76,7 @@ export const stake = async (
     try {
       const transaction = (await pool.unstake(toEthersBN(diff), {
         gasLimit: await pool.estimateGas.unstake(toEthersBN(diff)),
-        gasPrice: (
-          await pool.provider.getGasPrice()
-        ).mul(new BigNumber(gasMultiplier).toNumber()),
+        gasPrice: await getGasPrice(pool, gasMultiplier),
       })) as ContractTransaction;
       stakeLogger.debug(
         `Unstaking ${toHumanReadable(diff)} $KYVE. Transaction = ${
@@ -112,9 +110,7 @@ export const stake = async (
             pool.address,
             toEthersBN(diff)
           ),
-          gasPrice: (
-            await pool.provider.getGasPrice()
-          ).mul(new BigNumber(gasMultiplier).toNumber()),
+          gasPrice: await getGasPrice(pool, gasMultiplier),
         });
         stakeLogger.debug(
           `Approving ${toHumanReadable(
@@ -127,9 +123,7 @@ export const stake = async (
 
         transaction = await pool.stake(toEthersBN(diff), {
           gasLimit: await pool.estimateGas.stake(toEthersBN(diff)),
-          gasPrice: (
-            await pool.provider.getGasPrice()
-          ).mul(new BigNumber(gasMultiplier).toNumber()),
+          gasPrice: await getGasPrice(pool, gasMultiplier),
         });
         stakeLogger.debug(
           `Staking ${toHumanReadable(diff)} $KYVE. Transaction = ${
@@ -171,9 +165,7 @@ export const unstakeAll = async (
     try {
       const transaction = (await pool.unstake(toEthersBN(currentStake), {
         gasLimit: await pool.estimateGas.unstake(toEthersBN(currentStake)),
-        gasPrice: (
-          await pool.provider.getGasPrice()
-        ).mul(new BigNumber(gasMultiplier).toNumber()),
+        gasPrice: await getGasPrice(pool, gasMultiplier),
       })) as ContractTransaction;
       unstakeLogger.debug(
         `Unstaking ${toHumanReadable(currentStake)} $KYVE. Transaction = ${

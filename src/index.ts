@@ -1,6 +1,5 @@
 import Arweave from "arweave";
 import { JWKInterface } from "arweave/node/lib/wallet";
-import { BigNumber } from "bignumber.js";
 import { Contract, ContractTransaction, ethers, Wallet } from "ethers";
 import { appendFileSync, existsSync, mkdirSync } from "fs";
 import Prando from "prando";
@@ -22,7 +21,13 @@ import {
 } from "./faces";
 import { fromBytes, toBytes } from "./utils/arweave";
 import logger from "./utils/logger";
-import Pool, { stake, toBN, toHumanReadable, unstakeAll } from "./utils/pool";
+import Pool, {
+  getGasPrice,
+  stake,
+  toBN,
+  toHumanReadable,
+  unstakeAll,
+} from "./utils/pool";
 import { version } from "../package.json";
 
 class KYVE {
@@ -235,9 +240,7 @@ class KYVE {
             +transaction.data_size,
             {
               gasLimit: 10000000,
-              gasPrice: (
-                await this.pool.provider.getGasPrice()
-              ).mul(new BigNumber(this.gasMultiplier).toNumber()),
+              gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
             }
           )) as ContractTransaction;
 
@@ -346,9 +349,7 @@ class KYVE {
           toBytes(input.transaction),
           input.valid
         ),
-        gasPrice: (
-          await this.pool.provider.getGasPrice()
-        ).mul(new BigNumber(this.gasMultiplier).toNumber()),
+        gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
       });
     } catch (error) {
       voteLogger.error("❌ Received an error while trying to vote:", error);
