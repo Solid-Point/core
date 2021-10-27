@@ -72,7 +72,7 @@ export const stake = async (
         gasLimit: await pool.estimateGas.unstake(toEthersBN(diff)),
         gasPrice: (
           await pool.provider.getGasPrice()
-        ).mul(toEthersBN(new BigNumber(gasMultiplier))),
+        ).mul(new BigNumber(gasMultiplier).toNumber()),
       })) as ContractTransaction;
       stakeLogger.debug(
         `Unstaking ${toHumanReadable(diff)} $KYVE. Transaction = ${
@@ -108,7 +108,7 @@ export const stake = async (
           ),
           gasPrice: (
             await pool.provider.getGasPrice()
-          ).mul(toEthersBN(new BigNumber(gasMultiplier))),
+          ).mul(new BigNumber(gasMultiplier).toNumber()),
         });
         stakeLogger.debug(
           `Approving ${toHumanReadable(
@@ -123,7 +123,7 @@ export const stake = async (
           gasLimit: await pool.estimateGas.stake(toEthersBN(diff)),
           gasPrice: (
             await pool.provider.getGasPrice()
-          ).mul(toEthersBN(new BigNumber(gasMultiplier))),
+          ).mul(new BigNumber(gasMultiplier).toNumber()),
         });
         stakeLogger.debug(
           `Staking ${toHumanReadable(diff)} $KYVE. Transaction = ${
@@ -167,7 +167,7 @@ export const unstakeAll = async (
         gasLimit: await pool.estimateGas.unstake(toEthersBN(currentStake)),
         gasPrice: (
           await pool.provider.getGasPrice()
-        ).mul(toEthersBN(new BigNumber(gasMultiplier))),
+        ).mul(new BigNumber(gasMultiplier).toNumber()),
       })) as ContractTransaction;
       unstakeLogger.debug(
         `Unstaking ${toHumanReadable(currentStake)} $KYVE. Transaction = ${

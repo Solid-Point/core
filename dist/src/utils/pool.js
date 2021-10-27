@@ -115,7 +115,7 @@ var stake = function (stake, pool, settings, gasMultiplier) { return __awaiter(v
             case 5:
                 _m.gasLimit = _q.sent();
                 return [4 /*yield*/, pool.provider.getGasPrice()];
-            case 6: return [4 /*yield*/, _c.apply(_b, _d.concat([(_m.gasPrice = (_q.sent()).mul((0, exports.toEthersBN)(new bignumber_js_1.BigNumber(gasMultiplier))),
+            case 6: return [4 /*yield*/, _c.apply(_b, _d.concat([(_m.gasPrice = (_q.sent()).mul(new bignumber_js_1.BigNumber(gasMultiplier).toNumber()),
                         _m)]))];
             case 7:
                 transaction = (_q.sent());
@@ -153,7 +153,7 @@ var stake = function (stake, pool, settings, gasMultiplier) { return __awaiter(v
             case 14:
                 _o.gasLimit = _q.sent();
                 return [4 /*yield*/, pool.provider.getGasPrice()];
-            case 15: return [4 /*yield*/, _g.apply(_f, _h.concat([(_o.gasPrice = (_q.sent()).mul((0, exports.toEthersBN)(new bignumber_js_1.BigNumber(gasMultiplier))),
+            case 15: return [4 /*yield*/, _g.apply(_f, _h.concat([(_o.gasPrice = (_q.sent()).mul(new bignumber_js_1.BigNumber(gasMultiplier).toNumber()),
                         _o)]))];
             case 16:
                 transaction = _q.sent();
@@ -169,7 +169,7 @@ var stake = function (stake, pool, settings, gasMultiplier) { return __awaiter(v
             case 18:
                 _p.gasLimit = _q.sent();
                 return [4 /*yield*/, pool.provider.getGasPrice()];
-            case 19: return [4 /*yield*/, _k.apply(_j, _l.concat([(_p.gasPrice = (_q.sent()).mul((0, exports.toEthersBN)(new bignumber_js_1.BigNumber(gasMultiplier))),
+            case 19: return [4 /*yield*/, _k.apply(_j, _l.concat([(_p.gasPrice = (_q.sent()).mul(new bignumber_js_1.BigNumber(gasMultiplier).toNumber()),
                         _p)]))];
             case 20:
                 transaction = _q.sent();
@@ -222,7 +222,7 @@ var unstakeAll = function (pool, gasMultiplier) { return __awaiter(void 0, void 
             case 4:
                 _e.gasLimit = _f.sent();
                 return [4 /*yield*/, pool.provider.getGasPrice()];
-            case 5: return [4 /*yield*/, _c.apply(_b, _d.concat([(_e.gasPrice = (_f.sent()).mul((0, exports.toEthersBN)(new bignumber_js_1.BigNumber(gasMultiplier))),
+            case 5: return [4 /*yield*/, _c.apply(_b, _d.concat([(_e.gasPrice = (_f.sent()).mul(new bignumber_js_1.BigNumber(gasMultiplier).toNumber()),
                         _e)]))];
             case 6:
                 transaction = (_f.sent());

@@ -59,6 +59,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 exports.__esModule = true;
 var arweave_1 = __importDefault(require("arweave"));
+var bignumber_js_1 = require("bignumber.js");
 var ethers_1 = require("ethers");
 var fs_1 = require("fs");
 var prando_1 = __importDefault(require("prando"));
@@ -69,7 +70,6 @@ var arweave_2 = require("./utils/arweave");
 var logger_1 = __importDefault(require("./utils/logger"));
 var pool_1 = __importStar(require("./utils/pool"));
 var package_json_1 = require("../package.json");
-var bignumber_js_1 = require("bignumber.js");
 var KYVE = /** @class */ (function () {
     function KYVE(poolAddress, runtime, version, stakeAmount, privateKey, keyfile, name, endpoint, gasMultiplier) {
         var _this = this;
@@ -249,7 +249,7 @@ var KYVE = /** @class */ (function () {
                                     gasLimit: 10000000
                                 };
                                 return [4 /*yield*/, this.pool.provider.getGasPrice()];
-                            case 7: return [4 /*yield*/, _d.apply(_c, _e.concat([(_f.gasPrice = (_g.sent()).mul((0, pool_1.toEthersBN)(new bignumber_js_1.BigNumber(this.gasMultiplier))),
+                            case 7: return [4 /*yield*/, _d.apply(_c, _e.concat([(_f.gasPrice = (_g.sent()).mul(new bignumber_js_1.BigNumber(this.gasMultiplier).toNumber()),
                                         _f)]))];
                             case 8:
                                 registerTransaction = (_g.sent());
@@ -366,7 +366,7 @@ var KYVE = /** @class */ (function () {
                     case 2:
                         _d.gasLimit = _e.sent();
                         return [4 /*yield*/, this.pool.provider.getGasPrice()];
-                    case 3: return [4 /*yield*/, _b.apply(_a, _c.concat([(_d.gasPrice = (_e.sent()).mul((0, pool_1.toEthersBN)(new bignumber_js_1.BigNumber(this.gasMultiplier))),
+                    case 3: return [4 /*yield*/, _b.apply(_a, _c.concat([(_d.gasPrice = (_e.sent()).mul(new bignumber_js_1.BigNumber(this.gasMultiplier).toNumber()),
                                 _d)]))];
                     case 4:
                         _e.sent();
