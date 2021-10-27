@@ -21,8 +21,15 @@ import {
 } from "./faces";
 import { fromBytes, toBytes } from "./utils/arweave";
 import logger from "./utils/logger";
-import Pool, { stake, toBN, toHumanReadable, unstakeAll } from "./utils/pool";
+import Pool, {
+  stake,
+  toBN,
+  toEthersBN,
+  toHumanReadable,
+  unstakeAll,
+} from "./utils/pool";
 import { version } from "../package.json";
+import { BigNumber } from "bignumber.js";
 
 class KYVE {
   private pool: Contract;
@@ -32,6 +39,7 @@ class KYVE {
   private wallet: Wallet;
   private keyfile?: JWKInterface;
   private name: string;
+  private gasMultiplier: string;
 
   private buffer: Bundle = [];
   private _metadata: any;
@@ -50,7 +58,8 @@ class KYVE {
     privateKey: string,
     keyfile?: JWKInterface,
     name?: string,
-    endpoint?: string
+    endpoint?: string,
+    gasMultiplier: string = "1"
   ) {
     this.wallet = new Wallet(
       privateKey,
@@ -68,6 +77,7 @@ class KYVE {
     this.version = version;
     this.stake = stakeAmount;
     this.keyfile = keyfile;
+    this.gasMultiplier = gasMultiplier;
 
     if (name) {
       this.name = name;
@@ -129,7 +139,7 @@ class KYVE {
       logger.error(
         `❌ Running an invalid version for the specified pool. Version requirements are ${this._metadata.versions}.`
       );
-      await unstakeAll(this.pool);
+      await unstakeAll(this.pool, this.gasMultiplier);
       process.exit(1);
     }
 
@@ -140,7 +150,7 @@ class KYVE {
       process.exit(1);
     }
 
-    await stake(this.stake, this.pool, this._settings);
+    await stake(this.stake, this.pool, this._settings, this.gasMultiplier);
     const _uploader = this._settings._uploader;
 
     if (this.wallet.address === _uploader) {
@@ -231,6 +241,9 @@ class KYVE {
             +transaction.data_size,
             {
               gasLimit: 10000000,
+              gasPrice: (
+                await this.pool.provider.getGasPrice()
+              ).mul(toEthersBN(new BigNumber(this.gasMultiplier))),
             }
           )) as ContractTransaction;
 
@@ -339,6 +352,9 @@ class KYVE {
           toBytes(input.transaction),
           input.valid
         ),
+        gasPrice: (
+          await this.pool.provider.getGasPrice()
+        ).mul(toEthersBN(new BigNumber(this.gasMultiplier))),
       });
     } catch (error) {
       voteLogger.error("❌ Received an error while trying to vote:", error);
@@ -488,7 +504,7 @@ class KYVE {
         logger.info(
           `⏱  New version requirements are ${this._metadata.versions}.`
         );
-        await unstakeAll(this.pool);
+        await unstakeAll(this.pool, this.gasMultiplier);
         process.exit();
       }
 
