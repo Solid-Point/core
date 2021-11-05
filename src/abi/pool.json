@@ -7,11 +7,6 @@
         "type": "address"
       },
       {
-        "internalType": "address",
-        "name": "uploader",
-        "type": "address"
-      },
-      {
         "internalType": "string",
         "name": "metadata",
         "type": "string"
@@ -23,12 +18,12 @@
       },
       {
         "internalType": "uint256",
-        "name": "minimumStake",
+        "name": "maxValidators",
         "type": "uint256"
       },
       {
         "internalType": "uint256",
-        "name": "maxVotes",
+        "name": "maxSlots",
         "type": "uint256"
       },
       {
@@ -105,48 +100,17 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "funderIndexed",
+        "name": "node",
         "type": "address"
       },
       {
         "indexed": false,
         "internalType": "address",
-        "name": "funder",
+        "name": "owner",
         "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
       }
     ],
-    "name": "Defunded",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "funderIndexed",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "funder",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
-    ],
-    "name": "Funded",
+    "name": "CreatedNode",
     "type": "event"
   },
   {
@@ -222,6 +186,31 @@
     "anonymous": false,
     "inputs": [
       {
+        "indexed": true,
+        "internalType": "address",
+        "name": "funderIndexed",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "funder",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "JoinedSlot",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
         "indexed": false,
         "internalType": "uint256",
         "name": "previous",
@@ -235,6 +224,50 @@
       }
     ],
     "name": "KyvePerByteChanged",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "funderIndexed",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "funder",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "LeftSlot",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "previous",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "current",
+        "type": "uint256"
+      }
+    ],
+    "name": "MaxSlotsChanged",
     "type": "event"
   },
   {
@@ -468,13 +501,25 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "nodeIndexed",
+        "name": "delegatorIndexed",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "validatorIndexed",
         "type": "address"
       },
       {
         "indexed": false,
         "internalType": "address",
-        "name": "node",
+        "name": "delegator",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "validator",
         "type": "address"
       },
       {
@@ -506,13 +551,25 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "nodeIndexed",
+        "name": "delegatorIndexed",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "validatorIndexed",
         "type": "address"
       },
       {
         "indexed": false,
         "internalType": "address",
-        "name": "node",
+        "name": "delegator",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "validator",
         "type": "address"
       },
       {
@@ -621,19 +678,26 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs": [],
+    "name": "_lastSlotOwner",
+    "outputs": [
       {
         "internalType": "address",
         "name": "",
         "type": "address"
       }
     ],
-    "name": "_fundingAmounts",
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "_lastValidatorSlotOwner",
     "outputs": [
       {
-        "internalType": "uint256",
+        "internalType": "address",
         "name": "",
-        "type": "uint256"
+        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -647,6 +711,25 @@
         "internalType": "string",
         "name": "",
         "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "_nodeOwners",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -669,6 +752,16 @@
       {
         "internalType": "uint256",
         "name": "_start",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_validLength",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_invalidLength",
         "type": "uint256"
       }
     ],
@@ -713,12 +806,12 @@
     "outputs": [
       {
         "internalType": "uint256",
-        "name": "_minimumStake",
+        "name": "_maxValidators",
         "type": "uint256"
       },
       {
         "internalType": "uint256",
-        "name": "_maxVotes",
+        "name": "_maxSlots",
         "type": "uint256"
       },
       {
@@ -744,6 +837,25 @@
       {
         "internalType": "uint256",
         "name": "_idleCost",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "_slotAmounts",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
         "type": "uint256"
       }
     ],
@@ -824,6 +936,11 @@
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "recipient",
+        "type": "address"
+      },
+      {
         "internalType": "uint256",
         "name": "amount",
         "type": "uint256"
@@ -838,10 +955,17 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "amount",
+        "name": "commission",
         "type": "uint256"
       }
     ],
+    "name": "createNode",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "defund",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -874,19 +998,6 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "invalidVotes",
-    "outputs": [
-      {
-        "internalType": "address[]",
-        "name": "",
-        "type": "address[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "internalType": "address",
@@ -900,6 +1011,32 @@
         "internalType": "bool",
         "name": "",
         "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "minimumFundingAmount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "nodes",
+    "outputs": [
+      {
+        "internalType": "address[]",
+        "name": "",
+        "type": "address[]"
       }
     ],
     "stateMutability": "view",
@@ -959,6 +1096,11 @@
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "delegator",
+        "type": "address"
+      },
+      {
         "internalType": "uint256",
         "name": "amount",
         "type": "uint256"
@@ -967,19 +1109,6 @@
     "name": "stake",
     "outputs": [],
     "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "stakers",
-    "outputs": [
-      {
-        "internalType": "address[]",
-        "name": "",
-        "type": "address[]"
-      }
-    ],
-    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -1017,6 +1146,11 @@
   },
   {
     "inputs": [
+      {
+        "internalType": "address",
+        "name": "delegator",
+        "type": "address"
+      },
       {
         "internalType": "uint256",
         "name": "amount",
@@ -1071,11 +1205,24 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "maxVotes",
+        "name": "maxSlots",
         "type": "uint256"
       }
     ],
-    "name": "updateMaxVotes",
+    "name": "updateMaxSlots",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "maxValidators",
+        "type": "uint256"
+      }
+    ],
+    "name": "updateMaxValidators",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1089,19 +1236,6 @@
       }
     ],
     "name": "updateMetadata",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "minimumStake",
-        "type": "uint256"
-      }
-    ],
-    "name": "updateMinimumStake",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1147,7 +1281,7 @@
   },
   {
     "inputs": [],
-    "name": "validVotes",
+    "name": "validators",
     "outputs": [
       {
         "internalType": "address[]",

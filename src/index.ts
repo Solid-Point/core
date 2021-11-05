@@ -1,6 +1,12 @@
 import Arweave from "arweave";
 import { JWKInterface } from "arweave/node/lib/wallet";
-import { Contract, ContractTransaction, ethers, Wallet } from "ethers";
+import {
+  Contract,
+  ContractTransaction,
+  ethers,
+  constants,
+  Wallet,
+} from "ethers";
 import { appendFileSync, existsSync, mkdirSync } from "fs";
 import Prando from "prando";
 import { Observable } from "rxjs";
@@ -21,17 +27,21 @@ import {
 } from "./faces";
 import { fromBytes, toBytes } from "./utils/arweave";
 import logger from "./utils/logger";
-import Pool, {
+import {
   getGasPrice,
-  stake,
   toBN,
+  toEthersBN,
   toHumanReadable,
-  unstakeAll,
-} from "./utils/pool";
+  Pool,
+  Token,
+} from "./utils/helpers";
+import NodeABI from "./abi/node.json";
 import { version } from "../package.json";
+import BigNumber from "bignumber.js";
 
 class KYVE {
   private pool: Contract;
+  private node: any;
   private runtime: string;
   private version: string;
   private stake: string;
@@ -119,19 +129,16 @@ class KYVE {
     // log node info
     this.logNodeInfo();
 
-    // fetch properties
     await this.fetchMetadata();
     await this.fetchSettings();
     await this.fetchConfig();
 
-    // setup listeners
     await this.setupListeners();
 
-    // check requirements
     await this.checkVersionRequirements();
     await this.checkRuntimeRequirements();
 
-    await stake(this.stake, this.pool, this._settings, this.gasMultiplier);
+    await this.setupNodeContract();
 
     // execute uploader/validator
     if (this.wallet.address === this._settings._uploader) {
@@ -350,7 +357,7 @@ class KYVE {
       }\n\t${formatInfoLogs("Address")} = ${
         this.wallet.address
       }\n\t${formatInfoLogs("Pool")} = ${this.pool.address}\n\t${formatInfoLogs(
-        "Initial Stake"
+        "Desired Stake"
       )} = ${this.stake} $KYVE\n\n\t${formatInfoLogs(
         "@kyve/core"
       )} = v${version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}`
@@ -453,7 +460,7 @@ class KYVE {
     );
   }
 
-  private async fetchConfig(): Promise<void> {
+  private async fetchConfig() {
     const configLogger = logger.getChildLogger({
       name: "Config",
     });
@@ -497,7 +504,6 @@ class KYVE {
         logger.info(
           `⏱  New version requirements are ${this._metadata.versions}.`
         );
-        await unstakeAll(this.pool, this.gasMultiplier);
         process.exit();
       }
 
@@ -538,6 +544,120 @@ class KYVE {
       logger.info(`💻 Running node on runtime ${this.runtime}.`);
     } else {
       logger.error("❌ Specified pool does not match the integration runtime.");
+      process.exit(1);
+    }
+  }
+
+  private async setupNodeContract() {
+    let nodeAddress = await this.pool._nodeOwners(this.wallet.address);
+    let parsedStake;
+
+    let tx: ContractTransaction;
+
+    if (constants.AddressZero === nodeAddress) {
+      try {
+        logger.debug(`Can't find node - creating new node contract ...`);
+
+        tx = await this.pool.createNode(10);
+        await tx.wait();
+
+        nodeAddress = await this.pool._nodeOwners(this.wallet.address);
+      } catch (error) {
+        logger.error("❌ Could not create node contract:", error);
+        process.exit(1);
+      }
+    }
+
+    this.node = new Contract(nodeAddress, NodeABI, this.wallet);
+
+    logger.info(`✅ Connected to node ${nodeAddress}`);
+
+    let nodeStake = await this.pool._stakingAmounts(nodeAddress);
+
+    try {
+      parsedStake = new BigNumber(this.stake).multipliedBy(
+        new BigNumber(10).exponentiatedBy(18)
+      );
+
+      if (parsedStake.isZero()) {
+        logger.error("❌ Desired stake can't be zero.");
+        process.exit(1);
+      }
+    } catch (error) {
+      logger.error("❌ Provided invalid staking amount:", error);
+      process.exit(1);
+    }
+
+    if (nodeStake.isZero()) {
+      await this.selfDelegate(parsedStake);
+    } else if (!toEthersBN(parsedStake).eq(nodeStake)) {
+      await this.selfUndelegate();
+      await this.selfDelegate(parsedStake);
+    } else {
+      logger.info("👌 Already staked with the correct amount.");
+    }
+  }
+
+  private async selfDelegate(amount: BigNumber) {
+    const token = await Token(this.pool);
+    let tx: ContractTransaction;
+
+    const balance = toBN(
+      (await token.balanceOf(this.wallet.address)) as ethers.BigNumber
+    );
+
+    if (balance.lt(amount)) {
+      logger.error("❌ Supplied wallet does not have enough $KYVE to stake.");
+      process.exit(1);
+    }
+
+    try {
+      tx = await token.approve(this.pool.address, toEthersBN(amount), {
+        gasLimit: await token.estimateGas.approve(
+          this.pool.address,
+          toEthersBN(amount)
+        ),
+        gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
+      });
+      logger.debug(
+        `Approving ${toHumanReadable(
+          amount
+        )} $KYVE to be spent. Transaction = ${tx.hash}`
+      );
+
+      await tx.wait();
+      logger.info("👍 Successfully approved.");
+
+      tx = await this.node.delegate(toEthersBN(amount), {
+        gasLimit: await this.node.estimateGas.delegate(toEthersBN(amount)),
+        gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
+      });
+      logger.debug(
+        `Staking ${toHumanReadable(amount)} $KYVE. Transaction = ${tx.hash}`
+      );
+
+      await tx.wait();
+      logger.info("📈 Successfully staked.");
+    } catch (error) {
+      logger.error("❌ Received an error while trying to stake:", error);
+      process.exit(1);
+    }
+  }
+
+  private async selfUndelegate() {
+    let tx: ContractTransaction;
+
+    try {
+      tx = await this.node.undelegate({
+        gasLimit: await this.node.estimateGas.delegate(),
+        gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
+      });
+      logger.debug(`Unstaking. Transaction = ${tx.hash}`);
+
+      await tx.wait();
+      logger.info("📉 Successfully unstaked.");
+    } catch (error) {
+      logger.error("❌ Received an error while trying to unstake:", error);
       process.exit(1);
     }
   }
