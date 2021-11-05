@@ -43,6 +43,7 @@ class KYVE {
   private buffer: Bundle = [];
   private _metadata: any;
   private _settings: any;
+  private _config: any;
 
   private client = new Arweave({
     host: "arweave.net",
@@ -124,13 +125,12 @@ class KYVE {
         "Address"
       )} = ${this.wallet.address}\n\t${format("Pool")} = ${
         this.pool.address
-      }\n\t${format("Desired Stake")} = ${this.stake} $KYVE\n\n\t${format(
+      }\n\t${format("Initial Stake")} = ${this.stake} $KYVE\n\n\t${format(
         "@kyve/core"
       )} = v${version}\n\t${format(this.runtime)} = v${this.version}`
     );
 
     await this.sync();
-    const config = await this.fetchConfig();
 
     if (satisfies(this.version, this._metadata.versions || this.version)) {
       logger.info("⏱  Pool version requirements met.");
@@ -138,7 +138,6 @@ class KYVE {
       logger.error(
         `❌ Running an invalid version for the specified pool. Version requirements are ${this._metadata.versions}.`
       );
-      await unstakeAll(this.pool, this.gasMultiplier);
       process.exit(1);
     }
 
@@ -159,7 +158,7 @@ class KYVE {
           process.exit();
         } else {
           logger.info("📚 Running as an uploader ...");
-          this.uploader<ConfigType>(uploadFunction, config);
+          this.uploader<ConfigType>(uploadFunction, this._config);
         }
       } else {
         logger.error("❌ You need to specify your Arweave keyfile.");
@@ -167,7 +166,7 @@ class KYVE {
       }
     } else {
       logger.info("🧐 Running as an validator ...");
-      this.validator<ConfigType>(validateFunction, config);
+      this.validator<ConfigType>(validateFunction, this._config);
     }
   }
 
@@ -359,6 +358,7 @@ class KYVE {
   private async sync() {
     await this.fetchMetadata();
     await this.fetchSettings();
+    await this.fetchConfig();
 
     // Listen to new contract changes.
     this.pool.on("ConfigChanged", () => {
@@ -368,6 +368,7 @@ class KYVE {
     this.pool.on("MetadataChanged", async () => {
       await this.fetchMetadata();
     });
+    // TODO: instead listen to validator slot changes
     this.pool.on(
       "MinimumStakeChanged",
       async (_, minimum: ethers.BigNumber) => {
@@ -454,7 +455,7 @@ class KYVE {
     );
   }
 
-  private async fetchConfig(): Promise<any> {
+  private async fetchConfig(): Promise<void> {
     const configLogger = logger.getChildLogger({
       name: "Config",
     });
@@ -463,10 +464,9 @@ class KYVE {
     const _config = (await this.pool._config()) as string;
 
     try {
-      const config = JSON.parse(_config);
+      this._config = JSON.parse(_config);
 
       configLogger.debug("Successfully fetched the config.");
-      return config;
     } catch (error) {
       configLogger.error(
         "❌ Received an error while trying to fetch the config:",
