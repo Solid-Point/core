@@ -126,7 +126,6 @@ class KYVE {
     uploadFunction: UploadFunction<ConfigType>,
     validateFunction: ValidateFunction<ConfigType>
   ) {
-    // log node info
     this.logNodeInfo();
 
     await this.fetchMetadata();
@@ -140,7 +139,6 @@ class KYVE {
 
     await this.setupNodeContract();
 
-    // execute uploader/validator
     if (this.wallet.address === this._settings._uploader) {
       if (this.keyfile) {
         if (await this.pool.paused()) {
@@ -265,39 +263,50 @@ class KYVE {
             `⬇️  Received a new proposal. Bundle = ${transaction}`
           );
 
-          const res = await this.client.transactions.getStatus(transaction);
-          if (res.status === 200 || res.status === 202) {
-            const _data = (await this.client.transactions.getData(transaction, {
-              decode: true,
-            })) as Uint8Array;
-            const bytes = _data.byteLength;
-            const bundle = JSON.parse(
-              new TextDecoder("utf-8", {
-                fatal: true,
-              }).decode(_data)
-            ) as Bundle;
+          const isValidator = await this.pool.isValidator(this.node.address);
 
-            if (+_bytes === +bytes) {
-              listenerLogger.debug(
-                "Bytes match, forwarding bundle to the validate function."
-              );
-
-              subscriber.next({
+          if (isValidator) {
+            const res = await this.client.transactions.getStatus(transaction);
+            if (res.status === 200 || res.status === 202) {
+              const _data = (await this.client.transactions.getData(
                 transaction,
-                bundle,
-              });
+                {
+                  decode: true,
+                }
+              )) as Uint8Array;
+              const bytes = _data.byteLength;
+              const bundle = JSON.parse(
+                new TextDecoder("utf-8", {
+                  fatal: true,
+                }).decode(_data)
+              ) as Bundle;
+
+              if (+_bytes === +bytes) {
+                listenerLogger.debug(
+                  "Bytes match, forwarding bundle to the validate function."
+                );
+
+                subscriber.next({
+                  transaction,
+                  bundle,
+                });
+              } else {
+                listenerLogger.debug(
+                  `Bytes don't match (${_bytes} vs ${bytes}).`
+                );
+
+                this.vote({
+                  transaction,
+                  valid: false,
+                });
+              }
             } else {
-              listenerLogger.debug(
-                `Bytes don't match (${_bytes} vs ${bytes}).`
-              );
-
-              this.vote({
-                transaction,
-                valid: false,
-              });
+              listenerLogger.error("❌ Error fetching bundle from Arweave.");
             }
           } else {
-            listenerLogger.error("❌ Error fetching bundle from Arweave.");
+            logger.warn(
+              "⚠️  Stake not high enough to participate as validator. Skipping proposal ..."
+            );
           }
         }
       );
@@ -373,24 +382,6 @@ class KYVE {
     this.pool.on("MetadataChanged", async () => {
       await this.fetchMetadata();
     });
-    // TODO: instead listen to validator slot changes
-    this.pool.on(
-      "MinimumStakeChanged",
-      async (_, minimum: ethers.BigNumber) => {
-        const stake = (await this.pool._stakingAmounts(
-          this.wallet.address
-        )) as ethers.BigNumber;
-
-        if (stake.lt(minimum)) {
-          logger.error(
-            `❌ Minimum stake is ${toHumanReadable(
-              toBN(minimum)
-            )} $KYVE. You will not be able to register / vote.`
-          );
-          process.exit();
-        }
-      }
-    );
     this.pool.on("Paused", () => {
       if (this.wallet.address === this._settings._uploader) {
         logger.warn("⚠️  Pool is now paused. Exiting ...");
