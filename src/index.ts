@@ -116,42 +116,25 @@ class KYVE {
     uploadFunction: UploadFunction<ConfigType>,
     validateFunction: ValidateFunction<ConfigType>
   ) {
-    const format = (input: string) => {
-      const length = Math.max(13, this.runtime.length);
-      return input.padEnd(length, " ");
-    };
-    logger.info(
-      `🚀 Starting node ...\n\t${format("Name")} = ${this.name}\n\t${format(
-        "Address"
-      )} = ${this.wallet.address}\n\t${format("Pool")} = ${
-        this.pool.address
-      }\n\t${format("Initial Stake")} = ${this.stake} $KYVE\n\n\t${format(
-        "@kyve/core"
-      )} = v${version}\n\t${format(this.runtime)} = v${this.version}`
-    );
+    // log node info
+    this.logNodeInfo();
 
-    await this.sync();
+    // fetch properties
+    await this.fetchMetadata();
+    await this.fetchSettings();
+    await this.fetchConfig();
 
-    if (satisfies(this.version, this._metadata.versions || this.version)) {
-      logger.info("⏱  Pool version requirements met.");
-    } else {
-      logger.error(
-        `❌ Running an invalid version for the specified pool. Version requirements are ${this._metadata.versions}.`
-      );
-      process.exit(1);
-    }
+    // setup listeners
+    await this.setupListeners();
 
-    if (this._metadata.runtime === this.runtime) {
-      logger.info(`💻 Running node on runtime ${this.runtime}.`);
-    } else {
-      logger.error("❌ Specified pool does not match the integration runtime.");
-      process.exit(1);
-    }
+    // check requirements
+    await this.checkVersionRequirements();
+    await this.checkRuntimeRequirements();
 
     await stake(this.stake, this.pool, this._settings, this.gasMultiplier);
-    const _uploader = this._settings._uploader;
 
-    if (this.wallet.address === _uploader) {
+    // execute uploader/validator
+    if (this.wallet.address === this._settings._uploader) {
       if (this.keyfile) {
         if (await this.pool.paused()) {
           logger.warn("⚠️  Pool is paused. Exiting ...");
@@ -355,11 +338,26 @@ class KYVE {
     }
   }
 
-  private async sync() {
-    await this.fetchMetadata();
-    await this.fetchSettings();
-    await this.fetchConfig();
+  private logNodeInfo() {
+    const formatInfoLogs = (input: string) => {
+      const length = Math.max(13, this.runtime.length);
+      return input.padEnd(length, " ");
+    };
 
+    logger.info(
+      `🚀 Starting node ...\n\t${formatInfoLogs("Name")} = ${
+        this.name
+      }\n\t${formatInfoLogs("Address")} = ${
+        this.wallet.address
+      }\n\t${formatInfoLogs("Pool")} = ${this.pool.address}\n\t${formatInfoLogs(
+        "Initial Stake"
+      )} = ${this.stake} $KYVE\n\n\t${formatInfoLogs(
+        "@kyve/core"
+      )} = v${version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}`
+    );
+  }
+
+  private async setupListeners() {
     // Listen to new contract changes.
     this.pool.on("ConfigChanged", () => {
       logger.warn("⚠️  Config changed. Exiting ...");
@@ -522,6 +520,26 @@ class KYVE {
     this._settings = await this.pool._settings();
 
     settingsLogger.debug("Successfully fetched the settings.");
+  }
+
+  private async checkVersionRequirements() {
+    if (satisfies(this.version, this._metadata.versions || this.version)) {
+      logger.info("⏱  Pool version requirements met.");
+    } else {
+      logger.error(
+        `❌ Running an invalid version for the specified pool. Version requirements are ${this._metadata.versions}.`
+      );
+      process.exit(1);
+    }
+  }
+
+  private async checkRuntimeRequirements() {
+    if (this._metadata.runtime === this.runtime) {
+      logger.info(`💻 Running node on runtime ${this.runtime}.`);
+    } else {
+      logger.error("❌ Specified pool does not match the integration runtime.");
+      process.exit(1);
+    }
   }
 }
 
