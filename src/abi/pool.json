@@ -679,6 +679,32 @@
   },
   {
     "inputs": [],
+    "name": "_idleCost",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "_kyvePerByte",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "_lastSlotOwner",
     "outputs": [
       {
@@ -698,6 +724,32 @@
         "internalType": "address",
         "name": "",
         "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "_maxSlots",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "_maxValidators",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -802,41 +854,11 @@
   },
   {
     "inputs": [],
-    "name": "_settings",
+    "name": "_slashThreshold",
     "outputs": [
       {
         "internalType": "uint256",
-        "name": "_maxValidators",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_maxSlots",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_uploadLimit",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_slashThreshold",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "_uploader",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_kyvePerByte",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_idleCost",
+        "name": "",
         "type": "uint256"
       }
     ],
@@ -902,6 +924,32 @@
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "_uploadLimit",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "_uploader",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -1030,6 +1078,67 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "node",
+        "type": "address"
+      }
+    ],
+    "name": "nodeState",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "nodeAddress",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "poolAddress",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "apy",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "totalStaked",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "commission",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "totalLenders",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "totalSlashes",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "totalPoints",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct Pool.NodeState",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "nodes",
     "outputs": [
@@ -1057,6 +1166,111 @@
         "internalType": "bool",
         "name": "",
         "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "poolState",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "poolAddress",
+            "type": "address"
+          },
+          {
+            "internalType": "string",
+            "name": "metadata",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "config",
+            "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "maxValidators",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "maxSlots",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "uploadLimit",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "slashThreshold",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "uploader",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "kyvePerByte",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "idleCost",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "paused",
+            "type": "bool"
+          },
+          {
+            "internalType": "address[]",
+            "name": "funders",
+            "type": "address[]"
+          },
+          {
+            "internalType": "uint256",
+            "name": "totalFunded",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "minFunds",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address[]",
+            "name": "validators",
+            "type": "address[]"
+          },
+          {
+            "internalType": "address[]",
+            "name": "nodes",
+            "type": "address[]"
+          },
+          {
+            "internalType": "uint256",
+            "name": "totalStaked",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "minStake",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct Pool.PoolState",
+        "name": "",
+        "type": "tuple"
       }
     ],
     "stateMutability": "view",

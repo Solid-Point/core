@@ -128,10 +128,7 @@ class KYVE {
   ) {
     this.logNodeInfo();
 
-    await this.fetchMetadata();
-    await this.fetchSettings();
-    await this.fetchConfig();
-
+    await this.fetchPoolState();
     await this.setupListeners();
 
     await this.checkVersionRequirements();
@@ -380,7 +377,7 @@ class KYVE {
       process.exit();
     });
     this.pool.on("MetadataChanged", async () => {
-      await this.fetchMetadata();
+      await this.fetchPoolState();
     });
     this.pool.on("Paused", () => {
       if (this.wallet.address === this._settings._uploader) {
@@ -451,72 +448,61 @@ class KYVE {
     );
   }
 
-  private async fetchConfig() {
-    const configLogger = logger.getChildLogger({
-      name: "Config",
+  private async fetchPoolState() {
+    const stateLogger = logger.getChildLogger({
+      name: "PoolState",
     });
-    configLogger.debug("Attempting to fetch the config.");
 
-    const _config = (await this.pool._config()) as string;
+    stateLogger.debug("Attempting to fetch pool state.");
+
+    let _poolState;
 
     try {
-      this._config = JSON.parse(_config);
-
-      configLogger.debug("Successfully fetched the config.");
+      _poolState = await this.pool.poolState();
     } catch (error) {
-      configLogger.error(
-        "❌ Received an error while trying to fetch the config:",
+      stateLogger.error(
+        "❌ Received an error while trying to fetch the pool state:",
         error
       );
       process.exit(1);
     }
-  }
 
-  private async fetchMetadata() {
-    const metadataLogger = logger.getChildLogger({
-      name: "Metadata",
-    });
-    metadataLogger.debug("Attempting to fetch the metadata.");
-
-    const _metadata = (await this.pool._metadata()) as string;
+    try {
+      this._config = JSON.parse(_poolState.config);
+    } catch (error) {
+      stateLogger.error(
+        "❌ Received an error while trying to parse the config:",
+        error
+      );
+      process.exit(1);
+    }
 
     try {
       const oldMetadata = this._metadata;
-      this._metadata = JSON.parse(_metadata);
+      this._metadata = JSON.parse(_poolState.metadata);
 
       if (
         oldMetadata &&
         this._metadata.versions &&
         oldMetadata.versions !== this._metadata.versions
       ) {
-        logger.warn(
-          "⚠️  Version requirements changed. Unstaking and exiting ..."
-        );
+        logger.warn("⚠️  Version requirements changed. Exiting ...");
         logger.info(
           `⏱  New version requirements are ${this._metadata.versions}.`
         );
         process.exit();
       }
-
-      metadataLogger.debug("Successfully fetched the metadata.");
     } catch (error) {
-      metadataLogger.error(
-        "❌ Received an error while trying to fetch the metadata:",
+      stateLogger.error(
+        "❌ Received an error while trying to parse the metadata:",
         error
       );
       process.exit(1);
     }
-  }
 
-  private async fetchSettings() {
-    const settingsLogger = logger.getChildLogger({
-      name: "Settings",
-    });
-    settingsLogger.debug("Attempting to fetch the settings.");
+    this._settings = _poolState;
 
-    this._settings = await this.pool._settings();
-
-    settingsLogger.debug("Successfully fetched the settings.");
+    stateLogger.debug("Successfully fetched pool state.");
   }
 
   private async checkVersionRequirements() {
