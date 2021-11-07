@@ -499,38 +499,47 @@ var KYVE = /** @class */ (function () {
     };
     KYVE.prototype.setupNodeContract = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var nodeAddress, parsedStake, tx, error_4, nodeStake;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var nodeAddress, parsedStake, tx, _a, _b, _c, error_4, nodeStake;
+            var _d;
+            return __generator(this, function (_e) {
+                switch (_e.label) {
                     case 0: return [4 /*yield*/, this.pool._nodeOwners(this.wallet.address)];
                     case 1:
-                        nodeAddress = _a.sent();
-                        if (!(ethers_1.constants.AddressZero === nodeAddress)) return [3 /*break*/, 7];
-                        _a.label = 2;
+                        nodeAddress = _e.sent();
+                        if (!(ethers_1.constants.AddressZero === nodeAddress)) return [3 /*break*/, 9];
+                        _e.label = 2;
                     case 2:
-                        _a.trys.push([2, 6, , 7]);
+                        _e.trys.push([2, 8, , 9]);
                         logger_1["default"].debug("Can't find node - creating new node contract ...");
-                        return [4 /*yield*/, this.pool.createNode(10)];
+                        _b = (_a = this.pool).createNode;
+                        _c = [10];
+                        _d = {};
+                        return [4 /*yield*/, this.pool.estimateGas.createNode(10)];
                     case 3:
-                        tx = _a.sent();
-                        return [4 /*yield*/, tx.wait()];
-                    case 4:
-                        _a.sent();
-                        return [4 /*yield*/, this.pool._nodeOwners(this.wallet.address)];
+                        _d.gasLimit = _e.sent();
+                        return [4 /*yield*/, (0, helpers_1.getGasPrice)(this.pool, this.gasMultiplier)];
+                    case 4: return [4 /*yield*/, _b.apply(_a, _c.concat([(_d.gasPrice = _e.sent(),
+                                _d)]))];
                     case 5:
-                        nodeAddress = _a.sent();
-                        return [3 /*break*/, 7];
+                        tx = _e.sent();
+                        return [4 /*yield*/, tx.wait()];
                     case 6:
-                        error_4 = _a.sent();
+                        _e.sent();
+                        return [4 /*yield*/, this.pool._nodeOwners(this.wallet.address)];
+                    case 7:
+                        nodeAddress = _e.sent();
+                        return [3 /*break*/, 9];
+                    case 8:
+                        error_4 = _e.sent();
                         logger_1["default"].error("❌ Could not create node contract:", error_4);
                         process.exit(1);
-                        return [3 /*break*/, 7];
-                    case 7:
+                        return [3 /*break*/, 9];
+                    case 9:
                         this.node = new ethers_1.Contract(nodeAddress, node_json_1["default"], this.wallet);
                         logger_1["default"].info("\u2705 Connected to node " + nodeAddress);
                         return [4 /*yield*/, this.pool._stakingAmounts(nodeAddress)];
-                    case 8:
-                        nodeStake = _a.sent();
+                    case 10:
+                        nodeStake = _e.sent();
                         try {
                             parsedStake = new bignumber_js_1["default"](this.stake).multipliedBy(new bignumber_js_1["default"](10).exponentiatedBy(18));
                             if (parsedStake.isZero()) {
@@ -542,24 +551,24 @@ var KYVE = /** @class */ (function () {
                             logger_1["default"].error("❌ Provided invalid staking amount:", error);
                             process.exit(1);
                         }
-                        if (!nodeStake.isZero()) return [3 /*break*/, 10];
+                        if (!nodeStake.isZero()) return [3 /*break*/, 12];
                         return [4 /*yield*/, this.selfDelegate(parsedStake)];
-                    case 9:
-                        _a.sent();
-                        return [3 /*break*/, 14];
-                    case 10:
-                        if (!!(0, helpers_1.toEthersBN)(parsedStake).eq(nodeStake)) return [3 /*break*/, 13];
-                        return [4 /*yield*/, this.selfUndelegate()];
                     case 11:
-                        _a.sent();
-                        return [4 /*yield*/, this.selfDelegate(parsedStake)];
+                        _e.sent();
+                        return [3 /*break*/, 16];
                     case 12:
-                        _a.sent();
-                        return [3 /*break*/, 14];
+                        if (!!(0, helpers_1.toEthersBN)(parsedStake).eq(nodeStake)) return [3 /*break*/, 15];
+                        return [4 /*yield*/, this.selfUndelegate()];
                     case 13:
+                        _e.sent();
+                        return [4 /*yield*/, this.selfDelegate(parsedStake)];
+                    case 14:
+                        _e.sent();
+                        return [3 /*break*/, 16];
+                    case 15:
                         logger_1["default"].info("👌 Already staked with the correct amount.");
-                        _a.label = 14;
-                    case 14: return [2 /*return*/];
+                        _e.label = 16;
+                    case 16: return [2 /*return*/];
                 }
             });
         });

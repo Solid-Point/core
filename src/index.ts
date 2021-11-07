@@ -535,7 +535,10 @@ class KYVE {
       try {
         logger.debug(`Can't find node - creating new node contract ...`);
 
-        tx = await this.pool.createNode(10);
+        tx = await this.pool.createNode(10, {
+          gasLimit: await this.pool.estimateGas.createNode(10),
+          gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
+        });
         await tx.wait();
 
         nodeAddress = await this.pool._nodeOwners(this.wallet.address);
