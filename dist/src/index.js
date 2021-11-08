@@ -66,6 +66,7 @@ var KYVE = /** @class */ (function () {
             name: "moonbase-alphanet"
         }));
         this.pool = (0, helpers_1.Pool)(poolAddress, this.wallet);
+        this.node = null;
         this.runtime = runtime;
         this.version = version;
         this.stake = stakeAmount;
@@ -101,48 +102,49 @@ var KYVE = /** @class */ (function () {
         });
     }
     KYVE.prototype.run = function (uploadFunction, validateFunction) {
+        var _a;
         return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
                         this.logNodeInfo();
                         return [4 /*yield*/, this.fetchPoolState()];
                     case 1:
-                        _a.sent();
-                        return [4 /*yield*/, this.setupListeners()];
-                    case 2:
-                        _a.sent();
+                        _b.sent();
                         return [4 /*yield*/, this.checkVersionRequirements()];
-                    case 3:
-                        _a.sent();
+                    case 2:
+                        _b.sent();
                         return [4 /*yield*/, this.checkRuntimeRequirements()];
-                    case 4:
-                        _a.sent();
+                    case 3:
+                        _b.sent();
                         return [4 /*yield*/, this.setupNodeContract()];
+                    case 4:
+                        _b.sent();
+                        return [4 /*yield*/, this.setupListeners()];
                     case 5:
-                        _a.sent();
-                        if (!(this.wallet.address === this._settings._uploader)) return [3 /*break*/, 9];
+                        _b.sent();
+                        if (!(((_a = this.node) === null || _a === void 0 ? void 0 : _a.address) === this.settings.uploader)) return [3 /*break*/, 9];
                         if (!this.keyfile) return [3 /*break*/, 7];
                         return [4 /*yield*/, this.pool.paused()];
                     case 6:
-                        if (_a.sent()) {
+                        if (_b.sent()) {
                             logger_1["default"].warn("⚠️  Pool is paused. Exiting ...");
                             process.exit();
                         }
                         else {
                             logger_1["default"].info("📚 Running as an uploader ...");
-                            this.uploader(uploadFunction, this._config);
+                            this.uploader(uploadFunction, this.config);
                         }
                         return [3 /*break*/, 8];
                     case 7:
                         logger_1["default"].error("❌ You need to specify your Arweave keyfile.");
                         process.exit(1);
-                        _a.label = 8;
+                        _b.label = 8;
                     case 8: return [3 /*break*/, 10];
                     case 9:
                         logger_1["default"].info("🧐 Running as an validator ...");
-                        this.validator(validateFunction, this._config);
-                        _a.label = 10;
+                        this.validator(validateFunction, this.config);
+                        _b.label = 10;
                     case 10: return [2 /*return*/];
                 }
             });
@@ -166,8 +168,8 @@ var KYVE = /** @class */ (function () {
                         switch (_g.label) {
                             case 0:
                                 i = this.buffer.push(item);
-                                uploaderLogger.debug("Received a new data item (" + i + " / " + this._metadata.bundleSize + ").");
-                                if (!(this.buffer.length >= this._metadata.bundleSize)) return [3 /*break*/, 10];
+                                uploaderLogger.debug("Received a new data item (" + i + " / " + this.metadata.bundleSize + ").");
+                                if (!(this.buffer.length >= this.metadata.bundleSize)) return [3 /*break*/, 10];
                                 uploaderLogger.info("📦 Creating bundle ...");
                                 tempBuffer = this.buffer;
                                 this.buffer = [];
@@ -182,7 +184,7 @@ var KYVE = /** @class */ (function () {
                                 transaction.addTag("Pool", this.pool.address);
                                 transaction.addTag("@kyve/core", package_json_1.version);
                                 transaction.addTag(this.runtime, this.version);
-                                transaction.addTag("Bundle-Size", this._metadata.bundleSize);
+                                transaction.addTag("Bundle-Size", this.metadata.bundleSize);
                                 transaction.addTag("Content-Type", "application/json");
                                 return [4 /*yield*/, this.client.transactions.sign(transaction, this.keyfile)];
                             case 2:
@@ -242,24 +244,25 @@ var KYVE = /** @class */ (function () {
                 return [2 /*return*/, new rxjs_1.Observable(function (subscriber) {
                         _this.pool.on("ProposalStart", function (_transactionIndexed, _transaction, _bytes) { return __awaiter(_this, void 0, void 0, function () {
                             var transaction, isValidator, res, _data, bytes, bundle;
-                            return __generator(this, function (_a) {
-                                switch (_a.label) {
+                            var _a;
+                            return __generator(this, function (_b) {
+                                switch (_b.label) {
                                     case 0:
                                         transaction = (0, arweave_2.fromBytes)(_transaction);
                                         listenerLogger.info("\u2B07\uFE0F  Received a new proposal. Bundle = " + transaction);
-                                        return [4 /*yield*/, this.pool.isValidator(this.node.address)];
+                                        return [4 /*yield*/, this.pool.isValidator((_a = this.node) === null || _a === void 0 ? void 0 : _a.address)];
                                     case 1:
-                                        isValidator = _a.sent();
+                                        isValidator = _b.sent();
                                         if (!isValidator) return [3 /*break*/, 6];
                                         return [4 /*yield*/, this.client.transactions.getStatus(transaction)];
                                     case 2:
-                                        res = _a.sent();
+                                        res = _b.sent();
                                         if (!(res.status === 200 || res.status === 202)) return [3 /*break*/, 4];
                                         return [4 /*yield*/, this.client.transactions.getData(transaction, {
                                                 decode: true
                                             })];
                                     case 3:
-                                        _data = (_a.sent());
+                                        _data = (_b.sent());
                                         bytes = _data.byteLength;
                                         bundle = JSON.parse(new TextDecoder("utf-8", {
                                             fatal: true
@@ -281,11 +284,11 @@ var KYVE = /** @class */ (function () {
                                         return [3 /*break*/, 5];
                                     case 4:
                                         listenerLogger.error("❌ Error fetching bundle from Arweave.");
-                                        _a.label = 5;
+                                        _b.label = 5;
                                     case 5: return [3 /*break*/, 7];
                                     case 6:
                                         logger_1["default"].warn("⚠️  Stake not high enough to participate as validator. Skipping proposal ...");
-                                        _a.label = 7;
+                                        _b.label = 7;
                                     case 7: return [2 /*return*/];
                                 }
                             });
@@ -360,10 +363,11 @@ var KYVE = /** @class */ (function () {
         logger_1["default"].info("\uD83D\uDE80 Starting node ...\n\t" + formatInfoLogs("Name") + " = " + this.name + "\n\t" + formatInfoLogs("Address") + " = " + this.wallet.address + "\n\t" + formatInfoLogs("Pool") + " = " + this.pool.address + "\n\t" + formatInfoLogs("Desired Stake") + " = " + this.stake + " $KYVE\n\n\t" + formatInfoLogs("@kyve/core") + " = v" + package_json_1.version + "\n\t" + formatInfoLogs(this.runtime) + " = v" + this.version);
     };
     KYVE.prototype.setupListeners = function () {
+        var _a, _b, _c;
         return __awaiter(this, void 0, void 0, function () {
             var payoutLogger, pointsLogger, slashLogger;
             var _this = this;
-            return __generator(this, function (_a) {
+            return __generator(this, function (_d) {
                 // Listen to new contract changes.
                 this.pool.on("ConfigChanged", function () {
                     logger_1["default"].warn("⚠️  Config changed. Exiting ...");
@@ -380,13 +384,15 @@ var KYVE = /** @class */ (function () {
                     });
                 }); });
                 this.pool.on("Paused", function () {
-                    if (_this.wallet.address === _this._settings._uploader) {
+                    var _a;
+                    if (((_a = _this.node) === null || _a === void 0 ? void 0 : _a.address) === _this.settings.uploader) {
                         logger_1["default"].warn("⚠️  Pool is now paused. Exiting ...");
                         process.exit();
                     }
                 });
                 this.pool.on("UploaderChanged", function (previous) {
-                    if (_this.wallet.address === previous) {
+                    var _a;
+                    if (((_a = _this.node) === null || _a === void 0 ? void 0 : _a.address) === previous) {
                         logger_1["default"].warn("⚠️  Uploader changed. Exiting ...");
                         process.exit();
                     }
@@ -394,21 +400,21 @@ var KYVE = /** @class */ (function () {
                 payoutLogger = logger_1["default"].getChildLogger({
                     name: "Payout"
                 });
-                this.pool.on(this.pool.filters.Payout(this.wallet.address), function (_, __, _amount, _transaction) {
+                this.pool.on(this.pool.filters.Payout((_a = this.node) === null || _a === void 0 ? void 0 : _a.address), function (_, __, _amount, _transaction) {
                     var transaction = (0, arweave_2.fromBytes)(_transaction);
                     payoutLogger.info("\uD83D\uDCB8 Received a reward of " + (0, helpers_1.toHumanReadable)((0, helpers_1.toBN)(_amount)) + " $KYVE. Bundle = " + transaction);
                 });
                 pointsLogger = logger_1["default"].getChildLogger({
                     name: "Points"
                 });
-                this.pool.on(this.pool.filters.IncreasePoints(this.wallet.address), function (_, __, _points, _transaction) {
+                this.pool.on(this.pool.filters.IncreasePoints((_b = this.node) === null || _b === void 0 ? void 0 : _b.address), function (_, __, _points, _transaction) {
                     var transaction = (0, arweave_2.fromBytes)(_transaction);
-                    pointsLogger.warn("\u26A0\uFE0F  Received a new slashing point (" + _points.toString() + " / " + _this._settings._slashThreshold + "). Bundle = " + transaction);
+                    pointsLogger.warn("\u26A0\uFE0F  Received a new slashing point (" + _points.toString() + " / " + _this.settings.slashThreshold + "). Bundle = " + transaction);
                 });
                 slashLogger = logger_1["default"].getChildLogger({
                     name: "Slash"
                 });
-                this.pool.on(this.pool.filters.Slash(this.wallet.address), function (_, __, _amount, _transaction) {
+                this.pool.on(this.pool.filters.Slash((_c = this.node) === null || _c === void 0 ? void 0 : _c.address), function (_, __, _amount, _transaction) {
                     var transaction = (0, arweave_2.fromBytes)(_transaction);
                     slashLogger.warn("\uD83D\uDEAB Node has been slashed. Lost " + (0, helpers_1.toHumanReadable)((0, helpers_1.toBN)(_amount)) + " $KYVE. Bundle = " + transaction);
                     process.exit();
@@ -441,20 +447,20 @@ var KYVE = /** @class */ (function () {
                         return [3 /*break*/, 4];
                     case 4:
                         try {
-                            this._config = JSON.parse(_poolState.config);
+                            this.config = JSON.parse(_poolState.config);
                         }
                         catch (error) {
                             stateLogger.error("❌ Received an error while trying to parse the config:", error);
                             process.exit(1);
                         }
                         try {
-                            oldMetadata = this._metadata;
-                            this._metadata = JSON.parse(_poolState.metadata);
+                            oldMetadata = this.metadata;
+                            this.metadata = JSON.parse(_poolState.metadata);
                             if (oldMetadata &&
-                                this._metadata.versions &&
-                                oldMetadata.versions !== this._metadata.versions) {
+                                this.metadata.versions &&
+                                oldMetadata.versions !== this.metadata.versions) {
                                 logger_1["default"].warn("⚠️  Version requirements changed. Exiting ...");
-                                logger_1["default"].info("\u23F1  New version requirements are " + this._metadata.versions + ".");
+                                logger_1["default"].info("\u23F1  New version requirements are " + this.metadata.versions + ".");
                                 process.exit();
                             }
                         }
@@ -462,7 +468,7 @@ var KYVE = /** @class */ (function () {
                             stateLogger.error("❌ Received an error while trying to parse the metadata:", error);
                             process.exit(1);
                         }
-                        this._settings = _poolState;
+                        this.settings = _poolState;
                         stateLogger.debug("Successfully fetched pool state.");
                         return [2 /*return*/];
                 }
@@ -472,11 +478,11 @@ var KYVE = /** @class */ (function () {
     KYVE.prototype.checkVersionRequirements = function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                if ((0, semver_1.satisfies)(this.version, this._metadata.versions || this.version)) {
+                if ((0, semver_1.satisfies)(this.version, this.metadata.versions || this.version)) {
                     logger_1["default"].info("⏱  Pool version requirements met.");
                 }
                 else {
-                    logger_1["default"].error("\u274C Running an invalid version for the specified pool. Version requirements are " + this._metadata.versions + ".");
+                    logger_1["default"].error("\u274C Running an invalid version for the specified pool. Version requirements are " + this.metadata.versions + ".");
                     process.exit(1);
                 }
                 return [2 /*return*/];
@@ -486,7 +492,7 @@ var KYVE = /** @class */ (function () {
     KYVE.prototype.checkRuntimeRequirements = function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                if (this._metadata.runtime === this.runtime) {
+                if (this.metadata.runtime === this.runtime) {
                     logger_1["default"].info("\uD83D\uDCBB Running node on runtime " + this.runtime + ".");
                 }
                 else {
@@ -506,11 +512,11 @@ var KYVE = /** @class */ (function () {
                     case 0: return [4 /*yield*/, this.pool._nodeOwners(this.wallet.address)];
                     case 1:
                         nodeAddress = _e.sent();
+                        logger_1["default"].info("🌐 Joining KYVE Network ...");
                         if (!(ethers_1.constants.AddressZero === nodeAddress)) return [3 /*break*/, 9];
                         _e.label = 2;
                     case 2:
                         _e.trys.push([2, 8, , 9]);
-                        logger_1["default"].debug("Can't find node - creating new node contract ...");
                         _b = (_a = this.pool).createNode;
                         _c = [10];
                         _d = {};
@@ -522,6 +528,7 @@ var KYVE = /** @class */ (function () {
                                 _d)]))];
                     case 5:
                         tx = _e.sent();
+                        logger_1["default"].debug("Creating new contract. Transaction = " + tx.hash);
                         return [4 /*yield*/, tx.wait()];
                     case 6:
                         _e.sent();
@@ -574,98 +581,114 @@ var KYVE = /** @class */ (function () {
         });
     };
     KYVE.prototype.selfDelegate = function (amount) {
+        var _a, _b;
         return __awaiter(this, void 0, void 0, function () {
-            var token, tx, balance, _a, _b, _c, _d, _e, _f, _g, error_5;
-            var _h, _j;
-            return __generator(this, function (_k) {
-                switch (_k.label) {
+            var token, tx, balance, _c, _d, _e, _f, _g, _h, _j, _k, error_5;
+            var _l, _m;
+            return __generator(this, function (_o) {
+                switch (_o.label) {
                     case 0: return [4 /*yield*/, (0, helpers_1.Token)(this.pool)];
                     case 1:
-                        token = _k.sent();
-                        _a = helpers_1.toBN;
+                        token = _o.sent();
+                        _c = helpers_1.toBN;
                         return [4 /*yield*/, token.balanceOf(this.wallet.address)];
                     case 2:
-                        balance = _a.apply(void 0, [(_k.sent())]);
+                        balance = _c.apply(void 0, [(_o.sent())]);
                         if (balance.lt(amount)) {
                             logger_1["default"].error("❌ Supplied wallet does not have enough $KYVE to stake.");
                             process.exit(1);
                         }
-                        _k.label = 3;
+                        _o.label = 3;
                     case 3:
-                        _k.trys.push([3, 12, , 13]);
-                        _c = (_b = token).approve;
-                        _d = [this.pool.address, (0, helpers_1.toEthersBN)(amount)];
-                        _h = {};
+                        _o.trys.push([3, 14, , 15]);
+                        _e = (_d = token).approve;
+                        _f = [this.pool.address, (0, helpers_1.toEthersBN)(amount)];
+                        _l = {};
                         return [4 /*yield*/, token.estimateGas.approve(this.pool.address, (0, helpers_1.toEthersBN)(amount))];
                     case 4:
-                        _h.gasLimit = _k.sent();
+                        _l.gasLimit = _o.sent();
                         return [4 /*yield*/, (0, helpers_1.getGasPrice)(this.pool, this.gasMultiplier)];
-                    case 5: return [4 /*yield*/, _c.apply(_b, _d.concat([(_h.gasPrice = _k.sent(),
-                                _h)]))];
+                    case 5: return [4 /*yield*/, _e.apply(_d, _f.concat([(_l.gasPrice = _o.sent(),
+                                _l)]))];
                     case 6:
-                        tx = _k.sent();
+                        tx = _o.sent();
                         logger_1["default"].debug("Approving " + (0, helpers_1.toHumanReadable)(amount) + " $KYVE to be spent. Transaction = " + tx.hash);
                         return [4 /*yield*/, tx.wait()];
                     case 7:
-                        _k.sent();
+                        _o.sent();
                         logger_1["default"].info("👍 Successfully approved.");
-                        _f = (_e = this.node).delegate;
-                        _g = [(0, helpers_1.toEthersBN)(amount)];
-                        _j = {};
-                        return [4 /*yield*/, this.node.estimateGas.delegate((0, helpers_1.toEthersBN)(amount))];
+                        if (!((_a = this.node) === null || _a === void 0)) return [3 /*break*/, 8];
+                        _g = void 0;
+                        return [3 /*break*/, 11];
                     case 8:
-                        _j.gasLimit = _k.sent();
+                        _j = (_h = _a).delegate;
+                        _k = [(0, helpers_1.toEthersBN)(amount)];
+                        _m = {};
+                        return [4 /*yield*/, ((_b = this.node) === null || _b === void 0 ? void 0 : _b.estimateGas.delegate((0, helpers_1.toEthersBN)(amount)))];
+                    case 9:
+                        _m.gasLimit = _o.sent();
                         return [4 /*yield*/, (0, helpers_1.getGasPrice)(this.pool, this.gasMultiplier)];
-                    case 9: return [4 /*yield*/, _f.apply(_e, _g.concat([(_j.gasPrice = _k.sent(),
-                                _j)]))];
                     case 10:
-                        tx = _k.sent();
+                        _g = _j.apply(_h, _k.concat([(_m.gasPrice = _o.sent(),
+                                _m)]));
+                        _o.label = 11;
+                    case 11: return [4 /*yield*/, (_g)];
+                    case 12:
+                        tx = _o.sent();
                         logger_1["default"].debug("Staking " + (0, helpers_1.toHumanReadable)(amount) + " $KYVE. Transaction = " + tx.hash);
                         return [4 /*yield*/, tx.wait()];
-                    case 11:
-                        _k.sent();
+                    case 13:
+                        _o.sent();
                         logger_1["default"].info("📈 Successfully staked.");
-                        return [3 /*break*/, 13];
-                    case 12:
-                        error_5 = _k.sent();
+                        return [3 /*break*/, 15];
+                    case 14:
+                        error_5 = _o.sent();
                         logger_1["default"].error("❌ Received an error while trying to stake:", error_5);
                         process.exit(1);
-                        return [3 /*break*/, 13];
-                    case 13: return [2 /*return*/];
+                        return [3 /*break*/, 15];
+                    case 15: return [2 /*return*/];
                 }
             });
         });
     };
     KYVE.prototype.selfUndelegate = function () {
+        var _a, _b;
         return __awaiter(this, void 0, void 0, function () {
-            var tx, _a, _b, error_6;
-            var _c;
-            return __generator(this, function (_d) {
-                switch (_d.label) {
+            var tx, _c, _d, _e, error_6;
+            var _f;
+            return __generator(this, function (_g) {
+                switch (_g.label) {
                     case 0:
-                        _d.trys.push([0, 5, , 6]);
-                        _b = (_a = this.node).undelegate;
-                        _c = {};
-                        return [4 /*yield*/, this.node.estimateGas.delegate()];
+                        _g.trys.push([0, 7, , 8]);
+                        if (!((_a = this.node) === null || _a === void 0)) return [3 /*break*/, 1];
+                        _c = void 0;
+                        return [3 /*break*/, 4];
                     case 1:
-                        _c.gasLimit = _d.sent();
+                        _e = (_d = _a).undelegate;
+                        _f = {};
+                        return [4 /*yield*/, ((_b = this.node) === null || _b === void 0 ? void 0 : _b.estimateGas.undelegate())];
+                    case 2:
+                        _f.gasLimit = _g.sent();
                         return [4 /*yield*/, (0, helpers_1.getGasPrice)(this.pool, this.gasMultiplier)];
-                    case 2: return [4 /*yield*/, _b.apply(_a, [(_c.gasPrice = _d.sent(),
-                                _c)])];
                     case 3:
-                        tx = _d.sent();
+                        _c = _e.apply(_d, [(_f.gasPrice = _g.sent(),
+                                _f)]);
+                        _g.label = 4;
+                    case 4: return [4 /*yield*/, (_c)];
+                    case 5:
+                        tx = _g.sent();
                         logger_1["default"].debug("Unstaking. Transaction = " + tx.hash);
                         return [4 /*yield*/, tx.wait()];
-                    case 4:
-                        _d.sent();
+                    case 6:
+                        _g.sent();
                         logger_1["default"].info("📉 Successfully unstaked.");
-                        return [3 /*break*/, 6];
-                    case 5:
-                        error_6 = _d.sent();
+                        return [3 /*break*/, 8];
+                    case 7:
+                        error_6 = _g.sent();
                         logger_1["default"].error("❌ Received an error while trying to unstake:", error_6);
                         process.exit(1);
-                        return [3 /*break*/, 6];
-                    case 6: return [2 /*return*/];
+                        return [3 /*break*/, 8];
+                    case 8: return [2 /*return*/];
                 }
             });
         });

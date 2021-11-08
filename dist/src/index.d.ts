@@ -11,9 +11,9 @@ declare class KYVE {
     private name;
     private gasMultiplier;
     private buffer;
-    private _metadata;
-    private _settings;
-    private _config;
+    private metadata;
+    private settings;
+    private config;
     private client;
     constructor(poolAddress: string, runtime: string, version: string, stakeAmount: string, privateKey: string, keyfile?: JWKInterface, name?: string, endpoint?: string, gasMultiplier?: string);
     run<ConfigType>(uploadFunction: UploadFunction<ConfigType>, validateFunction: ValidateFunction<ConfigType>): Promise<void>;

@@ -41,7 +41,7 @@ import BigNumber from "bignumber.js";
 
 class KYVE {
   private pool: Contract;
-  private node: any;
+  private node: Contract | null;
   private runtime: string;
   private version: string;
   private stake: string;
@@ -51,9 +51,9 @@ class KYVE {
   private gasMultiplier: string;
 
   private buffer: Bundle = [];
-  private _metadata: any;
-  private _settings: any;
-  private _config: any;
+  private metadata: any;
+  private settings: any;
+  private config: any;
 
   private client = new Arweave({
     host: "arweave.net",
@@ -83,6 +83,7 @@ class KYVE {
     );
 
     this.pool = Pool(poolAddress, this.wallet);
+    this.node = null;
     this.runtime = runtime;
     this.version = version;
     this.stake = stakeAmount;
@@ -129,21 +130,21 @@ class KYVE {
     this.logNodeInfo();
 
     await this.fetchPoolState();
-    await this.setupListeners();
 
     await this.checkVersionRequirements();
     await this.checkRuntimeRequirements();
 
     await this.setupNodeContract();
+    await this.setupListeners();
 
-    if (this.wallet.address === this._settings._uploader) {
+    if (this.node?.address === this.settings.uploader) {
       if (this.keyfile) {
         if (await this.pool.paused()) {
           logger.warn("⚠️  Pool is paused. Exiting ...");
           process.exit();
         } else {
           logger.info("📚 Running as an uploader ...");
-          this.uploader<ConfigType>(uploadFunction, this._config);
+          this.uploader<ConfigType>(uploadFunction, this.config);
         }
       } else {
         logger.error("❌ You need to specify your Arweave keyfile.");
@@ -151,7 +152,7 @@ class KYVE {
       }
     } else {
       logger.info("🧐 Running as an validator ...");
-      this.validator<ConfigType>(validateFunction, this._config);
+      this.validator<ConfigType>(validateFunction, this.config);
     }
   }
 
@@ -171,11 +172,11 @@ class KYVE {
       // Push item to buffer.
       const i = this.buffer.push(item);
       uploaderLogger.debug(
-        `Received a new data item (${i} / ${this._metadata.bundleSize}).`
+        `Received a new data item (${i} / ${this.metadata.bundleSize}).`
       );
 
       // Check buffer length.
-      if (this.buffer.length >= this._metadata.bundleSize) {
+      if (this.buffer.length >= this.metadata.bundleSize) {
         uploaderLogger.info("📦 Creating bundle ...");
 
         // Clear the buffer.
@@ -193,7 +194,7 @@ class KYVE {
         transaction.addTag("Pool", this.pool.address);
         transaction.addTag("@kyve/core", version);
         transaction.addTag(this.runtime, this.version);
-        transaction.addTag("Bundle-Size", this._metadata.bundleSize);
+        transaction.addTag("Bundle-Size", this.metadata.bundleSize);
         transaction.addTag("Content-Type", "application/json");
 
         await this.client.transactions.sign(transaction, this.keyfile);
@@ -260,7 +261,7 @@ class KYVE {
             `⬇️  Received a new proposal. Bundle = ${transaction}`
           );
 
-          const isValidator = await this.pool.isValidator(this.node.address);
+          const isValidator = await this.pool.isValidator(this.node?.address);
 
           if (isValidator) {
             const res = await this.client.transactions.getStatus(transaction);
@@ -380,13 +381,13 @@ class KYVE {
       await this.fetchPoolState();
     });
     this.pool.on("Paused", () => {
-      if (this.wallet.address === this._settings._uploader) {
+      if (this.node?.address === this.settings.uploader) {
         logger.warn("⚠️  Pool is now paused. Exiting ...");
         process.exit();
       }
     });
     this.pool.on("UploaderChanged", (previous: string) => {
-      if (this.wallet.address === previous) {
+      if (this.node?.address === previous) {
         logger.warn("⚠️  Uploader changed. Exiting ...");
         process.exit();
       }
@@ -398,7 +399,7 @@ class KYVE {
     });
 
     this.pool.on(
-      this.pool.filters.Payout(this.wallet.address),
+      this.pool.filters.Payout(this.node?.address),
       (_, __, _amount: ethers.BigNumber, _transaction: string) => {
         const transaction = fromBytes(_transaction);
 
@@ -416,13 +417,13 @@ class KYVE {
     });
 
     this.pool.on(
-      this.pool.filters.IncreasePoints(this.wallet.address),
+      this.pool.filters.IncreasePoints(this.node?.address),
       (_, __, _points: ethers.BigNumber, _transaction: string) => {
         const transaction = fromBytes(_transaction);
 
         pointsLogger.warn(
           `⚠️  Received a new slashing point (${_points.toString()} / ${
-            this._settings._slashThreshold
+            this.settings.slashThreshold
           }). Bundle = ${transaction}`
         );
       }
@@ -434,7 +435,7 @@ class KYVE {
     });
 
     this.pool.on(
-      this.pool.filters.Slash(this.wallet.address),
+      this.pool.filters.Slash(this.node?.address),
       (_, __, _amount: ethers.BigNumber, _transaction: string) => {
         const transaction = fromBytes(_transaction);
 
@@ -468,7 +469,7 @@ class KYVE {
     }
 
     try {
-      this._config = JSON.parse(_poolState.config);
+      this.config = JSON.parse(_poolState.config);
     } catch (error) {
       stateLogger.error(
         "❌ Received an error while trying to parse the config:",
@@ -478,17 +479,17 @@ class KYVE {
     }
 
     try {
-      const oldMetadata = this._metadata;
-      this._metadata = JSON.parse(_poolState.metadata);
+      const oldMetadata = this.metadata;
+      this.metadata = JSON.parse(_poolState.metadata);
 
       if (
         oldMetadata &&
-        this._metadata.versions &&
-        oldMetadata.versions !== this._metadata.versions
+        this.metadata.versions &&
+        oldMetadata.versions !== this.metadata.versions
       ) {
         logger.warn("⚠️  Version requirements changed. Exiting ...");
         logger.info(
-          `⏱  New version requirements are ${this._metadata.versions}.`
+          `⏱  New version requirements are ${this.metadata.versions}.`
         );
         process.exit();
       }
@@ -500,24 +501,24 @@ class KYVE {
       process.exit(1);
     }
 
-    this._settings = _poolState;
+    this.settings = _poolState;
 
     stateLogger.debug("Successfully fetched pool state.");
   }
 
   private async checkVersionRequirements() {
-    if (satisfies(this.version, this._metadata.versions || this.version)) {
+    if (satisfies(this.version, this.metadata.versions || this.version)) {
       logger.info("⏱  Pool version requirements met.");
     } else {
       logger.error(
-        `❌ Running an invalid version for the specified pool. Version requirements are ${this._metadata.versions}.`
+        `❌ Running an invalid version for the specified pool. Version requirements are ${this.metadata.versions}.`
       );
       process.exit(1);
     }
   }
 
   private async checkRuntimeRequirements() {
-    if (this._metadata.runtime === this.runtime) {
+    if (this.metadata.runtime === this.runtime) {
       logger.info(`💻 Running node on runtime ${this.runtime}.`);
     } else {
       logger.error("❌ Specified pool does not match the integration runtime.");
@@ -531,14 +532,17 @@ class KYVE {
 
     let tx: ContractTransaction;
 
+    logger.info("🌐 Joining KYVE Network ...");
+
     if (constants.AddressZero === nodeAddress) {
       try {
-        logger.debug(`Can't find node - creating new node contract ...`);
-
         tx = await this.pool.createNode(10, {
           gasLimit: await this.pool.estimateGas.createNode(10),
           gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
         });
+
+        logger.debug(`Creating new contract. Transaction = ${tx.hash}`);
+
         await tx.wait();
 
         nodeAddress = await this.pool._nodeOwners(this.wallet.address);
@@ -608,8 +612,8 @@ class KYVE {
       await tx.wait();
       logger.info("👍 Successfully approved.");
 
-      tx = await this.node.delegate(toEthersBN(amount), {
-        gasLimit: await this.node.estimateGas.delegate(toEthersBN(amount)),
+      tx = await this.node?.delegate(toEthersBN(amount), {
+        gasLimit: await this.node?.estimateGas.delegate(toEthersBN(amount)),
         gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
       });
       logger.debug(
@@ -628,8 +632,8 @@ class KYVE {
     let tx: ContractTransaction;
 
     try {
-      tx = await this.node.undelegate({
-        gasLimit: await this.node.estimateGas.delegate(),
+      tx = await this.node?.undelegate({
+        gasLimit: await this.node?.estimateGas.undelegate(),
         gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
       });
       logger.debug(`Unstaking. Transaction = ${tx.hash}`);
