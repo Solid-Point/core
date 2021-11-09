@@ -1,4 +1,11 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -39,6 +46,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 exports.__esModule = true;
+exports.getTagByName = void 0;
 var arweave_1 = __importDefault(require("arweave"));
 var ethers_1 = require("ethers");
 var fs_1 = require("fs");
@@ -52,6 +60,8 @@ var helpers_1 = require("./utils/helpers");
 var node_json_1 = __importDefault(require("./abi/node.json"));
 var package_json_1 = require("../package.json");
 var bignumber_js_1 = __importDefault(require("bignumber.js"));
+var utils_1 = require("./utils");
+__createBinding(exports, utils_1, "getTagByName");
 var KYVE = /** @class */ (function () {
     function KYVE(poolAddress, runtime, version, stakeAmount, privateKey, keyfile, name, endpoint, gasMultiplier) {
         var _this = this;

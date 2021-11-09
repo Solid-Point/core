@@ -1,5 +1,6 @@
 import { JWKInterface } from "arweave/node/lib/wallet";
 import { UploadFunction, ValidateFunction } from "./faces";
+export { getTagByName } from "./utils";
 declare class KYVE {
     private pool;
     private node;
