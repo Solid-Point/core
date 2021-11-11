@@ -7,7 +7,7 @@ import {
   constants,
   Wallet,
 } from "ethers";
-import { appendFileSync, existsSync, mkdirSync } from "fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync } from "fs";
 import Prando from "prando";
 import { Observable } from "rxjs";
 import { satisfies } from "semver";
@@ -25,6 +25,7 @@ import {
   ValidateFunction,
   ValidateFunctionReturn,
 } from "./faces";
+import { CLI } from "./utils";
 import { fromBytes, toBytes } from "./utils/arweave";
 import logger from "./utils/logger";
 import {
@@ -39,7 +40,7 @@ import NodeABI from "./abi/node.json";
 import { version } from "../package.json";
 import BigNumber from "bignumber.js";
 
-export { getTagByName } from "./utils";
+export * from "./utils";
 
 class KYVE {
   private pool: Contract;
@@ -125,6 +126,29 @@ class KYVE {
     });
   }
 
+  static async generate(cli?: CLI): Promise<KYVE> {
+    if (!cli) {
+      cli = new CLI(process.env.KYVE_RUNTIME!, process.env.KYVE_VERSION!);
+    }
+    await cli.parseAsync();
+    const options = cli.opts();
+
+    const node = new KYVE(
+      options.pool,
+      cli.runtime,
+      cli.packageVersion,
+      options.stake,
+      options.privateKey,
+      // if there is a keyfile flag defined, we load it from disk.
+      options.keyfile && JSON.parse(readFileSync(options.keyfile, "utf-8")),
+      options.name,
+      options.endpoint,
+      options.gasMultiplier
+    );
+
+    return node;
+  }
+
   async run<ConfigType>(
     uploadFunction: UploadFunction<ConfigType>,
     validateFunction: ValidateFunction<ConfigType>
@@ -167,6 +191,9 @@ class KYVE {
     });
 
     const node = new Observable<UploadFunctionReturn>((subscriber) => {
+      // @ts-ignore
+      subscriber.upload = subscriber.next;
+      // @ts-ignore
       uploadFunction(subscriber, config, uploaderLogger);
     });
 
@@ -324,6 +351,9 @@ class KYVE {
     const listener = await this.listener();
 
     const node = new Observable<ValidateFunctionReturn>((subscriber) => {
+      // @ts-ignore
+      subscriber.vote = subscriber.next;
+      // @ts-ignore
       validateFunction(listener, subscriber, config, validatorLogger);
     });
 

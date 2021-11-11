@@ -1,4 +1,4 @@
-import { Observable, Subscriber } from "rxjs";
+import { Observable } from "rxjs";
 import { Logger } from "tslog";
 
 // Uploader types.
@@ -11,10 +11,12 @@ export interface UploadFunctionReturn {
   tags?: Tags;
 }
 
-export type UploadFunctionSubscriber = Subscriber<UploadFunctionReturn>;
+export interface UploadFunctionSubscriber {
+  upload(value?: UploadFunctionReturn): void;
+}
 
 export type UploadFunction<ConfigType> = (
-  subscriber: UploadFunctionSubscriber,
+  uploader: UploadFunctionSubscriber,
   config: ConfigType,
   logger: Logger
 ) => void;
@@ -37,11 +39,13 @@ export interface ValidateFunctionReturn {
   valid: boolean;
 }
 
-export type ValidateFunctionSubscriber = Subscriber<ValidateFunctionReturn>;
+export interface ValidateFunctionSubscriber {
+  vote(value?: ValidateFunctionReturn): void;
+}
 
 export type ValidateFunction<ConfigType> = (
   listener: ListenFunctionObservable,
-  subscriber: ValidateFunctionSubscriber,
+  validator: ValidateFunctionSubscriber,
   config: ConfigType,
   logger: Logger
 ) => void;

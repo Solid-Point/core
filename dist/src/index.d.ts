@@ -1,6 +1,7 @@
 import { JWKInterface } from "arweave/node/lib/wallet";
 import { UploadFunction, ValidateFunction } from "./faces";
-export { getTagByName } from "./utils";
+import { CLI } from "./utils";
+export * from "./utils";
 declare class KYVE {
     private pool;
     private node;
@@ -17,6 +18,7 @@ declare class KYVE {
     private config;
     private client;
     constructor(poolAddress: string, runtime: string, version: string, stakeAmount: string, privateKey: string, keyfile?: JWKInterface, name?: string, endpoint?: string, gasMultiplier?: string);
+    static generate(cli?: CLI): Promise<KYVE>;
     run<ConfigType>(uploadFunction: UploadFunction<ConfigType>, validateFunction: ValidateFunction<ConfigType>): Promise<void>;
     private uploader;
     private listener;
