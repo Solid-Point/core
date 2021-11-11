@@ -1,4 +1,14 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -17,6 +27,7 @@ const helpers_1 = require("./utils/helpers");
 const node_json_1 = __importDefault(require("./abi/node.json"));
 const package_json_1 = require("../package.json");
 const bignumber_js_1 = __importDefault(require("bignumber.js"));
+__exportStar(require("./utils"), exports);
 class KYVE {
     constructor(poolAddress, runtime, version, stakeAmount, privateKey, keyfile, name, endpoint, gasMultiplier = "1") {
         this.buffer = [];

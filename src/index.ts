@@ -40,6 +40,8 @@ import NodeABI from "./abi/node.json";
 import { version } from "../package.json";
 import BigNumber from "bignumber.js";
 
+export * from "./utils";
+
 class KYVE {
   private pool: Contract;
   private node: Contract | null;
