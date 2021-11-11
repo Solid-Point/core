@@ -11,7 +11,7 @@ export interface UploadFunctionReturn {
   tags?: Tags;
 }
 
-interface UploadFunctionSubscriber {
+export interface UploadFunctionSubscriber {
   upload(value?: UploadFunctionReturn): void;
 }
 
@@ -39,7 +39,7 @@ export interface ValidateFunctionReturn {
   valid: boolean;
 }
 
-interface ValidateFunctionSubscriber {
+export interface ValidateFunctionSubscriber {
   vote(value?: ValidateFunctionReturn): void;
 }
 

@@ -9,7 +9,7 @@ export interface UploadFunctionReturn {
     data: string;
     tags?: Tags;
 }
-interface UploadFunctionSubscriber {
+export interface UploadFunctionSubscriber {
     upload(value?: UploadFunctionReturn): void;
 }
 export declare type UploadFunction<ConfigType> = (uploader: UploadFunctionSubscriber, config: ConfigType, logger: Logger) => void;
@@ -23,8 +23,7 @@ export interface ValidateFunctionReturn {
     transaction: string;
     valid: boolean;
 }
-interface ValidateFunctionSubscriber {
+export interface ValidateFunctionSubscriber {
     vote(value?: ValidateFunctionReturn): void;
 }
 export declare type ValidateFunction<ConfigType> = (listener: ListenFunctionObservable, validator: ValidateFunctionSubscriber, config: ConfigType, logger: Logger) => void;
-export {};
