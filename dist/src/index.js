@@ -109,6 +109,9 @@ class KYVE {
             name: "Uploader",
         });
         const node = new rxjs_1.Observable((subscriber) => {
+            // @ts-ignore
+            subscriber.upload = subscriber.next;
+            // @ts-ignore
             uploadFunction(subscriber, config, uploaderLogger);
         });
         node.subscribe(async (item) => {
@@ -208,6 +211,9 @@ class KYVE {
         });
         const listener = await this.listener();
         const node = new rxjs_1.Observable((subscriber) => {
+            // @ts-ignore
+            subscriber.vote = subscriber.next;
+            // @ts-ignore
             validateFunction(listener, subscriber, config, validatorLogger);
         });
         node.subscribe((item) => this.vote(item));

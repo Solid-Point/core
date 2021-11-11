@@ -189,6 +189,9 @@ class KYVE {
     });
 
     const node = new Observable<UploadFunctionReturn>((subscriber) => {
+      // @ts-ignore
+      subscriber.upload = subscriber.next;
+      // @ts-ignore
       uploadFunction(subscriber, config, uploaderLogger);
     });
 
@@ -346,6 +349,9 @@ class KYVE {
     const listener = await this.listener();
 
     const node = new Observable<ValidateFunctionReturn>((subscriber) => {
+      // @ts-ignore
+      subscriber.vote = subscriber.next;
+      // @ts-ignore
       validateFunction(listener, subscriber, config, validatorLogger);
     });
 

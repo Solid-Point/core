@@ -1,4 +1,4 @@
-import { Observable, Subscriber } from "rxjs";
+import { Observable } from "rxjs";
 import { Logger } from "tslog";
 export declare type Tag = {
     name: string;
@@ -9,8 +9,10 @@ export interface UploadFunctionReturn {
     data: string;
     tags?: Tags;
 }
-export declare type UploadFunctionSubscriber = Subscriber<UploadFunctionReturn>;
-export declare type UploadFunction<ConfigType> = (subscriber: UploadFunctionSubscriber, config: ConfigType, logger: Logger) => void;
+interface UploadFunctionSubscriber {
+    upload(value?: UploadFunctionReturn): void;
+}
+export declare type UploadFunction<ConfigType> = (uploader: UploadFunctionSubscriber, config: ConfigType, logger: Logger) => void;
 export declare type Bundle = UploadFunctionReturn[];
 export interface ListenFunctionReturn {
     transaction: string;
@@ -21,5 +23,8 @@ export interface ValidateFunctionReturn {
     transaction: string;
     valid: boolean;
 }
-export declare type ValidateFunctionSubscriber = Subscriber<ValidateFunctionReturn>;
-export declare type ValidateFunction<ConfigType> = (listener: ListenFunctionObservable, subscriber: ValidateFunctionSubscriber, config: ConfigType, logger: Logger) => void;
+interface ValidateFunctionSubscriber {
+    vote(value?: ValidateFunctionReturn): void;
+}
+export declare type ValidateFunction<ConfigType> = (listener: ListenFunctionObservable, validator: ValidateFunctionSubscriber, config: ConfigType, logger: Logger) => void;
+export {};
