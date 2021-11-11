@@ -1,11 +1,4 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -46,7 +39,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 exports.__esModule = true;
-exports.getTagByName = void 0;
 var arweave_1 = __importDefault(require("arweave"));
 var ethers_1 = require("ethers");
 var fs_1 = require("fs");
@@ -54,14 +46,13 @@ var prando_1 = __importDefault(require("prando"));
 var rxjs_1 = require("rxjs");
 var semver_1 = require("semver");
 var unique_names_generator_1 = require("unique-names-generator");
+var utils_1 = require("./utils");
 var arweave_2 = require("./utils/arweave");
 var logger_1 = __importDefault(require("./utils/logger"));
 var helpers_1 = require("./utils/helpers");
 var node_json_1 = __importDefault(require("./abi/node.json"));
 var package_json_1 = require("../package.json");
 var bignumber_js_1 = __importDefault(require("bignumber.js"));
-var utils_1 = require("./utils");
-__createBinding(exports, utils_1, "getTagByName");
 var KYVE = /** @class */ (function () {
     function KYVE(poolAddress, runtime, version, stakeAmount, privateKey, keyfile, name, endpoint, gasMultiplier) {
         var _this = this;
@@ -111,6 +102,25 @@ var KYVE = /** @class */ (function () {
             fatal: logToTransport
         });
     }
+    KYVE.generate = function (cli) {
+        return __awaiter(this, void 0, void 0, function () {
+            var options, node;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!cli) {
+                            cli = new utils_1.CLI(process.env.KYVE_RUNTIME, process.env.KYVE_VERSION);
+                        }
+                        return [4 /*yield*/, cli.parseAsync()];
+                    case 1:
+                        _a.sent();
+                        options = cli.opts();
+                        node = new KYVE(options.pool, process.env.KYVE_RUNTIME, package_json_1.version, options.stake, options.privateKey, options.keyfile && JSON.parse((0, fs_1.readFileSync)(options.keyfile, "utf-8")), options.name, options.endpoint, options.gasMultiplier);
+                        return [2 /*return*/, node];
+                }
+            });
+        });
+    };
     KYVE.prototype.run = function (uploadFunction, validateFunction) {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
