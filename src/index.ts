@@ -133,10 +133,11 @@ class KYVE {
 
     const node = new KYVE(
       options.pool,
-      process.env.KYVE_RUNTIME!,
-      version,
+      cli.runtime,
+      cli.packageVersion,
       options.stake,
       options.privateKey,
+      // if there is a keyfile flag defined, we load it from disk.
       options.keyfile && JSON.parse(readFileSync(options.keyfile, "utf-8")),
       options.name,
       options.endpoint,

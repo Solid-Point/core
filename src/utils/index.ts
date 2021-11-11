@@ -14,7 +14,10 @@ export const getTagByName = (name: string, tags?: Tags): string | undefined => {
 };
 
 export class CLI extends Command {
-  constructor(runtime: string, version: string) {
+  constructor(
+    public runtime = process.env.KYVE_RUNTIME!,
+    public packageVersion = process.env.KYVE_VERSION!
+  ) {
     super(runtime);
 
     this.requiredOption(
@@ -50,6 +53,6 @@ export class CLI extends Command {
       "Send statistics. [optional, default = true]",
       true
     );
-    this.version(version, "-v, --version");
+    this.version(packageVersion, "-v, --version");
   }
 }

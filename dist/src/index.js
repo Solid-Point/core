@@ -70,7 +70,9 @@ class KYVE {
         }
         await cli.parseAsync();
         const options = cli.opts();
-        const node = new KYVE(options.pool, process.env.KYVE_RUNTIME, package_json_1.version, options.stake, options.privateKey, options.keyfile && JSON.parse((0, fs_1.readFileSync)(options.keyfile, "utf-8")), options.name, options.endpoint, options.gasMultiplier);
+        const node = new KYVE(options.pool, cli.runtime, cli.packageVersion, options.stake, options.privateKey, 
+        // if there is a keyfile flag defined, we load it from disk.
+        options.keyfile && JSON.parse((0, fs_1.readFileSync)(options.keyfile, "utf-8")), options.name, options.endpoint, options.gasMultiplier);
         return node;
     }
     async run(uploadFunction, validateFunction) {

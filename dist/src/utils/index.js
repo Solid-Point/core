@@ -13,8 +13,10 @@ const getTagByName = (name, tags) => {
 };
 exports.getTagByName = getTagByName;
 class CLI extends commander_1.Command {
-    constructor(runtime, version) {
+    constructor(runtime = process.env.KYVE_RUNTIME, packageVersion = process.env.KYVE_VERSION) {
         super(runtime);
+        this.runtime = runtime;
+        this.packageVersion = packageVersion;
         this.requiredOption("-p, --pool <string>", "The address of the pool you want to run on.");
         this.requiredOption("-s, --stake <number>", "The amount of tokens you want to stake.");
         this.requiredOption("-pk, --private-key <string>", "Your Ethereum private key that holds $KYVE.");
@@ -23,7 +25,7 @@ class CLI extends commander_1.Command {
         this.option("-e, --endpoint <string>", "A custom Moonbase Alpha endpoint. [optional]");
         this.option("-g, --gas-multiplier <string>", "The amount that you want to multiply the default gas price by. [optional]");
         this.option("-st, --send-statistics <boolean>", "Send statistics. [optional, default = true]", true);
-        this.version(version, "-v, --version");
+        this.version(packageVersion, "-v, --version");
     }
 }
 exports.CLI = CLI;
