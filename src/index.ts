@@ -279,12 +279,8 @@ class KYVE {
 
     return new Observable<ListenFunctionReturn>((subscriber) => {
       this.pool.on(
-        "ProposalStart",
-        async (
-          _transactionIndexed: string,
-          _transaction: string,
-          _bytes: number
-        ) => {
+        "ProposalStarted",
+        async (_transaction: string, _bytes: number) => {
           const transaction = fromBytes(_transaction);
           listenerLogger.info(
             `⬇️  Received a new proposal. Bundle = ${transaction}`
@@ -431,8 +427,8 @@ class KYVE {
     });
 
     this.pool.on(
-      this.pool.filters.Payout(this.node?.address),
-      (_, __, _amount: ethers.BigNumber, _transaction: string) => {
+      this.pool.filters.PayedOut(this.node?.address),
+      (_, _amount: ethers.BigNumber, _transaction: string) => {
         const transaction = fromBytes(_transaction);
 
         payoutLogger.info(
@@ -449,8 +445,8 @@ class KYVE {
     });
 
     this.pool.on(
-      this.pool.filters.IncreasePoints(this.node?.address),
-      (_, __, _points: ethers.BigNumber, _transaction: string) => {
+      this.pool.filters.PointsIncreased(this.node?.address),
+      (_, _points: ethers.BigNumber, _transaction: string) => {
         const transaction = fromBytes(_transaction);
 
         pointsLogger.warn(
@@ -467,8 +463,8 @@ class KYVE {
     });
 
     this.pool.on(
-      this.pool.filters.Slash(this.node?.address),
-      (_, __, _amount: ethers.BigNumber, _transaction: string) => {
+      this.pool.filters.Slashed(this.node?.address),
+      (_, _amount: ethers.BigNumber, _transaction: string) => {
         const transaction = fromBytes(_transaction);
 
         slashLogger.warn(
@@ -644,8 +640,8 @@ class KYVE {
       await tx.wait();
       logger.info("👍 Successfully approved.");
 
-      tx = await this.node?.delegate(toEthersBN(amount), {
-        gasLimit: await this.node?.estimateGas.delegate(toEthersBN(amount)),
+      tx = await this.pool.delegate(toEthersBN(amount), {
+        gasLimit: await this.pool.estimateGas.delegate(toEthersBN(amount)),
         gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
       });
       logger.debug(
@@ -664,8 +660,8 @@ class KYVE {
     let tx: ContractTransaction;
 
     try {
-      tx = await this.node?.undelegate({
-        gasLimit: await this.node?.estimateGas.undelegate(),
+      tx = await this.pool.undelegate({
+        gasLimit: await this.pool.estimateGas.undelegate(),
         gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
       });
       logger.debug(`Unstaking. Transaction = ${tx.hash}`);

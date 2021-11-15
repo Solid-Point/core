@@ -117,33 +117,7 @@
   },
   {
     "inputs": [],
-    "name": "_apy",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "_commission",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "_lastProposalTimestamp",
     "outputs": [
       {
         "internalType": "uint256",
@@ -162,7 +136,7 @@
         "type": "address"
       }
     ],
-    "name": "_lenders",
+    "name": "_delegators",
     "outputs": [
       {
         "internalType": "uint256",
@@ -211,7 +185,7 @@
   },
   {
     "inputs": [],
-    "name": "_proposal",
+    "name": "_proposals",
     "outputs": [
       {
         "internalType": "uint256",
@@ -237,11 +211,11 @@
   },
   {
     "inputs": [],
-    "name": "_totalLenders",
+    "name": "_totalDelegatorStake",
     "outputs": [
       {
         "internalType": "uint256",
-        "name": "_value",
+        "name": "",
         "type": "uint256"
       }
     ],
@@ -250,11 +224,11 @@
   },
   {
     "inputs": [],
-    "name": "_totalLendingStake",
+    "name": "_totalDelegators",
     "outputs": [
       {
         "internalType": "uint256",
-        "name": "",
+        "name": "_value",
         "type": "uint256"
       }
     ],
@@ -302,26 +276,7 @@
   },
   {
     "inputs": [],
-    "name": "calculateBalance",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "delegator",
-        "type": "address"
-      }
-    ],
-    "name": "calculateRewards",
+    "name": "calculateNodeBalance",
     "outputs": [
       {
         "internalType": "uint256",
@@ -342,6 +297,11 @@
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "delegator",
+        "type": "address"
+      },
+      {
         "internalType": "uint256",
         "name": "amount",
         "type": "uint256"
@@ -350,6 +310,63 @@
     "name": "delegate",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "delegator",
+        "type": "address"
+      }
+    ],
+    "name": "delegationAmount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "delegator",
+        "type": "address"
+      }
+    ],
+    "name": "delegationRewards",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "delegator",
+        "type": "address"
+      }
+    ],
+    "name": "isDelegator",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -393,21 +410,16 @@
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "_tx",
-        "type": "bytes32"
-      },
+    "inputs": [],
+    "name": "proposalsValidated",
+    "outputs": [
       {
         "internalType": "uint256",
-        "name": "_bytes",
+        "name": "",
         "type": "uint256"
       }
     ],
-    "name": "register",
-    "outputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -431,7 +443,18 @@
     "type": "function"
   },
   {
-    "inputs": [],
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "delegator",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "reward",
+        "type": "uint256"
+      }
+    ],
     "name": "undelegate",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -446,24 +469,6 @@
       }
     ],
     "name": "updateCommission",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "_tx",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "bool",
-        "name": "_vote",
-        "type": "bool"
-      }
-    ],
-    "name": "vote",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
