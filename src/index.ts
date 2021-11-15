@@ -646,8 +646,11 @@ class KYVE {
       await tx.wait();
       logger.info("👍 Successfully approved.");
 
-      tx = await this.pool.delegate(toEthersBN(amount), {
-        gasLimit: await this.pool.estimateGas.delegate(toEthersBN(amount)),
+      tx = await this.pool.delegate(this.node?.address, toEthersBN(amount), {
+        gasLimit: await this.pool.estimateGas.delegate(
+          this.node?.address,
+          toEthersBN(amount)
+        ),
         gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
       });
       logger.debug(
@@ -666,8 +669,8 @@ class KYVE {
     let tx: ContractTransaction;
 
     try {
-      tx = await this.pool.undelegate({
-        gasLimit: await this.pool.estimateGas.undelegate(),
+      tx = await this.pool.undelegate(this.node?.address, {
+        gasLimit: await this.pool.estimateGas.undelegate(this.node?.address),
         gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
       });
       logger.debug(`Unstaking. Transaction = ${tx.hash}`);

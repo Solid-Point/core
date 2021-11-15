@@ -406,6 +406,7 @@ class KYVE {
         }
     }
     async selfDelegate(amount) {
+        var _a, _b;
         const token = await (0, helpers_1.Token)(this.pool);
         let tx;
         const balance = (0, helpers_1.toBN)((await token.balanceOf(this.wallet.address)));
@@ -421,8 +422,8 @@ class KYVE {
             logger_1.default.debug(`Approving ${(0, helpers_1.toHumanReadable)(amount)} $KYVE to be spent. Transaction = ${tx.hash}`);
             await tx.wait();
             logger_1.default.info("👍 Successfully approved.");
-            tx = await this.pool.delegate((0, helpers_1.toEthersBN)(amount), {
-                gasLimit: await this.pool.estimateGas.delegate((0, helpers_1.toEthersBN)(amount)),
+            tx = await this.pool.delegate((_a = this.node) === null || _a === void 0 ? void 0 : _a.address, (0, helpers_1.toEthersBN)(amount), {
+                gasLimit: await this.pool.estimateGas.delegate((_b = this.node) === null || _b === void 0 ? void 0 : _b.address, (0, helpers_1.toEthersBN)(amount)),
                 gasPrice: await (0, helpers_1.getGasPrice)(this.pool, this.gasMultiplier),
             });
             logger_1.default.debug(`Staking ${(0, helpers_1.toHumanReadable)(amount)} $KYVE. Transaction = ${tx.hash}`);
@@ -435,10 +436,11 @@ class KYVE {
         }
     }
     async selfUndelegate() {
+        var _a, _b;
         let tx;
         try {
-            tx = await this.pool.undelegate({
-                gasLimit: await this.pool.estimateGas.undelegate(),
+            tx = await this.pool.undelegate((_a = this.node) === null || _a === void 0 ? void 0 : _a.address, {
+                gasLimit: await this.pool.estimateGas.undelegate((_b = this.node) === null || _b === void 0 ? void 0 : _b.address),
                 gasPrice: await (0, helpers_1.getGasPrice)(this.pool, this.gasMultiplier),
             });
             logger_1.default.debug(`Unstaking. Transaction = ${tx.hash}`);
