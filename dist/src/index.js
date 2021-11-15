@@ -14,6 +14,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const arweave_1 = __importDefault(require("arweave"));
+const bignumber_js_1 = __importDefault(require("bignumber.js"));
 const ethers_1 = require("ethers");
 const fs_1 = require("fs");
 const prando_1 = __importDefault(require("prando"));
@@ -26,7 +27,6 @@ const logger_1 = __importDefault(require("./utils/logger"));
 const helpers_1 = require("./utils/helpers");
 const node_json_1 = __importDefault(require("./abi/node.json"));
 const package_json_1 = require("../package.json");
-const bignumber_js_1 = __importDefault(require("bignumber.js"));
 __exportStar(require("./utils"), exports);
 class KYVE {
     constructor(poolAddress, runtime, version, stakeAmount, privateKey, keyfile, name, endpoint, gasMultiplier = "1") {
@@ -84,7 +84,10 @@ class KYVE {
         const node = new KYVE(options.pool, cli.runtime, cli.packageVersion, options.stake, options.privateKey, 
         // if there is a keyfile flag defined, we load it from disk.
         options.keyfile && JSON.parse((0, fs_1.readFileSync)(options.keyfile, "utf-8")), options.name, options.endpoint, options.gasMultiplier);
-        return node;
+        return {
+            node,
+            options,
+        };
     }
     async run(uploadFunction, validateFunction) {
         var _a;
@@ -176,7 +179,7 @@ class KYVE {
             name: "Listener",
         });
         return new rxjs_1.Observable((subscriber) => {
-            this.pool.on("ProposalStart", async (_transactionIndexed, _transaction, _bytes) => {
+            this.pool.on("ProposalStarted", async (_transaction, _bytes) => {
                 var _a;
                 const transaction = (0, arweave_2.fromBytes)(_transaction);
                 listenerLogger.info(`⬇️  Received a new proposal. Bundle = ${transaction}`);
@@ -279,7 +282,7 @@ class KYVE {
         const payoutLogger = logger_1.default.getChildLogger({
             name: "Payout",
         });
-        this.pool.on(this.pool.filters.Payout((_a = this.node) === null || _a === void 0 ? void 0 : _a.address), (_, __, _amount, _transaction) => {
+        this.pool.on(this.pool.filters.PayedOut((_a = this.node) === null || _a === void 0 ? void 0 : _a.address), (_, _amount, _transaction) => {
             const transaction = (0, arweave_2.fromBytes)(_transaction);
             payoutLogger.info(`💸 Received a reward of ${(0, helpers_1.toHumanReadable)((0, helpers_1.toBN)(_amount))} $KYVE. Bundle = ${transaction}`);
         });
@@ -287,7 +290,7 @@ class KYVE {
         const pointsLogger = logger_1.default.getChildLogger({
             name: "Points",
         });
-        this.pool.on(this.pool.filters.IncreasePoints((_b = this.node) === null || _b === void 0 ? void 0 : _b.address), (_, __, _points, _transaction) => {
+        this.pool.on(this.pool.filters.PointsIncreased((_b = this.node) === null || _b === void 0 ? void 0 : _b.address), (_, _points, _transaction) => {
             const transaction = (0, arweave_2.fromBytes)(_transaction);
             pointsLogger.warn(`⚠️  Received a new slashing point (${_points.toString()} / ${this.settings.slashThreshold}). Bundle = ${transaction}`);
         });
@@ -295,7 +298,7 @@ class KYVE {
         const slashLogger = logger_1.default.getChildLogger({
             name: "Slash",
         });
-        this.pool.on(this.pool.filters.Slash((_c = this.node) === null || _c === void 0 ? void 0 : _c.address), (_, __, _amount, _transaction) => {
+        this.pool.on(this.pool.filters.Slashed((_c = this.node) === null || _c === void 0 ? void 0 : _c.address), (_, _amount, _transaction) => {
             const transaction = (0, arweave_2.fromBytes)(_transaction);
             slashLogger.warn(`🚫 Node has been slashed. Lost ${(0, helpers_1.toHumanReadable)((0, helpers_1.toBN)(_amount))} $KYVE. Bundle = ${transaction}`);
             process.exit();
@@ -403,7 +406,6 @@ class KYVE {
         }
     }
     async selfDelegate(amount) {
-        var _a, _b;
         const token = await (0, helpers_1.Token)(this.pool);
         let tx;
         const balance = (0, helpers_1.toBN)((await token.balanceOf(this.wallet.address)));
@@ -419,10 +421,10 @@ class KYVE {
             logger_1.default.debug(`Approving ${(0, helpers_1.toHumanReadable)(amount)} $KYVE to be spent. Transaction = ${tx.hash}`);
             await tx.wait();
             logger_1.default.info("👍 Successfully approved.");
-            tx = await ((_a = this.node) === null || _a === void 0 ? void 0 : _a.delegate((0, helpers_1.toEthersBN)(amount), {
-                gasLimit: await ((_b = this.node) === null || _b === void 0 ? void 0 : _b.estimateGas.delegate((0, helpers_1.toEthersBN)(amount))),
+            tx = await this.pool.delegate((0, helpers_1.toEthersBN)(amount), {
+                gasLimit: await this.pool.estimateGas.delegate((0, helpers_1.toEthersBN)(amount)),
                 gasPrice: await (0, helpers_1.getGasPrice)(this.pool, this.gasMultiplier),
-            }));
+            });
             logger_1.default.debug(`Staking ${(0, helpers_1.toHumanReadable)(amount)} $KYVE. Transaction = ${tx.hash}`);
             await tx.wait();
             logger_1.default.info("📈 Successfully staked.");
@@ -433,13 +435,12 @@ class KYVE {
         }
     }
     async selfUndelegate() {
-        var _a, _b;
         let tx;
         try {
-            tx = await ((_a = this.node) === null || _a === void 0 ? void 0 : _a.undelegate({
-                gasLimit: await ((_b = this.node) === null || _b === void 0 ? void 0 : _b.estimateGas.undelegate()),
+            tx = await this.pool.undelegate({
+                gasLimit: await this.pool.estimateGas.undelegate(),
                 gasPrice: await (0, helpers_1.getGasPrice)(this.pool, this.gasMultiplier),
-            }));
+            });
             logger_1.default.debug(`Unstaking. Transaction = ${tx.hash}`);
             await tx.wait();
             logger_1.default.info("📉 Successfully unstaked.");
