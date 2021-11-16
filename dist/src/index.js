@@ -183,38 +183,46 @@ class KYVE {
                 var _a;
                 const transaction = (0, arweave_2.fromBytes)(_transaction);
                 listenerLogger.info(`⬇️  Received a new proposal. Bundle = ${transaction}`);
-                const isValidator = await this.pool.isValidator((_a = this.node) === null || _a === void 0 ? void 0 : _a.address);
-                if (isValidator) {
-                    const res = await this.client.transactions.getStatus(transaction);
-                    if (res.status === 200 || res.status === 202) {
-                        const _data = (await this.client.transactions.getData(transaction, {
-                            decode: true,
-                        }));
-                        const bytes = _data.byteLength;
-                        const bundle = JSON.parse(new TextDecoder("utf-8", {
-                            fatal: true,
-                        }).decode(_data));
-                        if (+_bytes === +bytes) {
-                            listenerLogger.debug("Bytes match, forwarding bundle to the validate function.");
-                            subscriber.next({
-                                transaction,
-                                bundle,
-                            });
+                const [isValidator, paused] = await Promise.all([
+                    this.pool.isValidator((_a = this.node) === null || _a === void 0 ? void 0 : _a.address),
+                    this.pool.paused(),
+                ]);
+                if (!paused) {
+                    if (isValidator) {
+                        const res = await this.client.transactions.getStatus(transaction);
+                        if (res.status === 200 || res.status === 202) {
+                            const _data = (await this.client.transactions.getData(transaction, {
+                                decode: true,
+                            }));
+                            const bytes = _data.byteLength;
+                            const bundle = JSON.parse(new TextDecoder("utf-8", {
+                                fatal: true,
+                            }).decode(_data));
+                            if (+_bytes === +bytes) {
+                                listenerLogger.debug("Bytes match, forwarding bundle to the validate function.");
+                                subscriber.next({
+                                    transaction,
+                                    bundle,
+                                });
+                            }
+                            else {
+                                listenerLogger.debug(`Bytes don't match (${_bytes} vs ${bytes}).`);
+                                this.vote({
+                                    transaction,
+                                    valid: false,
+                                });
+                            }
                         }
                         else {
-                            listenerLogger.debug(`Bytes don't match (${_bytes} vs ${bytes}).`);
-                            this.vote({
-                                transaction,
-                                valid: false,
-                            });
+                            listenerLogger.error("❌ Error fetching bundle from Arweave.");
                         }
                     }
                     else {
-                        listenerLogger.error("❌ Error fetching bundle from Arweave.");
+                        logger_1.default.warn("⚠️  Stake not high enough to participate as validator. Skipping proposal ...");
                     }
                 }
                 else {
-                    logger_1.default.warn("⚠️  Stake not high enough to participate as validator. Skipping proposal ...");
+                    logger_1.default.warn("⚠️  Pool is paused. Skipping proposal ...");
                 }
             });
         });
