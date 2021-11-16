@@ -35,7 +35,7 @@ class KYVE {
             host: "arweave.net",
             protocol: "https",
         });
-        this.wallet = new ethers_1.Wallet(privateKey, new ethers_1.ethers.providers.StaticJsonRpcProvider(endpoint || "https://moonbeam-alpha.api.onfinality.io/public", {
+        this.wallet = new ethers_1.Wallet(privateKey, new ethers_1.ethers.providers.WebSocketProvider(endpoint || "wss://moonbeam-alpha.api.onfinality.io/public-ws", {
             chainId: 1287,
             name: "moonbase-alphanet",
         }));
