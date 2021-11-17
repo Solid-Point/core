@@ -39,7 +39,7 @@ class KYVE {
             chainId: 1287,
             name: "moonbase-alphanet",
         });
-        provider._websocket.on("open", () => setInterval(() => provider._websocket.ping(), 1000));
+        provider._websocket.on("open", () => setInterval(() => provider._websocket.ping(), 5000));
         this.wallet = new ethers_1.Wallet(privateKey, provider);
         this.pool = (0, helpers_1.Pool)(poolAddress, this.wallet);
         this.node = null;
@@ -371,6 +371,7 @@ class KYVE {
         }
     }
     async setupNodeContract() {
+        var _a;
         let nodeAddress = await this.pool._nodeOwners(this.wallet.address);
         let parsedStake;
         let tx;
@@ -392,7 +393,7 @@ class KYVE {
         }
         this.node = new ethers_1.Contract(nodeAddress, node_json_1.default, this.wallet);
         logger_1.default.info(`✅ Connected to node ${nodeAddress}`);
-        let nodeStake = await this.pool._stakingAmounts(nodeAddress);
+        let nodeStake = await ((_a = this.node) === null || _a === void 0 ? void 0 : _a.delegationAmount(this.wallet.address));
         try {
             parsedStake = new bignumber_js_1.default(this.stake).multipliedBy(new bignumber_js_1.default(10).exponentiatedBy(18));
             if (parsedStake.isZero()) {

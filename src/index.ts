@@ -83,7 +83,7 @@ class KYVE {
       }
     );
     provider._websocket.on("open", () =>
-      setInterval(() => provider._websocket.ping(), 1000)
+      setInterval(() => provider._websocket.ping(), 5000)
     );
 
     this.wallet = new Wallet(privateKey, provider);
@@ -599,7 +599,7 @@ class KYVE {
 
     logger.info(`✅ Connected to node ${nodeAddress}`);
 
-    let nodeStake = await this.pool._stakingAmounts(nodeAddress);
+    let nodeStake = await this.node?.delegationAmount(this.wallet.address);
 
     try {
       parsedStake = new BigNumber(this.stake).multipliedBy(
