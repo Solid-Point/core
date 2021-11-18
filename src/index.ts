@@ -82,9 +82,13 @@ class KYVE {
         name: "moonbase-alphanet",
       }
     );
-    provider._websocket.on("open", () =>
-      setInterval(() => provider._websocket.ping(), 5000)
-    );
+    provider._websocket.on("open", () => {
+      console.log("connected");
+      setInterval(() => provider._websocket.ping(), 5000);
+    });
+    provider._websocket.on("message", (message: string) => {
+      console.log(message);
+    });
 
     this.wallet = new Wallet(privateKey, provider);
 

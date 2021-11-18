@@ -343,9 +343,9 @@
     "@ethersproject/strings" "^5.5.0"
 
 "@types/node@^16.10.3":
-  version "16.10.3"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-16.10.3.tgz#7a8f2838603ea314d1d22bb3171d899e15c57bd5"
-  integrity sha512-ho3Ruq+fFnBrZhUYI46n/bV2GjwzSkwuT4dTf0GkuNFmnb8nq4ny2z9JEVemFi6bdEJanHLlYfy9c6FN9B9McQ==
+  version "16.11.7"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-16.11.7.tgz#36820945061326978c42a01e56b61cd223dfdc42"
+  integrity sha512-QB5D2sqfSjCmTuWcBWyJ+/44bcjO7VbjSbOE0ucoVbAsSNQc4Lt6QkgkVXkTDwkL4z/beecZNDvVX15D4P8Jbw==
 
 "@types/semver@^7.3.9":
   version "7.3.9"
@@ -365,13 +365,13 @@ arconnect@^0.2.8:
     arweave "^1.10.13"
 
 arweave@^1.10.13, arweave@^1.10.17:
-  version "1.10.17"
-  resolved "https://registry.yarnpkg.com/arweave/-/arweave-1.10.17.tgz#85c214e54449e423c3758ef0957de3ac53c7668b"
-  integrity sha512-0QJu61oCDfEvyA/K1u3GyW5BHk5vyFvOnK9dHbKryIKK49RtsTvpEvCHE0Z7lEXEbmxDDLQEYy2exPFdpbVzIA==
+  version "1.10.18"
+  resolved "https://registry.yarnpkg.com/arweave/-/arweave-1.10.18.tgz#3042edd1afa52b7c3caeacf88271758232c7b866"
+  integrity sha512-i3pKBkLtU1Jl9RtJ9A6zgz8QqF5FZy7YA+qGQ9i2Zug171p29FTDZhN+KlRcVBg8sEgd1DKyecCCYJZ3K6Jdfg==
   dependencies:
     arconnect "^0.2.8"
     asn1.js "^5.4.1"
-    axios "^0.21.1"
+    axios "^0.22.0"
     base64-js "^1.3.1"
     bignumber.js "^9.0.1"
 
@@ -385,12 +385,12 @@ asn1.js@^5.4.1:
     minimalistic-assert "^1.0.0"
     safer-buffer "^2.1.0"
 
-axios@^0.21.1:
-  version "0.21.4"
-  resolved "https://registry.yarnpkg.com/axios/-/axios-0.21.4.tgz#c67b90dc0568e5c1cf2b0b858c43ba28e2eda575"
-  integrity sha512-ut5vewkiu8jjGBdqpM44XxjuCjq9LAKeHVmoVfHVzy8eHgxxq8SbAVQNovDA8mVi05kP0Ea/n/UzcSHcTJQfNg==
+axios@^0.22.0:
+  version "0.22.0"
+  resolved "https://registry.yarnpkg.com/axios/-/axios-0.22.0.tgz#bf702c41fb50fbca4539589d839a077117b79b25"
+  integrity sha512-Z0U3uhqQeg1oNcihswf4ZD57O3NrR1+ZXhxaROaWpDmsDTx7T2HNBV2ulBtie2hwJptu8UvgnJoK+BIqdzh/1w==
   dependencies:
-    follow-redirects "^1.14.0"
+    follow-redirects "^1.14.4"
 
 base64-js@^1.3.1:
   version "1.5.1"
@@ -481,10 +481,10 @@ ethers@^5.5.1:
     "@ethersproject/web" "5.5.0"
     "@ethersproject/wordlists" "5.5.0"
 
-follow-redirects@^1.14.0:
-  version "1.14.4"
-  resolved "https://registry.yarnpkg.com/follow-redirects/-/follow-redirects-1.14.4.tgz#838fdf48a8bbdd79e52ee51fb1c94e3ed98b9379"
-  integrity sha512-zwGkiSXC1MUJG/qmeIFH2HBJx9u0V46QGUe3YR1fXG8bXQxq7fLj0RjLZQ5nubr9qNJUZrH+xUcwXEoXNpfS+g==
+follow-redirects@^1.14.4:
+  version "1.14.5"
+  resolved "https://registry.yarnpkg.com/follow-redirects/-/follow-redirects-1.14.5.tgz#f09a5848981d3c772b5392309778523f8d85c381"
+  integrity sha512-wtphSXy7d4/OR+MvIFbCVBDzZ5520qV8XfPklSN5QtxuMUJZ+b0Wnst1e1lCDocfzuCkHqj8k0FpZqO+UIaKNA==
 
 hash.js@1.1.7, hash.js@^1.0.0, hash.js@^1.0.3:
   version "1.1.7"
@@ -590,9 +590,9 @@ tslog@^3.2.2:
     source-map-support "^0.5.19"
 
 typescript@^4.4.3:
-  version "4.4.3"
-  resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.4.3.tgz#bdc5407caa2b109efd4f82fe130656f977a29324"
-  integrity sha512-4xfscpisVgqqDfPaJo5vkd+Qd/ItkoagnHpufr+i2QCHBsNYp+G7UAoyFl8aPtx879u38wPV65rZ8qbGZijalA==
+  version "4.4.4"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.4.4.tgz#2cd01a1a1f160704d3101fd5a58ff0f9fcb8030c"
+  integrity sha512-DqGhF5IKoBl8WNf8C1gu8q0xZSInh9j1kJJMqT3a94w1JzVaBU4EXOSMrz9yDqMT0xt3selp83fuFMQ0uzv6qA==
 
 unique-names-generator@^4.6.0:
   version "4.6.0"
