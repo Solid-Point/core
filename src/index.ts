@@ -213,9 +213,7 @@ class KYVE {
       // Push item to buffer.
       const i = this.buffer.push(item);
       uploaderLogger.debug(
-        `Received a new block (${i} / ${this.metadata.bundleSize}). Height = ${
-          JSON.parse(item.data).number
-        }`
+        `Received a new block (${i} / ${this.metadata.bundleSize}).`
       );
 
       // Check buffer length.
