@@ -83,11 +83,11 @@ class KYVE {
       }
     );
     provider._websocket.on("open", () => {
-      console.log("connected");
       setInterval(() => provider._websocket.ping(), 5000);
     });
-    provider._websocket.on("message", (message: string) => {
-      console.log(message);
+    provider._websocket.on("close", () => {
+      logger.error("❌ Websocket closed.");
+      process.exit(1);
     });
 
     this.wallet = new Wallet(privateKey, provider);
@@ -213,7 +213,9 @@ class KYVE {
       // Push item to buffer.
       const i = this.buffer.push(item);
       uploaderLogger.debug(
-        `Received a new data item (${i} / ${this.metadata.bundleSize}).`
+        `Received a new block (${i} / ${this.metadata.bundleSize}). Height = ${
+          JSON.parse(item.data).number
+        }`
       );
 
       // Check buffer length.
@@ -307,37 +309,43 @@ class KYVE {
             if (isValidator) {
               const res = await this.client.transactions.getStatus(transaction);
               if (res.status === 200 || res.status === 202) {
-                const _data = (await this.client.transactions.getData(
-                  transaction,
-                  {
-                    decode: true,
+                try {
+                  const _data = (await this.client.transactions.getData(
+                    transaction,
+                    {
+                      decode: true,
+                    }
+                  )) as Uint8Array;
+                  const bytes = _data.byteLength;
+                  const bundle = JSON.parse(
+                    new TextDecoder("utf-8", {
+                      fatal: true,
+                    }).decode(_data)
+                  ) as Bundle;
+
+                  if (+_bytes === +bytes) {
+                    listenerLogger.debug(
+                      "Bytes match, forwarding bundle to the validate function."
+                    );
+
+                    subscriber.next({
+                      transaction,
+                      bundle,
+                    });
+                  } else {
+                    listenerLogger.debug(
+                      `Bytes don't match (${_bytes} vs ${bytes}).`
+                    );
+
+                    this.vote({
+                      transaction,
+                      valid: false,
+                    });
                   }
-                )) as Uint8Array;
-                const bytes = _data.byteLength;
-                const bundle = JSON.parse(
-                  new TextDecoder("utf-8", {
-                    fatal: true,
-                  }).decode(_data)
-                ) as Bundle;
-
-                if (+_bytes === +bytes) {
-                  listenerLogger.debug(
-                    "Bytes match, forwarding bundle to the validate function."
+                } catch (err) {
+                  listenerLogger.error(
+                    `❌ Error fetching bundle from Arweave: ${err}`
                   );
-
-                  subscriber.next({
-                    transaction,
-                    bundle,
-                  });
-                } else {
-                  listenerLogger.debug(
-                    `Bytes don't match (${_bytes} vs ${bytes}).`
-                  );
-
-                  this.vote({
-                    transaction,
-                    valid: false,
-                  });
                 }
               } else {
                 listenerLogger.error("❌ Error fetching bundle from Arweave.");

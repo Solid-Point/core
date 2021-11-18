@@ -39,7 +39,13 @@ class KYVE {
             chainId: 1287,
             name: "moonbase-alphanet",
         });
-        provider._websocket.on("open", () => setInterval(() => provider._websocket.ping(), 5000));
+        provider._websocket.on("open", () => {
+            setInterval(() => provider._websocket.ping(), 5000);
+        });
+        provider._websocket.on("close", () => {
+            logger_1.default.error("❌ Websocket closed.");
+            process.exit(1);
+        });
         this.wallet = new ethers_1.Wallet(privateKey, provider);
         this.pool = (0, helpers_1.Pool)(poolAddress, this.wallet);
         this.node = null;
@@ -133,7 +139,7 @@ class KYVE {
         node.subscribe(async (item) => {
             // Push item to buffer.
             const i = this.buffer.push(item);
-            uploaderLogger.debug(`Received a new data item (${i} / ${this.metadata.bundleSize}).`);
+            uploaderLogger.debug(`Received a new block (${i} / ${this.metadata.bundleSize}). Height = ${JSON.parse(item.data).number}`);
             // Check buffer length.
             if (this.buffer.length >= this.metadata.bundleSize) {
                 uploaderLogger.info("📦 Creating bundle ...");
@@ -193,26 +199,31 @@ class KYVE {
                     if (isValidator) {
                         const res = await this.client.transactions.getStatus(transaction);
                         if (res.status === 200 || res.status === 202) {
-                            const _data = (await this.client.transactions.getData(transaction, {
-                                decode: true,
-                            }));
-                            const bytes = _data.byteLength;
-                            const bundle = JSON.parse(new TextDecoder("utf-8", {
-                                fatal: true,
-                            }).decode(_data));
-                            if (+_bytes === +bytes) {
-                                listenerLogger.debug("Bytes match, forwarding bundle to the validate function.");
-                                subscriber.next({
-                                    transaction,
-                                    bundle,
-                                });
+                            try {
+                                const _data = (await this.client.transactions.getData(transaction, {
+                                    decode: true,
+                                }));
+                                const bytes = _data.byteLength;
+                                const bundle = JSON.parse(new TextDecoder("utf-8", {
+                                    fatal: true,
+                                }).decode(_data));
+                                if (+_bytes === +bytes) {
+                                    listenerLogger.debug("Bytes match, forwarding bundle to the validate function.");
+                                    subscriber.next({
+                                        transaction,
+                                        bundle,
+                                    });
+                                }
+                                else {
+                                    listenerLogger.debug(`Bytes don't match (${_bytes} vs ${bytes}).`);
+                                    this.vote({
+                                        transaction,
+                                        valid: false,
+                                    });
+                                }
                             }
-                            else {
-                                listenerLogger.debug(`Bytes don't match (${_bytes} vs ${bytes}).`);
-                                this.vote({
-                                    transaction,
-                                    valid: false,
-                                });
+                            catch (err) {
+                                listenerLogger.error(`❌ Error fetching bundle from Arweave: ${err}`);
                             }
                         }
                         else {
