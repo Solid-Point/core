@@ -27,7 +27,6 @@ const logger_1 = __importDefault(require("./utils/logger"));
 const helpers_1 = require("./utils/helpers");
 const node_json_1 = __importDefault(require("./abi/node.json"));
 const package_json_1 = require("../package.json");
-const ora_1 = __importDefault(require("ora"));
 __exportStar(require("./utils"), exports);
 class KYVE {
     constructor(poolAddress, runtime, version, stakeAmount, privateKey, keyfile, name, endpoint, gasMultiplier = "1") {
@@ -137,17 +136,12 @@ class KYVE {
             // @ts-ignore
             uploadFunction(subscriber, config, uploaderLogger);
         });
-        const spinner = (0, ora_1.default)();
         node.subscribe(async (item) => {
-            if (!this.buffer.length) {
-                spinner.start(`Received a new data item (0 / ${this.metadata.bundleSize}).`);
-            }
             // Push item to buffer.
             const i = this.buffer.push(item);
-            spinner.text = `Received a new data item (${i} / ${this.metadata.bundleSize}).`;
+            logger_1.default.debug(`Received a new data item (${i} / ${this.metadata.bundleSize}).`);
             // Check buffer length.
             if (this.buffer.length >= this.metadata.bundleSize) {
-                spinner.stop();
                 uploaderLogger.info("📦 Creating bundle ...");
                 // Clear the buffer.
                 const tempBuffer = this.buffer;
