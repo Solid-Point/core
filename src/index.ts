@@ -1,7 +1,15 @@
 import Arweave from "arweave";
 import { JWKInterface } from "arweave/node/lib/wallet";
-import { Contract, ContractTransaction, ethers, Wallet } from "ethers";
-import { appendFileSync, existsSync, mkdirSync } from "fs";
+import BigNumber from "bignumber.js";
+import { OptionValues } from "commander";
+import {
+  Contract,
+  ContractTransaction,
+  ethers,
+  constants,
+  Wallet,
+} from "ethers";
+import { appendFileSync, existsSync, mkdirSync, readFileSync } from "fs";
 import Prando from "prando";
 import { Observable } from "rxjs";
 import { satisfies } from "semver";
@@ -19,19 +27,25 @@ import {
   ValidateFunction,
   ValidateFunctionReturn,
 } from "./faces";
+import { CLI } from "./utils";
 import { fromBytes, toBytes } from "./utils/arweave";
 import logger from "./utils/logger";
-import Pool, {
+import {
   getGasPrice,
-  stake,
   toBN,
+  toEthersBN,
   toHumanReadable,
-  unstakeAll,
-} from "./utils/pool";
+  Pool,
+  Token,
+} from "./utils/helpers";
+import NodeABI from "./abi/node.json";
 import { version } from "../package.json";
+
+export * from "./utils";
 
 class KYVE {
   private pool: Contract;
+  private node: Contract | null;
   private runtime: string;
   private version: string;
   private stake: string;
@@ -41,8 +55,9 @@ class KYVE {
   private gasMultiplier: string;
 
   private buffer: Bundle = [];
-  private _metadata: any;
-  private _settings: any;
+  private metadata: any;
+  private settings: any;
+  private config: any;
 
   private client = new Arweave({
     host: "arweave.net",
@@ -60,18 +75,25 @@ class KYVE {
     endpoint?: string,
     gasMultiplier: string = "1"
   ) {
-    this.wallet = new Wallet(
-      privateKey,
-      new ethers.providers.StaticJsonRpcProvider(
-        endpoint || "https://moonbeam-alpha.api.onfinality.io/public",
-        {
-          chainId: 1287,
-          name: "moonbase-alphanet",
-        }
-      )
+    const provider = new ethers.providers.WebSocketProvider(
+      endpoint || "wss://moonbeam-alpha.api.onfinality.io/public-ws",
+      {
+        chainId: 1287,
+        name: "moonbase-alphanet",
+      }
     );
+    provider._websocket.on("open", () => {
+      setInterval(() => provider._websocket.ping(), 5000);
+    });
+    provider._websocket.on("close", () => {
+      logger.error("❌ Websocket closed.");
+      process.exit(1);
+    });
+
+    this.wallet = new Wallet(privateKey, provider);
 
     this.pool = Pool(poolAddress, this.wallet);
+    this.node = null;
     this.runtime = runtime;
     this.version = version;
     this.stake = stakeAmount;
@@ -111,55 +133,56 @@ class KYVE {
     });
   }
 
+  static async generate(
+    cli?: CLI
+  ): Promise<{ node: KYVE; options: OptionValues }> {
+    if (!cli) {
+      cli = new CLI(process.env.KYVE_RUNTIME!, process.env.KYVE_VERSION!);
+    }
+    await cli.parseAsync();
+    const options = cli.opts();
+
+    const node = new KYVE(
+      options.pool,
+      cli.runtime,
+      cli.packageVersion,
+      options.stake,
+      options.privateKey,
+      // if there is a keyfile flag defined, we load it from disk.
+      options.keyfile && JSON.parse(readFileSync(options.keyfile, "utf-8")),
+      options.name,
+      options.endpoint,
+      options.gasMultiplier
+    );
+
+    return {
+      node,
+      options,
+    };
+  }
+
   async run<ConfigType>(
     uploadFunction: UploadFunction<ConfigType>,
     validateFunction: ValidateFunction<ConfigType>
   ) {
-    const format = (input: string) => {
-      const length = Math.max(13, this.runtime.length);
-      return input.padEnd(length, " ");
-    };
-    logger.info(
-      `🚀 Starting node ...\n\t${format("Name")} = ${this.name}\n\t${format(
-        "Address"
-      )} = ${this.wallet.address}\n\t${format("Pool")} = ${
-        this.pool.address
-      }\n\t${format("Desired Stake")} = ${this.stake} $KYVE\n\n\t${format(
-        "@kyve/core"
-      )} = v${version}\n\t${format(this.runtime)} = v${this.version}`
-    );
+    this.logNodeInfo();
 
-    await this.sync();
-    const config = await this.fetchConfig();
+    await this.fetchPoolState();
 
-    if (satisfies(this.version, this._metadata.versions || this.version)) {
-      logger.info("⏱  Pool version requirements met.");
-    } else {
-      logger.error(
-        `❌ Running an invalid version for the specified pool. Version requirements are ${this._metadata.versions}.`
-      );
-      await unstakeAll(this.pool, this.gasMultiplier);
-      process.exit(1);
-    }
+    await this.checkVersionRequirements();
+    await this.checkRuntimeRequirements();
 
-    if (this._metadata.runtime === this.runtime) {
-      logger.info(`💻 Running node on runtime ${this.runtime}.`);
-    } else {
-      logger.error("❌ Specified pool does not match the integration runtime.");
-      process.exit(1);
-    }
+    await this.setupNodeContract();
+    await this.setupListeners();
 
-    await stake(this.stake, this.pool, this._settings, this.gasMultiplier);
-    const _uploader = this._settings._uploader;
-
-    if (this.wallet.address === _uploader) {
+    if (this.node?.address === this.settings.uploader) {
       if (this.keyfile) {
         if (await this.pool.paused()) {
           logger.warn("⚠️  Pool is paused. Exiting ...");
           process.exit();
         } else {
           logger.info("📚 Running as an uploader ...");
-          this.uploader<ConfigType>(uploadFunction, config);
+          this.uploader<ConfigType>(uploadFunction, this.config);
         }
       } else {
         logger.error("❌ You need to specify your Arweave keyfile.");
@@ -167,7 +190,7 @@ class KYVE {
       }
     } else {
       logger.info("🧐 Running as an validator ...");
-      this.validator<ConfigType>(validateFunction, config);
+      this.validator<ConfigType>(validateFunction, this.config);
     }
   }
 
@@ -180,18 +203,22 @@ class KYVE {
     });
 
     const node = new Observable<UploadFunctionReturn>((subscriber) => {
+      // @ts-ignore
+      subscriber.upload = subscriber.next;
+      // @ts-ignore
       uploadFunction(subscriber, config, uploaderLogger);
     });
 
     node.subscribe(async (item) => {
       // Push item to buffer.
       const i = this.buffer.push(item);
-      uploaderLogger.debug(
-        `Received a new data item (${i} / ${this._metadata.bundleSize}).`
+
+      logger.debug(
+        `Received a new data item (${i} / ${this.metadata.bundleSize}).`
       );
 
       // Check buffer length.
-      if (this.buffer.length >= this._metadata.bundleSize) {
+      if (this.buffer.length >= this.metadata.bundleSize) {
         uploaderLogger.info("📦 Creating bundle ...");
 
         // Clear the buffer.
@@ -209,7 +236,7 @@ class KYVE {
         transaction.addTag("Pool", this.pool.address);
         transaction.addTag("@kyve/core", version);
         transaction.addTag(this.runtime, this.version);
-        transaction.addTag("Bundle-Size", this._metadata.bundleSize);
+        transaction.addTag("Bundle-Size", this.metadata.bundleSize);
         transaction.addTag("Content-Type", "application/json");
 
         await this.client.transactions.sign(transaction, this.keyfile);
@@ -265,50 +292,70 @@ class KYVE {
 
     return new Observable<ListenFunctionReturn>((subscriber) => {
       this.pool.on(
-        "ProposalStart",
-        async (
-          _transactionIndexed: string,
-          _transaction: string,
-          _bytes: number
-        ) => {
+        "ProposalStarted",
+        async (_transaction: string, _bytes: number) => {
           const transaction = fromBytes(_transaction);
           listenerLogger.info(
             `⬇️  Received a new proposal. Bundle = ${transaction}`
           );
 
-          const res = await this.client.transactions.getStatus(transaction);
-          if (res.status === 200 || res.status === 202) {
-            const _data = (await this.client.transactions.getData(transaction, {
-              decode: true,
-            })) as Uint8Array;
-            const bytes = _data.byteLength;
-            const bundle = JSON.parse(
-              new TextDecoder("utf-8", {
-                fatal: true,
-              }).decode(_data)
-            ) as Bundle;
+          const [isValidator, paused] = await Promise.all([
+            this.pool.isValidator(this.node?.address),
+            this.pool.paused(),
+          ]);
 
-            if (+_bytes === +bytes) {
-              listenerLogger.debug(
-                "Bytes match, forwarding bundle to the validate function."
-              );
+          if (!paused) {
+            if (isValidator) {
+              const res = await this.client.transactions.getStatus(transaction);
+              if (res.status === 200 || res.status === 202) {
+                try {
+                  const _data = (await this.client.transactions.getData(
+                    transaction,
+                    {
+                      decode: true,
+                    }
+                  )) as Uint8Array;
+                  const bytes = _data.byteLength;
+                  const bundle = JSON.parse(
+                    new TextDecoder("utf-8", {
+                      fatal: true,
+                    }).decode(_data)
+                  ) as Bundle;
 
-              subscriber.next({
-                transaction,
-                bundle,
-              });
+                  if (+_bytes === +bytes) {
+                    listenerLogger.debug(
+                      "Bytes match, forwarding bundle to the validate function."
+                    );
+
+                    subscriber.next({
+                      transaction,
+                      bundle,
+                    });
+                  } else {
+                    listenerLogger.debug(
+                      `Bytes don't match (${_bytes} vs ${bytes}).`
+                    );
+
+                    this.vote({
+                      transaction,
+                      valid: false,
+                    });
+                  }
+                } catch (err) {
+                  listenerLogger.error(
+                    `❌ Error fetching bundle from Arweave: ${err}`
+                  );
+                }
+              } else {
+                listenerLogger.error("❌ Error fetching bundle from Arweave.");
+              }
             } else {
-              listenerLogger.debug(
-                `Bytes don't match (${_bytes} vs ${bytes}).`
+              logger.warn(
+                "⚠️  Stake not high enough to participate as validator. Skipping proposal ..."
               );
-
-              this.vote({
-                transaction,
-                valid: false,
-              });
             }
           } else {
-            listenerLogger.error("❌ Error fetching bundle from Arweave.");
+            logger.warn("⚠️  Pool is paused. Skipping proposal ...");
           }
         }
       );
@@ -326,6 +373,9 @@ class KYVE {
     const listener = await this.listener();
 
     const node = new Observable<ValidateFunctionReturn>((subscriber) => {
+      // @ts-ignore
+      subscriber.vote = subscriber.next;
+      // @ts-ignore
       validateFunction(listener, subscriber, config, validatorLogger);
     });
 
@@ -356,43 +406,42 @@ class KYVE {
     }
   }
 
-  private async sync() {
-    await this.fetchMetadata();
-    await this.fetchSettings();
+  private logNodeInfo() {
+    const formatInfoLogs = (input: string) => {
+      const length = Math.max(13, this.runtime.length);
+      return input.padEnd(length, " ");
+    };
 
+    logger.info(
+      `🚀 Starting node ...\n\t${formatInfoLogs("Name")} = ${
+        this.name
+      }\n\t${formatInfoLogs("Address")} = ${
+        this.wallet.address
+      }\n\t${formatInfoLogs("Pool")} = ${this.pool.address}\n\t${formatInfoLogs(
+        "Desired Stake"
+      )} = ${this.stake} $KYVE\n\n\t${formatInfoLogs(
+        "@kyve/core"
+      )} = v${version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}`
+    );
+  }
+
+  private async setupListeners() {
     // Listen to new contract changes.
     this.pool.on("ConfigChanged", () => {
       logger.warn("⚠️  Config changed. Exiting ...");
       process.exit();
     });
     this.pool.on("MetadataChanged", async () => {
-      await this.fetchMetadata();
+      await this.fetchPoolState();
     });
-    this.pool.on(
-      "MinimumStakeChanged",
-      async (_, minimum: ethers.BigNumber) => {
-        const stake = (await this.pool._stakingAmounts(
-          this.wallet.address
-        )) as ethers.BigNumber;
-
-        if (stake.lt(minimum)) {
-          logger.error(
-            `❌ Minimum stake is ${toHumanReadable(
-              toBN(minimum)
-            )} $KYVE. You will not be able to register / vote.`
-          );
-          process.exit();
-        }
-      }
-    );
     this.pool.on("Paused", () => {
-      if (this.wallet.address === this._settings._uploader) {
+      if (this.node?.address === this.settings.uploader) {
         logger.warn("⚠️  Pool is now paused. Exiting ...");
         process.exit();
       }
     });
     this.pool.on("UploaderChanged", (previous: string) => {
-      if (this.wallet.address === previous) {
+      if (this.node?.address === previous) {
         logger.warn("⚠️  Uploader changed. Exiting ...");
         process.exit();
       }
@@ -404,8 +453,8 @@ class KYVE {
     });
 
     this.pool.on(
-      this.pool.filters.Payout(this.wallet.address),
-      (_, __, _amount: ethers.BigNumber, _transaction: string) => {
+      this.pool.filters.PayedOut(this.node?.address),
+      (_, _amount: ethers.BigNumber, _transaction: string) => {
         const transaction = fromBytes(_transaction);
 
         payoutLogger.info(
@@ -422,13 +471,13 @@ class KYVE {
     });
 
     this.pool.on(
-      this.pool.filters.IncreasePoints(this.wallet.address),
-      (_, __, _points: ethers.BigNumber, _transaction: string) => {
+      this.pool.filters.PointsIncreased(this.node?.address),
+      (_, _points: ethers.BigNumber, _transaction: string) => {
         const transaction = fromBytes(_transaction);
 
         pointsLogger.warn(
           `⚠️  Received a new slashing point (${_points.toString()} / ${
-            this._settings._slashThreshold
+            this.settings.slashThreshold
           }). Bundle = ${transaction}`
         );
       }
@@ -440,8 +489,8 @@ class KYVE {
     });
 
     this.pool.on(
-      this.pool.filters.Slash(this.wallet.address),
-      (_, __, _amount: ethers.BigNumber, _transaction: string) => {
+      this.pool.filters.Slashed(this.node?.address),
+      (_, _amount: ethers.BigNumber, _transaction: string) => {
         const transaction = fromBytes(_transaction);
 
         slashLogger.warn(
@@ -454,74 +503,204 @@ class KYVE {
     );
   }
 
-  private async fetchConfig(): Promise<any> {
-    const configLogger = logger.getChildLogger({
-      name: "Config",
+  private async fetchPoolState() {
+    const stateLogger = logger.getChildLogger({
+      name: "PoolState",
     });
-    configLogger.debug("Attempting to fetch the config.");
 
-    const _config = (await this.pool._config()) as string;
+    stateLogger.debug("Attempting to fetch pool state.");
+
+    let _poolState;
 
     try {
-      const config = JSON.parse(_config);
-
-      configLogger.debug("Successfully fetched the config.");
-      return config;
+      _poolState = await this.pool.poolState();
     } catch (error) {
-      configLogger.error(
-        "❌ Received an error while trying to fetch the config:",
+      stateLogger.error(
+        "❌ Received an error while trying to fetch the pool state:",
         error
       );
       process.exit(1);
     }
-  }
-
-  private async fetchMetadata() {
-    const metadataLogger = logger.getChildLogger({
-      name: "Metadata",
-    });
-    metadataLogger.debug("Attempting to fetch the metadata.");
-
-    const _metadata = (await this.pool._metadata()) as string;
 
     try {
-      const oldMetadata = this._metadata;
-      this._metadata = JSON.parse(_metadata);
+      this.config = JSON.parse(_poolState.config);
+    } catch (error) {
+      stateLogger.error(
+        "❌ Received an error while trying to parse the config:",
+        error
+      );
+      process.exit(1);
+    }
+
+    try {
+      const oldMetadata = this.metadata;
+      this.metadata = JSON.parse(_poolState.metadata);
 
       if (
         oldMetadata &&
-        this._metadata.versions &&
-        oldMetadata.versions !== this._metadata.versions
+        this.metadata.versions &&
+        oldMetadata.versions !== this.metadata.versions
       ) {
-        logger.warn(
-          "⚠️  Version requirements changed. Unstaking and exiting ..."
-        );
+        logger.warn("⚠️  Version requirements changed. Exiting ...");
         logger.info(
-          `⏱  New version requirements are ${this._metadata.versions}.`
+          `⏱  New version requirements are ${this.metadata.versions}.`
         );
-        await unstakeAll(this.pool, this.gasMultiplier);
         process.exit();
       }
-
-      metadataLogger.debug("Successfully fetched the metadata.");
     } catch (error) {
-      metadataLogger.error(
-        "❌ Received an error while trying to fetch the metadata:",
+      stateLogger.error(
+        "❌ Received an error while trying to parse the metadata:",
         error
+      );
+      process.exit(1);
+    }
+
+    this.settings = _poolState;
+
+    stateLogger.debug("Successfully fetched pool state.");
+  }
+
+  private async checkVersionRequirements() {
+    if (satisfies(this.version, this.metadata.versions || this.version)) {
+      logger.info("⏱  Pool version requirements met.");
+    } else {
+      logger.error(
+        `❌ Running an invalid version for the specified pool. Version requirements are ${this.metadata.versions}.`
       );
       process.exit(1);
     }
   }
 
-  private async fetchSettings() {
-    const settingsLogger = logger.getChildLogger({
-      name: "Settings",
-    });
-    settingsLogger.debug("Attempting to fetch the settings.");
+  private async checkRuntimeRequirements() {
+    if (this.metadata.runtime === this.runtime) {
+      logger.info(`💻 Running node on runtime ${this.runtime}.`);
+    } else {
+      logger.error("❌ Specified pool does not match the integration runtime.");
+      process.exit(1);
+    }
+  }
 
-    this._settings = await this.pool._settings();
+  private async setupNodeContract() {
+    let nodeAddress = await this.pool._nodeOwners(this.wallet.address);
+    let parsedStake;
 
-    settingsLogger.debug("Successfully fetched the settings.");
+    let tx: ContractTransaction;
+
+    logger.info("🌐 Joining KYVE Network ...");
+
+    if (constants.AddressZero === nodeAddress) {
+      try {
+        tx = await this.pool.createNode(10, {
+          gasLimit: await this.pool.estimateGas.createNode(10),
+          gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
+        });
+
+        logger.debug(`Creating new contract. Transaction = ${tx.hash}`);
+
+        await tx.wait();
+
+        nodeAddress = await this.pool._nodeOwners(this.wallet.address);
+      } catch (error) {
+        logger.error("❌ Could not create node contract:", error);
+        process.exit(1);
+      }
+    }
+
+    this.node = new Contract(nodeAddress, NodeABI, this.wallet);
+
+    logger.info(`✅ Connected to node ${nodeAddress}`);
+
+    let nodeStake = await this.node?.delegationAmount(this.wallet.address);
+
+    try {
+      parsedStake = new BigNumber(this.stake).multipliedBy(
+        new BigNumber(10).exponentiatedBy(18)
+      );
+
+      if (parsedStake.isZero()) {
+        logger.error("❌ Desired stake can't be zero.");
+        process.exit(1);
+      }
+    } catch (error) {
+      logger.error("❌ Provided invalid staking amount:", error);
+      process.exit(1);
+    }
+
+    if (nodeStake.isZero()) {
+      await this.selfDelegate(parsedStake);
+    } else if (!toEthersBN(parsedStake).eq(nodeStake)) {
+      await this.selfUndelegate();
+      await this.selfDelegate(parsedStake);
+    } else {
+      logger.info("👌 Already staked with the correct amount.");
+    }
+  }
+
+  private async selfDelegate(amount: BigNumber) {
+    const token = await Token(this.pool);
+    let tx: ContractTransaction;
+
+    const balance = toBN(
+      (await token.balanceOf(this.wallet.address)) as ethers.BigNumber
+    );
+
+    if (balance.lt(amount)) {
+      logger.error("❌ Supplied wallet does not have enough $KYVE to stake.");
+      process.exit(1);
+    }
+
+    try {
+      tx = await token.approve(this.pool.address, toEthersBN(amount), {
+        gasLimit: await token.estimateGas.approve(
+          this.pool.address,
+          toEthersBN(amount)
+        ),
+        gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
+      });
+      logger.debug(
+        `Approving ${toHumanReadable(
+          amount
+        )} $KYVE to be spent. Transaction = ${tx.hash}`
+      );
+
+      await tx.wait();
+      logger.info("👍 Successfully approved.");
+
+      tx = await this.pool.delegate(this.node?.address, toEthersBN(amount), {
+        gasLimit: await this.pool.estimateGas.delegate(
+          this.node?.address,
+          toEthersBN(amount)
+        ),
+        gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
+      });
+      logger.debug(
+        `Staking ${toHumanReadable(amount)} $KYVE. Transaction = ${tx.hash}`
+      );
+
+      await tx.wait();
+      logger.info("📈 Successfully staked.");
+    } catch (error) {
+      logger.error("❌ Received an error while trying to stake:", error);
+      process.exit(1);
+    }
+  }
+
+  private async selfUndelegate() {
+    let tx: ContractTransaction;
+
+    try {
+      tx = await this.pool.undelegate(this.node?.address, {
+        gasLimit: await this.pool.estimateGas.undelegate(this.node?.address),
+        gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
+      });
+      logger.debug(`Unstaking. Transaction = ${tx.hash}`);
+
+      await tx.wait();
+      logger.info("📉 Successfully unstaked.");
+    } catch (error) {
+      logger.error("❌ Received an error while trying to unstake:", error);
+      process.exit(1);
+    }
   }
 }
 

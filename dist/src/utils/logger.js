@@ -1,8 +1,8 @@
 "use strict";
-exports.__esModule = true;
-var tslog_1 = require("tslog");
-var logger = new tslog_1.Logger({
+Object.defineProperty(exports, "__esModule", { value: true });
+const tslog_1 = require("tslog");
+const logger = new tslog_1.Logger({
     displayFilePath: "hidden",
-    displayFunctionName: false
+    displayFunctionName: false,
 });
-exports["default"] = logger;
+exports.default = logger;

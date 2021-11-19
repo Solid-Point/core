@@ -7,11 +7,6 @@
                 "type": "address"
             },
             {
-                "internalType": "address",
-                "name": "uploader",
-                "type": "address"
-            },
-            {
                 "internalType": "string",
                 "name": "metadata",
                 "type": "string"
@@ -23,12 +18,12 @@
             },
             {
                 "internalType": "uint256",
-                "name": "minimumStake",
+                "name": "maxValidators",
                 "type": "uint256"
             },
             {
                 "internalType": "uint256",
-                "name": "maxVotes",
+                "name": "maxFunders",
                 "type": "uint256"
             },
             {
@@ -61,13 +56,51 @@
             {
                 "indexed": true,
                 "internalType": "address",
-                "name": "nodeIndexed",
+                "name": "admin",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "adminAdded",
+                "type": "address"
+            }
+        ],
+        "name": "AdminAdded",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "admin",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "adminRemoved",
+                "type": "address"
+            }
+        ],
+        "name": "AdminRemoved",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "node",
                 "type": "address"
             },
             {
                 "indexed": false,
                 "internalType": "address",
-                "name": "node",
+                "name": "recipient",
                 "type": "address"
             },
             {
@@ -103,12 +136,6 @@
         "anonymous": false,
         "inputs": [
             {
-                "indexed": true,
-                "internalType": "address",
-                "name": "funderIndexed",
-                "type": "address"
-            },
-            {
                 "indexed": false,
                 "internalType": "address",
                 "name": "funder",
@@ -127,12 +154,6 @@
     {
         "anonymous": false,
         "inputs": [
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "funderIndexed",
-                "type": "address"
-            },
             {
                 "indexed": false,
                 "internalType": "address",
@@ -191,31 +212,19 @@
         "anonymous": false,
         "inputs": [
             {
-                "indexed": true,
-                "internalType": "address",
-                "name": "nodeIndexed",
-                "type": "address"
-            },
-            {
-                "indexed": false,
-                "internalType": "address",
-                "name": "node",
-                "type": "address"
-            },
-            {
                 "indexed": false,
                 "internalType": "uint256",
-                "name": "points",
+                "name": "previous",
                 "type": "uint256"
             },
             {
                 "indexed": false,
-                "internalType": "bytes32",
-                "name": "tx",
-                "type": "bytes32"
+                "internalType": "uint256",
+                "name": "current",
+                "type": "uint256"
             }
         ],
-        "name": "IncreasePoints",
+        "name": "KyvePerByteChanged",
         "type": "event"
     },
     {
@@ -234,7 +243,7 @@
                 "type": "uint256"
             }
         ],
-        "name": "KyvePerByteChanged",
+        "name": "MaxFundersChanged",
         "type": "event"
     },
     {
@@ -300,6 +309,25 @@
             {
                 "indexed": false,
                 "internalType": "address",
+                "name": "node",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "creator",
+                "type": "address"
+            }
+        ],
+        "name": "NodeCreated",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "address",
                 "name": "account",
                 "type": "address"
             }
@@ -313,12 +341,6 @@
             {
                 "indexed": true,
                 "internalType": "address",
-                "name": "nodeIndexed",
-                "type": "address"
-            },
-            {
-                "indexed": false,
-                "internalType": "address",
                 "name": "node",
                 "type": "address"
             },
@@ -335,7 +357,7 @@
                 "type": "bytes32"
             }
         ],
-        "name": "Payout",
+        "name": "PayedOut",
         "type": "event"
     },
     {
@@ -343,104 +365,86 @@
         "inputs": [
             {
                 "indexed": true,
-                "internalType": "bytes32",
-                "name": "_txIndexed",
-                "type": "bytes32"
+                "internalType": "address",
+                "name": "node",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "points",
+                "type": "uint256"
             },
             {
                 "indexed": false,
                 "internalType": "bytes32",
-                "name": "_tx",
+                "name": "tx",
+                "type": "bytes32"
+            }
+        ],
+        "name": "PointsIncreased",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "bytes32",
+                "name": "tx",
                 "type": "bytes32"
             },
             {
                 "indexed": false,
                 "internalType": "string",
-                "name": "_status",
+                "name": "status",
                 "type": "string"
             },
             {
                 "indexed": false,
                 "internalType": "uint256",
-                "name": "_votesValid",
+                "name": "votesValid",
                 "type": "uint256"
             },
             {
                 "indexed": false,
                 "internalType": "uint256",
-                "name": "_votesInvalid",
+                "name": "votesInvalid",
                 "type": "uint256"
             },
             {
                 "indexed": false,
                 "internalType": "uint256",
-                "name": "_totalPayout",
+                "name": "totalPayout",
                 "type": "uint256"
             },
             {
                 "indexed": false,
                 "internalType": "uint256",
-                "name": "_bytes",
+                "name": "byteSize",
                 "type": "uint256"
             }
         ],
-        "name": "ProposalEnd",
+        "name": "ProposalEnded",
         "type": "event"
     },
     {
         "anonymous": false,
         "inputs": [
-            {
-                "indexed": true,
-                "internalType": "bytes32",
-                "name": "_txIndexed",
-                "type": "bytes32"
-            },
-            {
-                "indexed": false,
-                "internalType": "bytes32",
-                "name": "_tx",
-                "type": "bytes32"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "_bytes",
-                "type": "uint256"
-            }
-        ],
-        "name": "ProposalStart",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "nodeIndexed",
-                "type": "address"
-            },
-            {
-                "indexed": false,
-                "internalType": "address",
-                "name": "node",
-                "type": "address"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-            },
             {
                 "indexed": false,
                 "internalType": "bytes32",
                 "name": "tx",
                 "type": "bytes32"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "byteSize",
+                "type": "uint256"
             }
         ],
-        "name": "Slash",
+        "name": "ProposalStarted",
         "type": "event"
     },
     {
@@ -468,13 +472,38 @@
             {
                 "indexed": true,
                 "internalType": "address",
-                "name": "nodeIndexed",
+                "name": "node",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "bytes32",
+                "name": "tx",
+                "type": "bytes32"
+            }
+        ],
+        "name": "Slashed",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "node",
                 "type": "address"
             },
             {
                 "indexed": false,
                 "internalType": "address",
-                "name": "node",
+                "name": "delegator",
                 "type": "address"
             },
             {
@@ -506,13 +535,13 @@
             {
                 "indexed": true,
                 "internalType": "address",
-                "name": "nodeIndexed",
+                "name": "node",
                 "type": "address"
             },
             {
                 "indexed": false,
                 "internalType": "address",
-                "name": "node",
+                "name": "delegator",
                 "type": "address"
             },
             {
@@ -589,6 +618,19 @@
         "type": "event"
     },
     {
+        "inputs": [],
+        "name": "_averageProposalTime",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
         "inputs": [
             {
                 "internalType": "address",
@@ -641,12 +683,109 @@
     },
     {
         "inputs": [],
+        "name": "_idleCost",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "_kyvePerByte",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "_lowestFunder",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "_lowestValidator",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "_maxFunders",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "_maxValidators",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
         "name": "_metadata",
         "outputs": [
             {
                 "internalType": "string",
                 "name": "",
                 "type": "string"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "_nodeOwners",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
             }
         ],
         "stateMutability": "view",
@@ -669,6 +808,16 @@
             {
                 "internalType": "uint256",
                 "name": "_start",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_validLength",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_invalidLength",
                 "type": "uint256"
             }
         ],
@@ -696,6 +845,19 @@
     },
     {
         "inputs": [],
+        "name": "_proposals",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "_value",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
         "name": "_registry",
         "outputs": [
             {
@@ -709,41 +871,11 @@
     },
     {
         "inputs": [],
-        "name": "_settings",
+        "name": "_slashThreshold",
         "outputs": [
             {
                 "internalType": "uint256",
-                "name": "_minimumStake",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "_maxVotes",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "_uploadLimit",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "_slashThreshold",
-                "type": "uint256"
-            },
-            {
-                "internalType": "address",
-                "name": "_uploader",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256",
-                "name": "_kyvePerByte",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "_idleCost",
+                "name": "",
                 "type": "uint256"
             }
         ],
@@ -796,6 +928,32 @@
         "type": "function"
     },
     {
+        "inputs": [],
+        "name": "_uploadLimit",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "_uploader",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
         "inputs": [
             {
                 "internalType": "address",
@@ -824,12 +982,30 @@
     {
         "inputs": [
             {
+                "internalType": "address",
+                "name": "recipient",
+                "type": "address"
+            },
+            {
                 "internalType": "uint256",
                 "name": "amount",
                 "type": "uint256"
             }
         ],
         "name": "claim",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "commission",
+                "type": "uint256"
+            }
+        ],
+        "name": "createNode",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -850,6 +1026,43 @@
     {
         "inputs": [
             {
+                "internalType": "address",
+                "name": "nodeAddress",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "delegate",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "delegator",
+                "type": "address"
+            }
+        ],
+        "name": "delegatorNodes",
+        "outputs": [
+            {
+                "internalType": "address[]",
+                "name": "",
+                "type": "address[]"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
                 "internalType": "uint256",
                 "name": "amount",
                 "type": "uint256"
@@ -863,19 +1076,6 @@
     {
         "inputs": [],
         "name": "funders",
-        "outputs": [
-            {
-                "internalType": "address[]",
-                "name": "",
-                "type": "address[]"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "invalidVotes",
         "outputs": [
             {
                 "internalType": "address[]",
@@ -906,6 +1106,95 @@
         "type": "function"
     },
     {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "node",
+                "type": "address"
+            }
+        ],
+        "name": "nodeState",
+        "outputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "uint256",
+                        "name": "apy",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "totalStaked",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "commission",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "totalDelegators",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "totalSlashes",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "totalPoints",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "proposalsValidated",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "nodeAddress",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "poolAddress",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "isUploader",
+                        "type": "bool"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "isValidator",
+                        "type": "bool"
+                    }
+                ],
+                "internalType": "struct Pool.NodeState",
+                "name": "",
+                "type": "tuple"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "nodes",
+        "outputs": [
+            {
+                "internalType": "address[]",
+                "name": "",
+                "type": "address[]"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
         "inputs": [],
         "name": "pause",
         "outputs": [],
@@ -920,6 +1209,111 @@
                 "internalType": "bool",
                 "name": "",
                 "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "poolState",
+        "outputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "uint256",
+                        "name": "maxValidators",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "maxFunders",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "uploadLimit",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "slashThreshold",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "kyvePerByte",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "idleCost",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "totalFunded",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "minFunds",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "totalStaked",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "minStake",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "uploader",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "poolAddress",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address[]",
+                        "name": "funders",
+                        "type": "address[]"
+                    },
+                    {
+                        "internalType": "address[]",
+                        "name": "validators",
+                        "type": "address[]"
+                    },
+                    {
+                        "internalType": "address[]",
+                        "name": "nodes",
+                        "type": "address[]"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "paused",
+                        "type": "bool"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "metadata",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "config",
+                        "type": "string"
+                    }
+                ],
+                "internalType": "struct Pool.PoolState",
+                "name": "",
+                "type": "tuple"
             }
         ],
         "stateMutability": "view",
@@ -957,32 +1351,6 @@
         "type": "function"
     },
     {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-            }
-        ],
-        "name": "stake",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "stakers",
-        "outputs": [
-            {
-                "internalType": "address[]",
-                "name": "",
-                "type": "address[]"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
         "inputs": [],
         "name": "token",
         "outputs": [
@@ -1009,21 +1377,21 @@
         "type": "function"
     },
     {
-        "inputs": [],
-        "name": "unpause",
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "nodeAddress",
+                "type": "address"
+            }
+        ],
+        "name": "undelegate",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
     },
     {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-            }
-        ],
-        "name": "unstake",
+        "inputs": [],
+        "name": "unpause",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -1071,11 +1439,24 @@
         "inputs": [
             {
                 "internalType": "uint256",
-                "name": "maxVotes",
+                "name": "maxFunders",
                 "type": "uint256"
             }
         ],
-        "name": "updateMaxVotes",
+        "name": "updateMaxFunders",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "maxValidators",
+                "type": "uint256"
+            }
+        ],
+        "name": "updateMaxValidators",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -1089,19 +1470,6 @@
             }
         ],
         "name": "updateMetadata",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "minimumStake",
-                "type": "uint256"
-            }
-        ],
-        "name": "updateMinimumStake",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -1147,7 +1515,7 @@
     },
     {
         "inputs": [],
-        "name": "validVotes",
+        "name": "validators",
         "outputs": [
             {
                 "internalType": "address[]",

@@ -6,83 +6,49 @@ var __createBinding = (this && this.__createBinding) || (Object.create ? (functi
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
 }));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __generator = (this && this.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
-    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
-    function verb(n) { return function (v) { return step([n, v]); }; }
-    function step(op) {
-        if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
-            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [op[0] & 2, t.value];
-            switch (op[0]) {
-                case 0: case 1: t = op; break;
-                case 4: _.label++; return { value: op[1], done: false };
-                case 5: _.label++; y = op[1]; op = [0]; continue;
-                case 7: op = _.ops.pop(); _.trys.pop(); continue;
-                default:
-                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
-                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
-                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
-                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
-                    if (t[2]) _.ops.pop();
-                    _.trys.pop(); continue;
-            }
-            op = body.call(thisArg, _);
-        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
-        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
-    }
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-exports.__esModule = true;
-var arweave_1 = __importDefault(require("arweave"));
-var ethers_1 = require("ethers");
-var fs_1 = require("fs");
-var prando_1 = __importDefault(require("prando"));
-var rxjs_1 = require("rxjs");
-var semver_1 = require("semver");
-var unique_names_generator_1 = require("unique-names-generator");
-var arweave_2 = require("./utils/arweave");
-var logger_1 = __importDefault(require("./utils/logger"));
-var pool_1 = __importStar(require("./utils/pool"));
-var package_json_1 = require("../package.json");
-var KYVE = /** @class */ (function () {
-    function KYVE(poolAddress, runtime, version, stakeAmount, privateKey, keyfile, name, endpoint, gasMultiplier) {
-        var _this = this;
-        if (gasMultiplier === void 0) { gasMultiplier = "1"; }
+Object.defineProperty(exports, "__esModule", { value: true });
+const arweave_1 = __importDefault(require("arweave"));
+const bignumber_js_1 = __importDefault(require("bignumber.js"));
+const ethers_1 = require("ethers");
+const fs_1 = require("fs");
+const prando_1 = __importDefault(require("prando"));
+const rxjs_1 = require("rxjs");
+const semver_1 = require("semver");
+const unique_names_generator_1 = require("unique-names-generator");
+const utils_1 = require("./utils");
+const arweave_2 = require("./utils/arweave");
+const logger_1 = __importDefault(require("./utils/logger"));
+const helpers_1 = require("./utils/helpers");
+const node_json_1 = __importDefault(require("./abi/node.json"));
+const package_json_1 = require("../package.json");
+__exportStar(require("./utils"), exports);
+class KYVE {
+    constructor(poolAddress, runtime, version, stakeAmount, privateKey, keyfile, name, endpoint, gasMultiplier = "1") {
         this.buffer = [];
-        this.client = new arweave_1["default"]({
+        this.client = new arweave_1.default({
             host: "arweave.net",
-            protocol: "https"
+            protocol: "https",
         });
-        this.wallet = new ethers_1.Wallet(privateKey, new ethers_1.ethers.providers.StaticJsonRpcProvider(endpoint || "https://moonbeam-alpha.api.onfinality.io/public", {
+        const provider = new ethers_1.ethers.providers.WebSocketProvider(endpoint || "wss://moonbeam-alpha.api.onfinality.io/public-ws", {
             chainId: 1287,
-            name: "moonbase-alphanet"
-        }));
-        this.pool = (0, pool_1["default"])(poolAddress, this.wallet);
+            name: "moonbase-alphanet",
+        });
+        provider._websocket.on("open", () => {
+            setInterval(() => provider._websocket.ping(), 5000);
+        });
+        provider._websocket.on("close", () => {
+            logger_1.default.error("❌ Websocket closed.");
+            process.exit(1);
+        });
+        this.wallet = new ethers_1.Wallet(privateKey, provider);
+        this.pool = (0, helpers_1.Pool)(poolAddress, this.wallet);
+        this.node = null;
         this.runtime = runtime;
         this.version = version;
         this.stake = stakeAmount;
@@ -92,462 +58,421 @@ var KYVE = /** @class */ (function () {
             this.name = name;
         }
         else {
-            var r = new prando_1["default"](this.wallet.address + this.pool.address);
+            const r = new prando_1.default(this.wallet.address + this.pool.address);
             this.name = (0, unique_names_generator_1.uniqueNamesGenerator)({
                 dictionaries: [unique_names_generator_1.adjectives, unique_names_generator_1.starWars],
                 separator: "-",
                 length: 2,
                 style: "lowerCase",
-                seed: r.nextInt(0, unique_names_generator_1.adjectives.length * unique_names_generator_1.starWars.length)
+                seed: r.nextInt(0, unique_names_generator_1.adjectives.length * unique_names_generator_1.starWars.length),
             }).replace(" ", "-");
         }
         if (!(0, fs_1.existsSync)("./logs")) {
             (0, fs_1.mkdirSync)("./logs");
         }
-        var logToTransport = function (log) {
-            (0, fs_1.appendFileSync)("./logs/" + _this.name + ".txt", JSON.stringify(log) + "\n");
+        const logToTransport = (log) => {
+            (0, fs_1.appendFileSync)(`./logs/${this.name}.txt`, JSON.stringify(log) + "\n");
         };
-        logger_1["default"].attachTransport({
+        logger_1.default.attachTransport({
             silly: logToTransport,
             debug: logToTransport,
             trace: logToTransport,
             info: logToTransport,
             warn: logToTransport,
             error: logToTransport,
-            fatal: logToTransport
+            fatal: logToTransport,
         });
     }
-    KYVE.prototype.run = function (uploadFunction, validateFunction) {
-        return __awaiter(this, void 0, void 0, function () {
-            var format, config, _uploader;
-            var _this = this;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        format = function (input) {
-                            var length = Math.max(13, _this.runtime.length);
-                            return input.padEnd(length, " ");
-                        };
-                        logger_1["default"].info("\uD83D\uDE80 Starting node ...\n\t" + format("Name") + " = " + this.name + "\n\t" + format("Address") + " = " + this.wallet.address + "\n\t" + format("Pool") + " = " + this.pool.address + "\n\t" + format("Desired Stake") + " = " + this.stake + " $KYVE\n\n\t" + format("@kyve/core") + " = v" + package_json_1.version + "\n\t" + format(this.runtime) + " = v" + this.version);
-                        return [4 /*yield*/, this.sync()];
-                    case 1:
-                        _a.sent();
-                        return [4 /*yield*/, this.fetchConfig()];
-                    case 2:
-                        config = _a.sent();
-                        if (!(0, semver_1.satisfies)(this.version, this._metadata.versions || this.version)) return [3 /*break*/, 3];
-                        logger_1["default"].info("⏱  Pool version requirements met.");
-                        return [3 /*break*/, 5];
-                    case 3:
-                        logger_1["default"].error("\u274C Running an invalid version for the specified pool. Version requirements are " + this._metadata.versions + ".");
-                        return [4 /*yield*/, (0, pool_1.unstakeAll)(this.pool, this.gasMultiplier)];
-                    case 4:
-                        _a.sent();
-                        process.exit(1);
-                        _a.label = 5;
-                    case 5:
-                        if (this._metadata.runtime === this.runtime) {
-                            logger_1["default"].info("\uD83D\uDCBB Running node on runtime " + this.runtime + ".");
+    static async generate(cli) {
+        if (!cli) {
+            cli = new utils_1.CLI(process.env.KYVE_RUNTIME, process.env.KYVE_VERSION);
+        }
+        await cli.parseAsync();
+        const options = cli.opts();
+        const node = new KYVE(options.pool, cli.runtime, cli.packageVersion, options.stake, options.privateKey, 
+        // if there is a keyfile flag defined, we load it from disk.
+        options.keyfile && JSON.parse((0, fs_1.readFileSync)(options.keyfile, "utf-8")), options.name, options.endpoint, options.gasMultiplier);
+        return {
+            node,
+            options,
+        };
+    }
+    async run(uploadFunction, validateFunction) {
+        var _a;
+        this.logNodeInfo();
+        await this.fetchPoolState();
+        await this.checkVersionRequirements();
+        await this.checkRuntimeRequirements();
+        await this.setupNodeContract();
+        await this.setupListeners();
+        if (((_a = this.node) === null || _a === void 0 ? void 0 : _a.address) === this.settings.uploader) {
+            if (this.keyfile) {
+                if (await this.pool.paused()) {
+                    logger_1.default.warn("⚠️  Pool is paused. Exiting ...");
+                    process.exit();
+                }
+                else {
+                    logger_1.default.info("📚 Running as an uploader ...");
+                    this.uploader(uploadFunction, this.config);
+                }
+            }
+            else {
+                logger_1.default.error("❌ You need to specify your Arweave keyfile.");
+                process.exit(1);
+            }
+        }
+        else {
+            logger_1.default.info("🧐 Running as an validator ...");
+            this.validator(validateFunction, this.config);
+        }
+    }
+    async uploader(uploadFunction, config) {
+        const uploaderLogger = logger_1.default.getChildLogger({
+            name: "Uploader",
+        });
+        const node = new rxjs_1.Observable((subscriber) => {
+            // @ts-ignore
+            subscriber.upload = subscriber.next;
+            // @ts-ignore
+            uploadFunction(subscriber, config, uploaderLogger);
+        });
+        node.subscribe(async (item) => {
+            // Push item to buffer.
+            const i = this.buffer.push(item);
+            logger_1.default.debug(`Received a new data item (${i} / ${this.metadata.bundleSize}).`);
+            // Check buffer length.
+            if (this.buffer.length >= this.metadata.bundleSize) {
+                uploaderLogger.info("📦 Creating bundle ...");
+                // Clear the buffer.
+                const tempBuffer = this.buffer;
+                this.buffer = [];
+                // Upload buffer to Arweave.
+                uploaderLogger.debug("Uploading bundle to Arweave.");
+                const transaction = await this.client.createTransaction({
+                    data: JSON.stringify(tempBuffer),
+                });
+                transaction.addTag("Application", "KYVE - Testnet");
+                transaction.addTag("Pool", this.pool.address);
+                transaction.addTag("@kyve/core", package_json_1.version);
+                transaction.addTag(this.runtime, this.version);
+                transaction.addTag("Bundle-Size", this.metadata.bundleSize);
+                transaction.addTag("Content-Type", "application/json");
+                await this.client.transactions.sign(transaction, this.keyfile);
+                const balance = await this.client.wallets.getBalance(await this.client.wallets.getAddress(this.keyfile));
+                if (+transaction.reward > +balance) {
+                    uploaderLogger.error("❌ You do not have enough funds in your Arweave wallet.");
+                    process.exit();
+                }
+                await this.client.transactions.post(transaction);
+                uploaderLogger.info(`💾 Uploaded bundle to Arweave. Transaction = ${transaction.id}`);
+                // Create a new vote.
+                uploaderLogger.debug(`Attempting to register a bundle.`);
+                try {
+                    // manual gas limit for resources exhausted error
+                    const registerTransaction = (await this.pool.register((0, arweave_2.toBytes)(transaction.id), +transaction.data_size, {
+                        gasLimit: 10000000,
+                        gasPrice: await (0, helpers_1.getGasPrice)(this.pool, this.gasMultiplier),
+                    }));
+                    uploaderLogger.info(`⬆️  Creating a new proposal. Transaction = ${registerTransaction.hash}`);
+                }
+                catch (error) {
+                    uploaderLogger.error("❌ Received an error while trying to register a bundle:", error);
+                    process.exit(1);
+                }
+            }
+        });
+    }
+    async listener() {
+        const listenerLogger = logger_1.default.getChildLogger({
+            name: "Listener",
+        });
+        return new rxjs_1.Observable((subscriber) => {
+            this.pool.on("ProposalStarted", async (_transaction, _bytes) => {
+                var _a;
+                const transaction = (0, arweave_2.fromBytes)(_transaction);
+                listenerLogger.info(`⬇️  Received a new proposal. Bundle = ${transaction}`);
+                const [isValidator, paused] = await Promise.all([
+                    this.pool.isValidator((_a = this.node) === null || _a === void 0 ? void 0 : _a.address),
+                    this.pool.paused(),
+                ]);
+                if (!paused) {
+                    if (isValidator) {
+                        const res = await this.client.transactions.getStatus(transaction);
+                        if (res.status === 200 || res.status === 202) {
+                            try {
+                                const _data = (await this.client.transactions.getData(transaction, {
+                                    decode: true,
+                                }));
+                                const bytes = _data.byteLength;
+                                const bundle = JSON.parse(new TextDecoder("utf-8", {
+                                    fatal: true,
+                                }).decode(_data));
+                                if (+_bytes === +bytes) {
+                                    listenerLogger.debug("Bytes match, forwarding bundle to the validate function.");
+                                    subscriber.next({
+                                        transaction,
+                                        bundle,
+                                    });
+                                }
+                                else {
+                                    listenerLogger.debug(`Bytes don't match (${_bytes} vs ${bytes}).`);
+                                    this.vote({
+                                        transaction,
+                                        valid: false,
+                                    });
+                                }
+                            }
+                            catch (err) {
+                                listenerLogger.error(`❌ Error fetching bundle from Arweave: ${err}`);
+                            }
                         }
                         else {
-                            logger_1["default"].error("❌ Specified pool does not match the integration runtime.");
-                            process.exit(1);
+                            listenerLogger.error("❌ Error fetching bundle from Arweave.");
                         }
-                        return [4 /*yield*/, (0, pool_1.stake)(this.stake, this.pool, this._settings, this.gasMultiplier)];
-                    case 6:
-                        _a.sent();
-                        _uploader = this._settings._uploader;
-                        if (!(this.wallet.address === _uploader)) return [3 /*break*/, 10];
-                        if (!this.keyfile) return [3 /*break*/, 8];
-                        return [4 /*yield*/, this.pool.paused()];
-                    case 7:
-                        if (_a.sent()) {
-                            logger_1["default"].warn("⚠️  Pool is paused. Exiting ...");
-                            process.exit();
-                        }
-                        else {
-                            logger_1["default"].info("📚 Running as an uploader ...");
-                            this.uploader(uploadFunction, config);
-                        }
-                        return [3 /*break*/, 9];
-                    case 8:
-                        logger_1["default"].error("❌ You need to specify your Arweave keyfile.");
-                        process.exit(1);
-                        _a.label = 9;
-                    case 9: return [3 /*break*/, 11];
-                    case 10:
-                        logger_1["default"].info("🧐 Running as an validator ...");
-                        this.validator(validateFunction, config);
-                        _a.label = 11;
-                    case 11: return [2 /*return*/];
+                    }
+                    else {
+                        logger_1.default.warn("⚠️  Stake not high enough to participate as validator. Skipping proposal ...");
+                    }
+                }
+                else {
+                    logger_1.default.warn("⚠️  Pool is paused. Skipping proposal ...");
                 }
             });
         });
-    };
-    KYVE.prototype.uploader = function (uploadFunction, config) {
-        return __awaiter(this, void 0, void 0, function () {
-            var uploaderLogger, node;
-            var _this = this;
-            return __generator(this, function (_a) {
-                uploaderLogger = logger_1["default"].getChildLogger({
-                    name: "Uploader"
+    }
+    async validator(validateFunction, config) {
+        const validatorLogger = logger_1.default.getChildLogger({
+            name: "Validator",
+        });
+        const listener = await this.listener();
+        const node = new rxjs_1.Observable((subscriber) => {
+            // @ts-ignore
+            subscriber.vote = subscriber.next;
+            // @ts-ignore
+            validateFunction(listener, subscriber, config, validatorLogger);
+        });
+        node.subscribe((item) => this.vote(item));
+    }
+    async vote(input) {
+        const voteLogger = logger_1.default.getChildLogger({
+            name: "Vote",
+        });
+        voteLogger.info(`🗳  Voting "${input.valid ? "valid" : "invalid"}" on bundle ${input.transaction}.`);
+        try {
+            await this.pool.vote((0, arweave_2.toBytes)(input.transaction), input.valid, {
+                gasLimit: await this.pool.estimateGas.vote((0, arweave_2.toBytes)(input.transaction), input.valid),
+                gasPrice: await (0, helpers_1.getGasPrice)(this.pool, this.gasMultiplier),
+            });
+        }
+        catch (error) {
+            voteLogger.error("❌ Received an error while trying to vote:", error);
+        }
+    }
+    logNodeInfo() {
+        const formatInfoLogs = (input) => {
+            const length = Math.max(13, this.runtime.length);
+            return input.padEnd(length, " ");
+        };
+        logger_1.default.info(`🚀 Starting node ...\n\t${formatInfoLogs("Name")} = ${this.name}\n\t${formatInfoLogs("Address")} = ${this.wallet.address}\n\t${formatInfoLogs("Pool")} = ${this.pool.address}\n\t${formatInfoLogs("Desired Stake")} = ${this.stake} $KYVE\n\n\t${formatInfoLogs("@kyve/core")} = v${package_json_1.version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}`);
+    }
+    async setupListeners() {
+        var _a, _b, _c;
+        // Listen to new contract changes.
+        this.pool.on("ConfigChanged", () => {
+            logger_1.default.warn("⚠️  Config changed. Exiting ...");
+            process.exit();
+        });
+        this.pool.on("MetadataChanged", async () => {
+            await this.fetchPoolState();
+        });
+        this.pool.on("Paused", () => {
+            var _a;
+            if (((_a = this.node) === null || _a === void 0 ? void 0 : _a.address) === this.settings.uploader) {
+                logger_1.default.warn("⚠️  Pool is now paused. Exiting ...");
+                process.exit();
+            }
+        });
+        this.pool.on("UploaderChanged", (previous) => {
+            var _a;
+            if (((_a = this.node) === null || _a === void 0 ? void 0 : _a.address) === previous) {
+                logger_1.default.warn("⚠️  Uploader changed. Exiting ...");
+                process.exit();
+            }
+        });
+        // Listen to new payouts.
+        const payoutLogger = logger_1.default.getChildLogger({
+            name: "Payout",
+        });
+        this.pool.on(this.pool.filters.PayedOut((_a = this.node) === null || _a === void 0 ? void 0 : _a.address), (_, _amount, _transaction) => {
+            const transaction = (0, arweave_2.fromBytes)(_transaction);
+            payoutLogger.info(`💸 Received a reward of ${(0, helpers_1.toHumanReadable)((0, helpers_1.toBN)(_amount))} $KYVE. Bundle = ${transaction}`);
+        });
+        // Listen to new points.
+        const pointsLogger = logger_1.default.getChildLogger({
+            name: "Points",
+        });
+        this.pool.on(this.pool.filters.PointsIncreased((_b = this.node) === null || _b === void 0 ? void 0 : _b.address), (_, _points, _transaction) => {
+            const transaction = (0, arweave_2.fromBytes)(_transaction);
+            pointsLogger.warn(`⚠️  Received a new slashing point (${_points.toString()} / ${this.settings.slashThreshold}). Bundle = ${transaction}`);
+        });
+        // Listen to new slashes.
+        const slashLogger = logger_1.default.getChildLogger({
+            name: "Slash",
+        });
+        this.pool.on(this.pool.filters.Slashed((_c = this.node) === null || _c === void 0 ? void 0 : _c.address), (_, _amount, _transaction) => {
+            const transaction = (0, arweave_2.fromBytes)(_transaction);
+            slashLogger.warn(`🚫 Node has been slashed. Lost ${(0, helpers_1.toHumanReadable)((0, helpers_1.toBN)(_amount))} $KYVE. Bundle = ${transaction}`);
+            process.exit();
+        });
+    }
+    async fetchPoolState() {
+        const stateLogger = logger_1.default.getChildLogger({
+            name: "PoolState",
+        });
+        stateLogger.debug("Attempting to fetch pool state.");
+        let _poolState;
+        try {
+            _poolState = await this.pool.poolState();
+        }
+        catch (error) {
+            stateLogger.error("❌ Received an error while trying to fetch the pool state:", error);
+            process.exit(1);
+        }
+        try {
+            this.config = JSON.parse(_poolState.config);
+        }
+        catch (error) {
+            stateLogger.error("❌ Received an error while trying to parse the config:", error);
+            process.exit(1);
+        }
+        try {
+            const oldMetadata = this.metadata;
+            this.metadata = JSON.parse(_poolState.metadata);
+            if (oldMetadata &&
+                this.metadata.versions &&
+                oldMetadata.versions !== this.metadata.versions) {
+                logger_1.default.warn("⚠️  Version requirements changed. Exiting ...");
+                logger_1.default.info(`⏱  New version requirements are ${this.metadata.versions}.`);
+                process.exit();
+            }
+        }
+        catch (error) {
+            stateLogger.error("❌ Received an error while trying to parse the metadata:", error);
+            process.exit(1);
+        }
+        this.settings = _poolState;
+        stateLogger.debug("Successfully fetched pool state.");
+    }
+    async checkVersionRequirements() {
+        if ((0, semver_1.satisfies)(this.version, this.metadata.versions || this.version)) {
+            logger_1.default.info("⏱  Pool version requirements met.");
+        }
+        else {
+            logger_1.default.error(`❌ Running an invalid version for the specified pool. Version requirements are ${this.metadata.versions}.`);
+            process.exit(1);
+        }
+    }
+    async checkRuntimeRequirements() {
+        if (this.metadata.runtime === this.runtime) {
+            logger_1.default.info(`💻 Running node on runtime ${this.runtime}.`);
+        }
+        else {
+            logger_1.default.error("❌ Specified pool does not match the integration runtime.");
+            process.exit(1);
+        }
+    }
+    async setupNodeContract() {
+        var _a;
+        let nodeAddress = await this.pool._nodeOwners(this.wallet.address);
+        let parsedStake;
+        let tx;
+        logger_1.default.info("🌐 Joining KYVE Network ...");
+        if (ethers_1.constants.AddressZero === nodeAddress) {
+            try {
+                tx = await this.pool.createNode(10, {
+                    gasLimit: await this.pool.estimateGas.createNode(10),
+                    gasPrice: await (0, helpers_1.getGasPrice)(this.pool, this.gasMultiplier),
                 });
-                node = new rxjs_1.Observable(function (subscriber) {
-                    uploadFunction(subscriber, config, uploaderLogger);
-                });
-                node.subscribe(function (item) { return __awaiter(_this, void 0, void 0, function () {
-                    var i, tempBuffer, transaction, balance, _a, _b, registerTransaction, _c, _d, _e, error_1;
-                    var _f;
-                    return __generator(this, function (_g) {
-                        switch (_g.label) {
-                            case 0:
-                                i = this.buffer.push(item);
-                                uploaderLogger.debug("Received a new data item (" + i + " / " + this._metadata.bundleSize + ").");
-                                if (!(this.buffer.length >= this._metadata.bundleSize)) return [3 /*break*/, 10];
-                                uploaderLogger.info("📦 Creating bundle ...");
-                                tempBuffer = this.buffer;
-                                this.buffer = [];
-                                // Upload buffer to Arweave.
-                                uploaderLogger.debug("Uploading bundle to Arweave.");
-                                return [4 /*yield*/, this.client.createTransaction({
-                                        data: JSON.stringify(tempBuffer)
-                                    })];
-                            case 1:
-                                transaction = _g.sent();
-                                transaction.addTag("Application", "KYVE - Testnet");
-                                transaction.addTag("Pool", this.pool.address);
-                                transaction.addTag("@kyve/core", package_json_1.version);
-                                transaction.addTag(this.runtime, this.version);
-                                transaction.addTag("Bundle-Size", this._metadata.bundleSize);
-                                transaction.addTag("Content-Type", "application/json");
-                                return [4 /*yield*/, this.client.transactions.sign(transaction, this.keyfile)];
-                            case 2:
-                                _g.sent();
-                                _b = (_a = this.client.wallets).getBalance;
-                                return [4 /*yield*/, this.client.wallets.getAddress(this.keyfile)];
-                            case 3: return [4 /*yield*/, _b.apply(_a, [_g.sent()])];
-                            case 4:
-                                balance = _g.sent();
-                                if (+transaction.reward > +balance) {
-                                    uploaderLogger.error("❌ You do not have enough funds in your Arweave wallet.");
-                                    process.exit();
-                                }
-                                return [4 /*yield*/, this.client.transactions.post(transaction)];
-                            case 5:
-                                _g.sent();
-                                uploaderLogger.info("\uD83D\uDCBE Uploaded bundle to Arweave. Transaction = " + transaction.id);
-                                // Create a new vote.
-                                uploaderLogger.debug("Attempting to register a bundle.");
-                                _g.label = 6;
-                            case 6:
-                                _g.trys.push([6, 9, , 10]);
-                                _d = (_c = this.pool).register;
-                                _e = [(0, arweave_2.toBytes)(transaction.id),
-                                    +transaction.data_size];
-                                _f = {
-                                    gasLimit: 10000000
-                                };
-                                return [4 /*yield*/, (0, pool_1.getGasPrice)(this.pool, this.gasMultiplier)];
-                            case 7: return [4 /*yield*/, _d.apply(_c, _e.concat([(_f.gasPrice = _g.sent(),
-                                        _f)]))];
-                            case 8:
-                                registerTransaction = (_g.sent());
-                                uploaderLogger.info("\u2B06\uFE0F  Creating a new proposal. Transaction = " + registerTransaction.hash);
-                                return [3 /*break*/, 10];
-                            case 9:
-                                error_1 = _g.sent();
-                                uploaderLogger.error("❌ Received an error while trying to register a bundle:", error_1);
-                                process.exit(1);
-                                return [3 /*break*/, 10];
-                            case 10: return [2 /*return*/];
-                        }
-                    });
-                }); });
-                return [2 /*return*/];
+                logger_1.default.debug(`Creating new contract. Transaction = ${tx.hash}`);
+                await tx.wait();
+                nodeAddress = await this.pool._nodeOwners(this.wallet.address);
+            }
+            catch (error) {
+                logger_1.default.error("❌ Could not create node contract:", error);
+                process.exit(1);
+            }
+        }
+        this.node = new ethers_1.Contract(nodeAddress, node_json_1.default, this.wallet);
+        logger_1.default.info(`✅ Connected to node ${nodeAddress}`);
+        let nodeStake = await ((_a = this.node) === null || _a === void 0 ? void 0 : _a.delegationAmount(this.wallet.address));
+        try {
+            parsedStake = new bignumber_js_1.default(this.stake).multipliedBy(new bignumber_js_1.default(10).exponentiatedBy(18));
+            if (parsedStake.isZero()) {
+                logger_1.default.error("❌ Desired stake can't be zero.");
+                process.exit(1);
+            }
+        }
+        catch (error) {
+            logger_1.default.error("❌ Provided invalid staking amount:", error);
+            process.exit(1);
+        }
+        if (nodeStake.isZero()) {
+            await this.selfDelegate(parsedStake);
+        }
+        else if (!(0, helpers_1.toEthersBN)(parsedStake).eq(nodeStake)) {
+            await this.selfUndelegate();
+            await this.selfDelegate(parsedStake);
+        }
+        else {
+            logger_1.default.info("👌 Already staked with the correct amount.");
+        }
+    }
+    async selfDelegate(amount) {
+        var _a, _b;
+        const token = await (0, helpers_1.Token)(this.pool);
+        let tx;
+        const balance = (0, helpers_1.toBN)((await token.balanceOf(this.wallet.address)));
+        if (balance.lt(amount)) {
+            logger_1.default.error("❌ Supplied wallet does not have enough $KYVE to stake.");
+            process.exit(1);
+        }
+        try {
+            tx = await token.approve(this.pool.address, (0, helpers_1.toEthersBN)(amount), {
+                gasLimit: await token.estimateGas.approve(this.pool.address, (0, helpers_1.toEthersBN)(amount)),
+                gasPrice: await (0, helpers_1.getGasPrice)(this.pool, this.gasMultiplier),
             });
-        });
-    };
-    KYVE.prototype.listener = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var listenerLogger;
-            var _this = this;
-            return __generator(this, function (_a) {
-                listenerLogger = logger_1["default"].getChildLogger({
-                    name: "Listener"
-                });
-                return [2 /*return*/, new rxjs_1.Observable(function (subscriber) {
-                        _this.pool.on("ProposalStart", function (_transactionIndexed, _transaction, _bytes) { return __awaiter(_this, void 0, void 0, function () {
-                            var transaction, res, _data, bytes, bundle;
-                            return __generator(this, function (_a) {
-                                switch (_a.label) {
-                                    case 0:
-                                        transaction = (0, arweave_2.fromBytes)(_transaction);
-                                        listenerLogger.info("\u2B07\uFE0F  Received a new proposal. Bundle = " + transaction);
-                                        return [4 /*yield*/, this.client.transactions.getStatus(transaction)];
-                                    case 1:
-                                        res = _a.sent();
-                                        if (!(res.status === 200 || res.status === 202)) return [3 /*break*/, 3];
-                                        return [4 /*yield*/, this.client.transactions.getData(transaction, {
-                                                decode: true
-                                            })];
-                                    case 2:
-                                        _data = (_a.sent());
-                                        bytes = _data.byteLength;
-                                        bundle = JSON.parse(new TextDecoder("utf-8", {
-                                            fatal: true
-                                        }).decode(_data));
-                                        if (+_bytes === +bytes) {
-                                            listenerLogger.debug("Bytes match, forwarding bundle to the validate function.");
-                                            subscriber.next({
-                                                transaction: transaction,
-                                                bundle: bundle
-                                            });
-                                        }
-                                        else {
-                                            listenerLogger.debug("Bytes don't match (" + _bytes + " vs " + bytes + ").");
-                                            this.vote({
-                                                transaction: transaction,
-                                                valid: false
-                                            });
-                                        }
-                                        return [3 /*break*/, 4];
-                                    case 3:
-                                        listenerLogger.error("❌ Error fetching bundle from Arweave.");
-                                        _a.label = 4;
-                                    case 4: return [2 /*return*/];
-                                }
-                            });
-                        }); });
-                    })];
+            logger_1.default.debug(`Approving ${(0, helpers_1.toHumanReadable)(amount)} $KYVE to be spent. Transaction = ${tx.hash}`);
+            await tx.wait();
+            logger_1.default.info("👍 Successfully approved.");
+            tx = await this.pool.delegate((_a = this.node) === null || _a === void 0 ? void 0 : _a.address, (0, helpers_1.toEthersBN)(amount), {
+                gasLimit: await this.pool.estimateGas.delegate((_b = this.node) === null || _b === void 0 ? void 0 : _b.address, (0, helpers_1.toEthersBN)(amount)),
+                gasPrice: await (0, helpers_1.getGasPrice)(this.pool, this.gasMultiplier),
             });
-        });
-    };
-    KYVE.prototype.validator = function (validateFunction, config) {
-        return __awaiter(this, void 0, void 0, function () {
-            var validatorLogger, listener, node;
-            var _this = this;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        validatorLogger = logger_1["default"].getChildLogger({
-                            name: "Validator"
-                        });
-                        return [4 /*yield*/, this.listener()];
-                    case 1:
-                        listener = _a.sent();
-                        node = new rxjs_1.Observable(function (subscriber) {
-                            validateFunction(listener, subscriber, config, validatorLogger);
-                        });
-                        node.subscribe(function (item) { return _this.vote(item); });
-                        return [2 /*return*/];
-                }
+            logger_1.default.debug(`Staking ${(0, helpers_1.toHumanReadable)(amount)} $KYVE. Transaction = ${tx.hash}`);
+            await tx.wait();
+            logger_1.default.info("📈 Successfully staked.");
+        }
+        catch (error) {
+            logger_1.default.error("❌ Received an error while trying to stake:", error);
+            process.exit(1);
+        }
+    }
+    async selfUndelegate() {
+        var _a, _b;
+        let tx;
+        try {
+            tx = await this.pool.undelegate((_a = this.node) === null || _a === void 0 ? void 0 : _a.address, {
+                gasLimit: await this.pool.estimateGas.undelegate((_b = this.node) === null || _b === void 0 ? void 0 : _b.address),
+                gasPrice: await (0, helpers_1.getGasPrice)(this.pool, this.gasMultiplier),
             });
-        });
-    };
-    KYVE.prototype.vote = function (input) {
-        return __awaiter(this, void 0, void 0, function () {
-            var voteLogger, _a, _b, _c, error_2;
-            var _d;
-            return __generator(this, function (_e) {
-                switch (_e.label) {
-                    case 0:
-                        voteLogger = logger_1["default"].getChildLogger({
-                            name: "Vote"
-                        });
-                        voteLogger.info("\uD83D\uDDF3  Voting \"" + (input.valid ? "valid" : "invalid") + "\" on bundle " + input.transaction + ".");
-                        _e.label = 1;
-                    case 1:
-                        _e.trys.push([1, 5, , 6]);
-                        _b = (_a = this.pool).vote;
-                        _c = [(0, arweave_2.toBytes)(input.transaction), input.valid];
-                        _d = {};
-                        return [4 /*yield*/, this.pool.estimateGas.vote((0, arweave_2.toBytes)(input.transaction), input.valid)];
-                    case 2:
-                        _d.gasLimit = _e.sent();
-                        return [4 /*yield*/, (0, pool_1.getGasPrice)(this.pool, this.gasMultiplier)];
-                    case 3: return [4 /*yield*/, _b.apply(_a, _c.concat([(_d.gasPrice = _e.sent(),
-                                _d)]))];
-                    case 4:
-                        _e.sent();
-                        return [3 /*break*/, 6];
-                    case 5:
-                        error_2 = _e.sent();
-                        voteLogger.error("❌ Received an error while trying to vote:", error_2);
-                        return [3 /*break*/, 6];
-                    case 6: return [2 /*return*/];
-                }
-            });
-        });
-    };
-    KYVE.prototype.sync = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var payoutLogger, pointsLogger, slashLogger;
-            var _this = this;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.fetchMetadata()];
-                    case 1:
-                        _a.sent();
-                        return [4 /*yield*/, this.fetchSettings()];
-                    case 2:
-                        _a.sent();
-                        // Listen to new contract changes.
-                        this.pool.on("ConfigChanged", function () {
-                            logger_1["default"].warn("⚠️  Config changed. Exiting ...");
-                            process.exit();
-                        });
-                        this.pool.on("MetadataChanged", function () { return __awaiter(_this, void 0, void 0, function () {
-                            return __generator(this, function (_a) {
-                                switch (_a.label) {
-                                    case 0: return [4 /*yield*/, this.fetchMetadata()];
-                                    case 1:
-                                        _a.sent();
-                                        return [2 /*return*/];
-                                }
-                            });
-                        }); });
-                        this.pool.on("MinimumStakeChanged", function (_, minimum) { return __awaiter(_this, void 0, void 0, function () {
-                            var stake;
-                            return __generator(this, function (_a) {
-                                switch (_a.label) {
-                                    case 0: return [4 /*yield*/, this.pool._stakingAmounts(this.wallet.address)];
-                                    case 1:
-                                        stake = (_a.sent());
-                                        if (stake.lt(minimum)) {
-                                            logger_1["default"].error("\u274C Minimum stake is " + (0, pool_1.toHumanReadable)((0, pool_1.toBN)(minimum)) + " $KYVE. You will not be able to register / vote.");
-                                            process.exit();
-                                        }
-                                        return [2 /*return*/];
-                                }
-                            });
-                        }); });
-                        this.pool.on("Paused", function () {
-                            if (_this.wallet.address === _this._settings._uploader) {
-                                logger_1["default"].warn("⚠️  Pool is now paused. Exiting ...");
-                                process.exit();
-                            }
-                        });
-                        this.pool.on("UploaderChanged", function (previous) {
-                            if (_this.wallet.address === previous) {
-                                logger_1["default"].warn("⚠️  Uploader changed. Exiting ...");
-                                process.exit();
-                            }
-                        });
-                        payoutLogger = logger_1["default"].getChildLogger({
-                            name: "Payout"
-                        });
-                        this.pool.on(this.pool.filters.Payout(this.wallet.address), function (_, __, _amount, _transaction) {
-                            var transaction = (0, arweave_2.fromBytes)(_transaction);
-                            payoutLogger.info("\uD83D\uDCB8 Received a reward of " + (0, pool_1.toHumanReadable)((0, pool_1.toBN)(_amount)) + " $KYVE. Bundle = " + transaction);
-                        });
-                        pointsLogger = logger_1["default"].getChildLogger({
-                            name: "Points"
-                        });
-                        this.pool.on(this.pool.filters.IncreasePoints(this.wallet.address), function (_, __, _points, _transaction) {
-                            var transaction = (0, arweave_2.fromBytes)(_transaction);
-                            pointsLogger.warn("\u26A0\uFE0F  Received a new slashing point (" + _points.toString() + " / " + _this._settings._slashThreshold + "). Bundle = " + transaction);
-                        });
-                        slashLogger = logger_1["default"].getChildLogger({
-                            name: "Slash"
-                        });
-                        this.pool.on(this.pool.filters.Slash(this.wallet.address), function (_, __, _amount, _transaction) {
-                            var transaction = (0, arweave_2.fromBytes)(_transaction);
-                            slashLogger.warn("\uD83D\uDEAB Node has been slashed. Lost " + (0, pool_1.toHumanReadable)((0, pool_1.toBN)(_amount)) + " $KYVE. Bundle = " + transaction);
-                            process.exit();
-                        });
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
-    KYVE.prototype.fetchConfig = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var configLogger, _config, config;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        configLogger = logger_1["default"].getChildLogger({
-                            name: "Config"
-                        });
-                        configLogger.debug("Attempting to fetch the config.");
-                        return [4 /*yield*/, this.pool._config()];
-                    case 1:
-                        _config = (_a.sent());
-                        try {
-                            config = JSON.parse(_config);
-                            configLogger.debug("Successfully fetched the config.");
-                            return [2 /*return*/, config];
-                        }
-                        catch (error) {
-                            configLogger.error("❌ Received an error while trying to fetch the config:", error);
-                            process.exit(1);
-                        }
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
-    KYVE.prototype.fetchMetadata = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var metadataLogger, _metadata, oldMetadata, error_3;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        metadataLogger = logger_1["default"].getChildLogger({
-                            name: "Metadata"
-                        });
-                        metadataLogger.debug("Attempting to fetch the metadata.");
-                        return [4 /*yield*/, this.pool._metadata()];
-                    case 1:
-                        _metadata = (_a.sent());
-                        _a.label = 2;
-                    case 2:
-                        _a.trys.push([2, 5, , 6]);
-                        oldMetadata = this._metadata;
-                        this._metadata = JSON.parse(_metadata);
-                        if (!(oldMetadata &&
-                            this._metadata.versions &&
-                            oldMetadata.versions !== this._metadata.versions)) return [3 /*break*/, 4];
-                        logger_1["default"].warn("⚠️  Version requirements changed. Unstaking and exiting ...");
-                        logger_1["default"].info("\u23F1  New version requirements are " + this._metadata.versions + ".");
-                        return [4 /*yield*/, (0, pool_1.unstakeAll)(this.pool, this.gasMultiplier)];
-                    case 3:
-                        _a.sent();
-                        process.exit();
-                        _a.label = 4;
-                    case 4:
-                        metadataLogger.debug("Successfully fetched the metadata.");
-                        return [3 /*break*/, 6];
-                    case 5:
-                        error_3 = _a.sent();
-                        metadataLogger.error("❌ Received an error while trying to fetch the metadata:", error_3);
-                        process.exit(1);
-                        return [3 /*break*/, 6];
-                    case 6: return [2 /*return*/];
-                }
-            });
-        });
-    };
-    KYVE.prototype.fetchSettings = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var settingsLogger, _a;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        settingsLogger = logger_1["default"].getChildLogger({
-                            name: "Settings"
-                        });
-                        settingsLogger.debug("Attempting to fetch the settings.");
-                        _a = this;
-                        return [4 /*yield*/, this.pool._settings()];
-                    case 1:
-                        _a._settings = _b.sent();
-                        settingsLogger.debug("Successfully fetched the settings.");
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
-    return KYVE;
-}());
-exports["default"] = KYVE;
+            logger_1.default.debug(`Unstaking. Transaction = ${tx.hash}`);
+            await tx.wait();
+            logger_1.default.info("📉 Successfully unstaked.");
+        }
+        catch (error) {
+            logger_1.default.error("❌ Received an error while trying to unstake:", error);
+            process.exit(1);
+        }
+    }
+}
+exports.default = KYVE;
