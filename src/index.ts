@@ -40,6 +40,7 @@ import {
 } from "./utils/helpers";
 import NodeABI from "./abi/node.json";
 import { version } from "../package.json";
+import ora from "ora";
 
 export * from "./utils";
 
@@ -209,15 +210,24 @@ class KYVE {
       uploadFunction(subscriber, config, uploaderLogger);
     });
 
+    const spinner = ora();
+
     node.subscribe(async (item) => {
+      if (!this.buffer.length) {
+        spinner.start(
+          `Received a new data item (0 / ${this.metadata.bundleSize}).`
+        );
+      }
+
       // Push item to buffer.
       const i = this.buffer.push(item);
-      uploaderLogger.debug(
-        `Received a new block (${i} / ${this.metadata.bundleSize}).`
-      );
+
+      spinner.text = `Received a new data item (${i} / ${this.metadata.bundleSize}).`;
 
       // Check buffer length.
       if (this.buffer.length >= this.metadata.bundleSize) {
+        spinner.stop();
+
         uploaderLogger.info("📦 Creating bundle ...");
 
         // Clear the buffer.
