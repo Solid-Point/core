@@ -174,7 +174,6 @@ class KYVE {
   private async run<ConfigType>(createBundle: BundlerFunction<ConfigType>) {
     let instructions: BlockInstructions | null = null;
     let uploadBundle: any = null;
-    let downloadBundle: any = null;
     let transaction: Transaction | null = null;
 
     const runner = async () => {
@@ -186,7 +185,7 @@ class KYVE {
         if (instructions.uploader === ethers.constants.AddressZero) {
           logger.info("🔗 Claiming uploader slot for genesis block ...");
 
-          const tx = await this.pool.claimGenesisUploader();
+          const tx = await this.pool.claimGenesisUploaderSlot();
           await tx.wait();
 
           instructions = await this.getCurrentBlockInstructions();
@@ -209,12 +208,13 @@ class KYVE {
           await this.submitBlockProposal(transaction, instructions);
         }
 
-        instructions = await this.waitForNextBlockInstructions();
+        const nextInstructions = await this.waitForNextBlockInstructions();
 
         if (instructions.uploader !== this.node?.address) {
-          // pull down arweave data
-          // vote
+          this.validateCurrentBlockProposal(uploadBundle);
         }
+
+        instructions = nextInstructions;
       }
     };
 
@@ -295,7 +295,7 @@ class KYVE {
         }
       );
 
-      logger.info(" Submitting new block proposal.");
+      logger.info("Submitting new block proposal.");
       logger.debug(`Transaction = ${tx.hash}`);
     } catch (error) {
       logger.error(
