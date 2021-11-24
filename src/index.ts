@@ -181,6 +181,7 @@ class KYVE {
   private async run<ConfigType>(createBundle: BundlerFunction<ConfigType>) {
     let instructions = await this.getCurrentBlockInstructions();
     let bundle: any = null;
+    let transaction: Transaction | null = null;
 
     const runner = async () => {
       if (instructions.uploader === ethers.constants.AddressZero) {
@@ -201,7 +202,9 @@ class KYVE {
       );
 
       if (instructions.uploader === this.node?.address) {
-        await this.uploadBundleToArweave(bundle, instructions);
+        // create block proposal if node is chosen uploader
+        transaction = await this.uploadBundleToArweave(bundle, instructions);
+        await this.submitBlockProposal(transaction);
       } else {
         // await NextBlockInstructions
         // vote on validity
@@ -289,218 +292,6 @@ class KYVE {
         error
       );
       process.exit(1);
-    }
-  }
-
-  private async uploader<ConfigType>(
-    uploadFunction: UploadFunction<ConfigType>,
-    config: ConfigType
-  ) {
-    const uploaderLogger = logger.getChildLogger({
-      name: "Uploader",
-    });
-
-    const node = new Observable<UploadFunctionReturn>((subscriber) => {
-      // @ts-ignore
-      subscriber.upload = subscriber.next;
-      // @ts-ignore
-      uploadFunction(subscriber, config, uploaderLogger);
-    });
-
-    node.subscribe(async (item) => {
-      // Push item to buffer.
-      const i = this.buffer.push(item);
-
-      logger.debug(
-        `Received a new data item (${i} / ${this.metadata.bundleSize}).`
-      );
-
-      // Check buffer length.
-      if (this.buffer.length >= this.metadata.bundleSize) {
-        uploaderLogger.info("📦 Creating bundle ...");
-
-        // Clear the buffer.
-        const tempBuffer = this.buffer;
-        this.buffer = [];
-
-        // Upload buffer to Arweave.
-        uploaderLogger.debug("Uploading bundle to Arweave.");
-
-        const transaction = await this.client.createTransaction({
-          data: JSON.stringify(tempBuffer),
-        });
-
-        transaction.addTag("Application", "KYVE - Testnet");
-        transaction.addTag("Pool", this.pool.address);
-        transaction.addTag("@kyve/core", version);
-        transaction.addTag(this.runtime, this.version);
-        transaction.addTag("Bundle-Size", this.metadata.bundleSize);
-        transaction.addTag("Content-Type", "application/json");
-
-        await this.client.transactions.sign(transaction, this.keyfile);
-
-        const balance = await this.client.wallets.getBalance(
-          await this.client.wallets.getAddress(this.keyfile)
-        );
-        if (+transaction.reward > +balance) {
-          uploaderLogger.error(
-            "❌ You do not have enough funds in your Arweave wallet."
-          );
-          process.exit();
-        }
-
-        await this.client.transactions.post(transaction);
-
-        uploaderLogger.info(
-          `💾 Uploaded bundle to Arweave. Transaction = ${transaction.id}`
-        );
-
-        // Create a new vote.
-        uploaderLogger.debug(`Attempting to register a bundle.`);
-
-        try {
-          // manual gas limit for resources exhausted error
-          const registerTransaction = (await this.pool.register(
-            toBytes(transaction.id),
-            +transaction.data_size,
-            {
-              gasLimit: 10000000,
-              gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
-            }
-          )) as ContractTransaction;
-
-          uploaderLogger.info(
-            `⬆️  Creating a new proposal. Transaction = ${registerTransaction.hash}`
-          );
-        } catch (error) {
-          uploaderLogger.error(
-            "❌ Received an error while trying to register a bundle:",
-            error
-          );
-          process.exit(1);
-        }
-      }
-    });
-  }
-
-  private async listener(): Promise<Observable<ListenFunctionReturn>> {
-    const listenerLogger = logger.getChildLogger({
-      name: "Listener",
-    });
-
-    return new Observable<ListenFunctionReturn>((subscriber) => {
-      this.pool.on(
-        "ProposalStarted",
-        async (_transaction: string, _bytes: number) => {
-          const transaction = fromBytes(_transaction);
-          listenerLogger.info(
-            `⬇️  Received a new proposal. Bundle = ${transaction}`
-          );
-
-          const [isValidator, paused] = await Promise.all([
-            this.pool.isValidator(this.node?.address),
-            this.pool.paused(),
-          ]);
-
-          if (!paused) {
-            if (isValidator) {
-              const res = await this.client.transactions.getStatus(transaction);
-              if (res.status === 200 || res.status === 202) {
-                try {
-                  const _data = (await this.client.transactions.getData(
-                    transaction,
-                    {
-                      decode: true,
-                    }
-                  )) as Uint8Array;
-                  const bytes = _data.byteLength;
-                  const bundle = JSON.parse(
-                    new TextDecoder("utf-8", {
-                      fatal: true,
-                    }).decode(_data)
-                  ) as Bundle;
-
-                  if (+_bytes === +bytes) {
-                    listenerLogger.debug(
-                      "Bytes match, forwarding bundle to the validate function."
-                    );
-
-                    subscriber.next({
-                      transaction,
-                      bundle,
-                    });
-                  } else {
-                    listenerLogger.debug(
-                      `Bytes don't match (${_bytes} vs ${bytes}).`
-                    );
-
-                    this.vote({
-                      transaction,
-                      valid: false,
-                    });
-                  }
-                } catch (err) {
-                  listenerLogger.error(
-                    `❌ Error fetching bundle from Arweave: ${err}`
-                  );
-                }
-              } else {
-                listenerLogger.error("❌ Error fetching bundle from Arweave.");
-              }
-            } else {
-              logger.warn(
-                "⚠️  Stake not high enough to participate as validator. Skipping proposal ..."
-              );
-            }
-          } else {
-            logger.warn("⚠️  Pool is paused. Skipping proposal ...");
-          }
-        }
-      );
-    });
-  }
-
-  private async validator<ConfigType>(
-    validateFunction: ValidateFunction<ConfigType>,
-    config: ConfigType
-  ) {
-    const validatorLogger = logger.getChildLogger({
-      name: "Validator",
-    });
-
-    const listener = await this.listener();
-
-    const node = new Observable<ValidateFunctionReturn>((subscriber) => {
-      // @ts-ignore
-      subscriber.vote = subscriber.next;
-      // @ts-ignore
-      validateFunction(listener, subscriber, config, validatorLogger);
-    });
-
-    node.subscribe((item) => this.vote(item));
-  }
-
-  private async vote(input: ValidateFunctionReturn) {
-    const voteLogger = logger.getChildLogger({
-      name: "Vote",
-    });
-
-    voteLogger.info(
-      `🗳  Voting "${input.valid ? "valid" : "invalid"}" on bundle ${
-        input.transaction
-      }.`
-    );
-
-    try {
-      await this.pool.vote(toBytes(input.transaction), input.valid, {
-        gasLimit: await this.pool.estimateGas.vote(
-          toBytes(input.transaction),
-          input.valid
-        ),
-        gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
-      });
-    } catch (error) {
-      voteLogger.error("❌ Received an error while trying to vote:", error);
     }
   }
 
