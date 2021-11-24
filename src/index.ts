@@ -11,7 +11,6 @@ import {
 } from "ethers";
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from "fs";
 import Prando from "prando";
-import { Observable } from "rxjs";
 import { satisfies } from "semver";
 import { ILogObject } from "tslog";
 import {
@@ -19,14 +18,7 @@ import {
   starWars,
   uniqueNamesGenerator,
 } from "unique-names-generator";
-import {
-  Bundle,
-  BundlerFunction,
-  ListenFunctionReturn,
-  UploadFunctionReturn,
-  ValidateFunction,
-  ValidateFunctionReturn,
-} from "./faces";
+import { BlockInstructions, Bundle, BundlerFunction, Vote } from "./faces";
 import { CLI } from "./utils";
 import { fromBytes, toBytes } from "./utils/arweave";
 import logger from "./utils/logger";
@@ -41,6 +33,7 @@ import {
 import NodeABI from "./abi/node.json";
 import { version } from "../package.json";
 import Transaction from "arweave/node/lib/transaction";
+import hash from "object-hash";
 
 export * from "./utils";
 
@@ -179,43 +172,56 @@ class KYVE {
   }
 
   private async run<ConfigType>(createBundle: BundlerFunction<ConfigType>) {
-    let instructions = await this.getCurrentBlockInstructions();
-    let bundle: any = null;
+    let instructions: BlockInstructions | null = null;
+    let uploadBundle: any = null;
+    let downloadBundle: any = null;
     let transaction: Transaction | null = null;
 
     const runner = async () => {
-      if (instructions.uploader === ethers.constants.AddressZero) {
-        logger.info("🔗 Claiming uploader slot for genesis block ...");
+      while (true) {
+        if (instructions === null) {
+          instructions = await this.getCurrentBlockInstructions();
+        }
 
-        const tx = await this.pool.claimGenesisUploader();
-        await tx.wait();
+        if (instructions.uploader === ethers.constants.AddressZero) {
+          logger.info("🔗 Claiming uploader slot for genesis block ...");
 
-        instructions = await this.getCurrentBlockInstructions();
-      }
+          const tx = await this.pool.claimGenesisUploader();
+          await tx.wait();
 
-      logger.info("📚 Creating bundle ...");
+          instructions = await this.getCurrentBlockInstructions();
+        }
 
-      bundle = createBundle(
-        this.config,
-        instructions.fromHeight,
-        instructions.toHeight
-      );
+        logger.info("📚 Creating bundle ...");
 
-      if (instructions.uploader === this.node?.address) {
-        // create block proposal if node is chosen uploader
-        transaction = await this.uploadBundleToArweave(bundle, instructions);
-        await this.submitBlockProposal(transaction);
-      } else {
-        // await NextBlockInstructions
-        // vote on validity
-        // restart startNode
+        uploadBundle = await createBundle(
+          this.config,
+          instructions.fromHeight,
+          instructions.toHeight
+        );
+
+        if (instructions.uploader === this.node?.address) {
+          // create block proposal if node is chosen uploader
+          transaction = await this.uploadBundleToArweave(
+            uploadBundle,
+            instructions
+          );
+          await this.submitBlockProposal(transaction, instructions);
+        }
+
+        instructions = await this.waitForNextBlockInstructions();
+
+        if (instructions.uploader !== this.node?.address) {
+          // pull down arweave data
+          // vote
+        }
       }
     };
 
     runner();
   }
 
-  private async getCurrentBlockInstructions() {
+  private async getCurrentBlockInstructions(): Promise<BlockInstructions> {
     const instructions = {
       ...(await this.pool._currentBlockInstructions()),
     };
@@ -229,7 +235,7 @@ class KYVE {
 
   private async uploadBundleToArweave(
     bundle: any,
-    instructions: any
+    instructions: BlockInstructions
   ): Promise<Transaction> {
     try {
       logger.info("💾 Uploading bundle to Arweave ...");
@@ -243,8 +249,8 @@ class KYVE {
       transaction.addTag("@kyve/core", version);
       transaction.addTag(this.runtime, this.version);
       transaction.addTag("Uploader", instructions.uploader);
-      transaction.addTag("FromHeight", instructions.fromHeight);
-      transaction.addTag("ToHeight", instructions.toHeight);
+      transaction.addTag("FromHeight", instructions.fromHeight.toString());
+      transaction.addTag("ToHeight", instructions.toHeight.toString());
       transaction.addTag("Content-Type", "application/json");
 
       await this.client.transactions.sign(transaction, this.keyfile);
@@ -272,26 +278,113 @@ class KYVE {
     }
   }
 
-  private async submitBlockProposal(transaction: Transaction) {
+  private async submitBlockProposal(
+    transaction: Transaction,
+    instructions: BlockInstructions
+  ) {
     try {
       // manual gas limit for resources exhausted error
-      const registerTransaction = (await this.pool.register(
+      const tx = await this.pool.submitBlockProposal(
         toBytes(transaction.id),
         +transaction.data_size,
+        instructions.fromHeight,
+        instructions.toHeight,
         {
           gasLimit: 10000000,
           gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
         }
-      )) as ContractTransaction;
+      );
 
       logger.info(" Submitting new block proposal.");
-      logger.debug(`Transaction = ${registerTransaction.hash}`);
+      logger.debug(`Transaction = ${tx.hash}`);
     } catch (error) {
       logger.error(
         "❌ Received an error while submitting block proposal:",
         error
       );
       process.exit(1);
+    }
+  }
+
+  private async waitForNextBlockInstructions(): Promise<BlockInstructions> {
+    return new Promise((resolve) => {
+      this.pool.on(
+        "NextBlockInstructions",
+        (uploader: string, fromHeight: number, toHeight: number) => {
+          resolve({
+            uploader,
+            fromHeight,
+            toHeight,
+          });
+        }
+      );
+    });
+  }
+
+  private async validateCurrentBlockProposal(uploadBundle: any) {
+    const blockProposal = { ...(await this.pool._currentBlockProposal()) };
+    const transaction = fromBytes(blockProposal._tx);
+    const uploadBytes = blockProposal._bytes;
+
+    try {
+      const { status } = await this.client.transactions.getStatus(transaction);
+
+      if (status === 200 || status === 202) {
+        const _data = (await this.client.transactions.getData(transaction, {
+          decode: true,
+        })) as Uint8Array;
+        const downloadBytes = _data.byteLength;
+        const downloadBundle = JSON.parse(
+          new TextDecoder("utf-8", {
+            fatal: true,
+          }).decode(_data)
+        ) as Bundle;
+
+        if (+uploadBytes === +downloadBytes) {
+          const uploadBundleHash = hash(
+            JSON.parse(JSON.stringify(uploadBundle))
+          );
+          const downloadBundleHash = hash(
+            JSON.parse(JSON.stringify(downloadBundle))
+          );
+
+          this.vote({
+            transaction,
+            valid: uploadBundleHash === downloadBundleHash,
+          });
+        } else {
+          logger.debug(
+            `Bytes don't match. Uploaded data size = ${uploadBytes} Downloaded data size = ${downloadBytes}`
+          );
+
+          this.vote({
+            transaction,
+            valid: false,
+          });
+        }
+      }
+    } catch (err) {
+      logger.error(`❌ Error fetching bundle from Arweave: ${err}`);
+    }
+  }
+
+  private async vote(vote: Vote) {
+    logger.info(
+      `🖋 Voting "${vote.valid ? "valid" : "invalid"}" on bundle ${
+        vote.transaction
+      } ...`
+    );
+
+    try {
+      await this.pool.vote(toBytes(vote.transaction), vote.valid, {
+        gasLimit: await this.pool.estimateGas.vote(
+          toBytes(vote.transaction),
+          vote.valid
+        ),
+        gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
+      });
+    } catch (error) {
+      logger.error("❌ Received an error while trying to vote:", error);
     }
   }
 

@@ -6,6 +6,17 @@ import { Logger } from "tslog";
 export type Tag = { name: string; value: string };
 export type Tags = Tag[];
 
+export type Vote = {
+  transaction: string;
+  valid: boolean;
+};
+
+export type BlockInstructions = {
+  uploader: string;
+  fromHeight: number;
+  toHeight: number;
+};
+
 export interface UploadFunctionReturn {
   data: string;
   tags?: Tags;
@@ -19,7 +30,7 @@ export type BundlerFunction<ConfigType> = (
   config: ConfigType,
   fromHeight: number,
   toHeight: number
-) => void;
+) => Promise<any>;
 
 // Listener types.
 
