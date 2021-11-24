@@ -21,8 +21,8 @@ import {
 } from "unique-names-generator";
 import {
   Bundle,
+  BundlerFunction,
   ListenFunctionReturn,
-  UploadFunction,
   UploadFunctionReturn,
   ValidateFunction,
   ValidateFunctionReturn,
@@ -40,6 +40,7 @@ import {
 } from "./utils/helpers";
 import NodeABI from "./abi/node.json";
 import { version } from "../package.json";
+import Transaction from "arweave/node/lib/transaction";
 
 export * from "./utils";
 
@@ -161,10 +162,7 @@ class KYVE {
     };
   }
 
-  async run<ConfigType>(
-    uploadFunction: UploadFunction<ConfigType>,
-    validateFunction: ValidateFunction<ConfigType>
-  ) {
+  async start<ConfigType>(createBundle: BundlerFunction<ConfigType>) {
     this.logNodeInfo();
 
     await this.fetchPoolState();
@@ -175,22 +173,122 @@ class KYVE {
     await this.setupNodeContract();
     await this.setupListeners();
 
-    if (this.node?.address === this.settings.uploader) {
-      if (this.keyfile) {
-        if (await this.pool.paused()) {
-          logger.warn("⚠️  Pool is paused. Exiting ...");
-          process.exit();
-        } else {
-          logger.info("📚 Running as an uploader ...");
-          this.uploader<ConfigType>(uploadFunction, this.config);
-        }
+    await this.run(createBundle);
+
+    logger.info("💤 Exiting node ...");
+  }
+
+  private async run<ConfigType>(createBundle: BundlerFunction<ConfigType>) {
+    let instructions = await this.getCurrentBlockInstructions();
+    let bundle: any = null;
+
+    const runner = async () => {
+      if (instructions.uploader === ethers.constants.AddressZero) {
+        logger.info("🔗 Claiming uploader slot for genesis block ...");
+
+        const tx = await this.pool.claimGenesisUploader();
+        await tx.wait();
+
+        instructions = await this.getCurrentBlockInstructions();
+      }
+
+      logger.info("📚 Creating bundle ...");
+
+      bundle = createBundle(
+        this.config,
+        instructions.fromHeight,
+        instructions.toHeight
+      );
+
+      if (instructions.uploader === this.node?.address) {
+        await this.uploadBundleToArweave(bundle, instructions);
       } else {
-        logger.error("❌ You need to specify your Arweave keyfile.");
+        // await NextBlockInstructions
+        // vote on validity
+        // restart startNode
+      }
+    };
+
+    runner();
+  }
+
+  private async getCurrentBlockInstructions() {
+    const instructions = {
+      ...(await this.pool._currentBlockInstructions()),
+    };
+
+    return {
+      uploader: instructions._uploader,
+      fromHeight: instructions._fromHeight,
+      toHeight: instructions._toHeight,
+    };
+  }
+
+  private async uploadBundleToArweave(
+    bundle: any,
+    instructions: any
+  ): Promise<Transaction> {
+    try {
+      logger.info("💾 Uploading bundle to Arweave ...");
+
+      const transaction = await this.client.createTransaction({
+        data: JSON.stringify(bundle),
+      });
+
+      transaction.addTag("Application", "KYVE - Testnet");
+      transaction.addTag("Pool", this.pool.address);
+      transaction.addTag("@kyve/core", version);
+      transaction.addTag(this.runtime, this.version);
+      transaction.addTag("Uploader", instructions.uploader);
+      transaction.addTag("FromHeight", instructions.fromHeight);
+      transaction.addTag("ToHeight", instructions.toHeight);
+      transaction.addTag("Content-Type", "application/json");
+
+      await this.client.transactions.sign(transaction, this.keyfile);
+
+      const balance = await this.client.wallets.getBalance(
+        await this.client.wallets.getAddress(this.keyfile)
+      );
+
+      if (+transaction.reward > +balance) {
+        logger.error("❌ You do not have enough funds in your Arweave wallet.");
         process.exit(1);
       }
-    } else {
-      logger.info("🧐 Running as an validator ...");
-      this.validator<ConfigType>(validateFunction, this.config);
+
+      await this.client.transactions.post(transaction);
+
+      logger.debug(`Arweave bundle = ${transaction.id}`);
+
+      return transaction;
+    } catch (error) {
+      logger.error(
+        "❌ Received an error while trying to create a block proposal:",
+        error
+      );
+      process.exit(1);
+    }
+  }
+
+  private async submitBlockProposal(transaction: Transaction) {
+    try {
+      // manual gas limit for resources exhausted error
+      const registerTransaction = (await this.pool.register(
+        toBytes(transaction.id),
+        +transaction.data_size,
+        {
+          gasLimit: 10000000,
+          gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
+        }
+      )) as ContractTransaction;
+
+      logger.info(" Submitting new block proposal.");
+      logger.debug(`Transaction = ${registerTransaction.hash}`);
+    } catch (error) {
+      logger.error(
+        "❌ Received an error while submitting block proposal:",
+        error
+      );
+      process.exit(1);
     }
   }
 

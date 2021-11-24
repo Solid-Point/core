@@ -15,10 +15,10 @@ export interface UploadFunctionSubscriber {
   upload(value?: UploadFunctionReturn): void;
 }
 
-export type UploadFunction<ConfigType> = (
-  uploader: UploadFunctionSubscriber,
+export type BundlerFunction<ConfigType> = (
   config: ConfigType,
-  logger: Logger
+  fromHeight: number,
+  toHeight: number
 ) => void;
 
 // Listener types.
