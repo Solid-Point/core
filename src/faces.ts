@@ -30,7 +30,7 @@ export type BundlerFunction<ConfigType> = (
   config: ConfigType,
   fromHeight: number,
   toHeight: number
-) => Promise<any>;
+) => Promise<any[]>;
 
 // Listener types.
 

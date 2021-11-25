@@ -21,7 +21,7 @@ export interface UploadFunctionReturn {
 export interface UploadFunctionSubscriber {
     upload(value?: UploadFunctionReturn): void;
 }
-export declare type BundlerFunction<ConfigType> = (config: ConfigType, fromHeight: number, toHeight: number) => Promise<any>;
+export declare type BundlerFunction<ConfigType> = (config: ConfigType, fromHeight: number, toHeight: number) => Promise<any[]>;
 export declare type Bundle = UploadFunctionReturn[];
 export interface ListenFunctionReturn {
     transaction: string;
