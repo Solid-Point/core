@@ -75,20 +75,13 @@ class KYVE {
     endpoint?: string,
     gasMultiplier: string = "1"
   ) {
-    const provider = new ethers.providers.WebSocketProvider(
-      endpoint || "wss://moonbeam-alpha.api.onfinality.io/public-ws",
+    const provider = new ethers.providers.JsonRpcProvider(
+      endpoint || "https://moonbeam-alpha.api.onfinality.io/public",
       {
         chainId: 1287,
         name: "moonbase-alphanet",
       }
     );
-    provider._websocket.on("open", () => {
-      setInterval(() => provider._websocket.ping(), 5000);
-    });
-    provider._websocket.on("close", () => {
-      logger.error("❌ Websocket closed.");
-      process.exit(1);
-    });
 
     this.wallet = new Wallet(privateKey, provider);
 
@@ -353,9 +346,11 @@ class KYVE {
               logger.warn(
                 "⚠️  Stake not high enough to participate as validator. Skipping proposal ..."
               );
+              process.exit();
             }
           } else {
             logger.warn("⚠️  Pool is paused. Skipping proposal ...");
+            process.exit();
           }
         }
       );
