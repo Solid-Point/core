@@ -18,7 +18,6 @@ const bignumber_js_1 = __importDefault(require("bignumber.js"));
 const ethers_1 = require("ethers");
 const fs_1 = require("fs");
 const prando_1 = __importDefault(require("prando"));
-const rxjs_1 = require("rxjs");
 const semver_1 = require("semver");
 const unique_names_generator_1 = require("unique-names-generator");
 const utils_1 = require("./utils");
@@ -27,6 +26,7 @@ const logger_1 = __importDefault(require("./utils/logger"));
 const helpers_1 = require("./utils/helpers");
 const node_json_1 = __importDefault(require("./abi/node.json"));
 const package_json_1 = require("../package.json");
+const object_hash_1 = __importDefault(require("object-hash"));
 __exportStar(require("./utils"), exports);
 class KYVE {
     constructor(poolAddress, runtime, version, stakeAmount, privateKey, keyfile, name, endpoint, gasMultiplier = "1") {
@@ -97,175 +97,158 @@ class KYVE {
             options,
         };
     }
-    async run(uploadFunction, validateFunction) {
-        var _a;
+    async start(createBundle) {
         this.logNodeInfo();
         await this.fetchPoolState();
         await this.checkVersionRequirements();
         await this.checkRuntimeRequirements();
         await this.setupNodeContract();
         await this.setupListeners();
-        if (((_a = this.node) === null || _a === void 0 ? void 0 : _a.address) === this.settings.uploader) {
-            if (this.keyfile) {
-                if (await this.pool.paused()) {
-                    logger_1.default.warn("⚠️  Pool is paused. Exiting ...");
-                    process.exit();
+        await this.run(createBundle);
+        logger_1.default.info("💤 Exiting node ...");
+    }
+    async run(createBundle) {
+        let instructions = null;
+        let uploadBundle = null;
+        let transaction = null;
+        const runner = async () => {
+            var _a, _b;
+            while (true) {
+                if (instructions === null) {
+                    instructions = await this.getCurrentBlockInstructions();
                 }
-                else {
-                    logger_1.default.info("📚 Running as an uploader ...");
-                    this.uploader(uploadFunction, this.config);
+                if (instructions.uploader === ethers_1.ethers.constants.AddressZero) {
+                    logger_1.default.info("🔗 Claiming uploader slot for genesis block ...");
+                    const tx = await this.pool.claimGenesisUploaderSlot();
+                    await tx.wait();
+                    instructions = await this.getCurrentBlockInstructions();
                 }
+                logger_1.default.info("📚 Creating bundle ...");
+                uploadBundle = await createBundle(this.config, instructions.fromHeight, instructions.toHeight);
+                if (instructions.uploader === ((_a = this.node) === null || _a === void 0 ? void 0 : _a.address)) {
+                    // create block proposal if node is chosen uploader
+                    transaction = await this.uploadBundleToArweave(uploadBundle, instructions);
+                    await this.submitBlockProposal(transaction, instructions);
+                }
+                const nextInstructions = await this.waitForNextBlockInstructions();
+                if (instructions.uploader !== ((_b = this.node) === null || _b === void 0 ? void 0 : _b.address)) {
+                    this.validateCurrentBlockProposal(uploadBundle);
+                }
+                instructions = nextInstructions;
             }
-            else {
-                logger_1.default.error("❌ You need to specify your Arweave keyfile.");
+        };
+        runner();
+    }
+    async getCurrentBlockInstructions() {
+        const instructions = {
+            ...(await this.pool._currentBlockInstructions()),
+        };
+        return {
+            uploader: instructions._uploader,
+            fromHeight: instructions._fromHeight,
+            toHeight: instructions._toHeight,
+        };
+    }
+    async uploadBundleToArweave(bundle, instructions) {
+        try {
+            logger_1.default.info("💾 Uploading bundle to Arweave ...");
+            const transaction = await this.client.createTransaction({
+                data: JSON.stringify(bundle),
+            });
+            transaction.addTag("Application", "KYVE - Testnet");
+            transaction.addTag("Pool", this.pool.address);
+            transaction.addTag("@kyve/core", package_json_1.version);
+            transaction.addTag(this.runtime, this.version);
+            transaction.addTag("Uploader", instructions.uploader);
+            transaction.addTag("FromHeight", instructions.fromHeight.toString());
+            transaction.addTag("ToHeight", instructions.toHeight.toString());
+            transaction.addTag("Content-Type", "application/json");
+            await this.client.transactions.sign(transaction, this.keyfile);
+            const balance = await this.client.wallets.getBalance(await this.client.wallets.getAddress(this.keyfile));
+            if (+transaction.reward > +balance) {
+                logger_1.default.error("❌ You do not have enough funds in your Arweave wallet.");
                 process.exit(1);
             }
+            await this.client.transactions.post(transaction);
+            logger_1.default.debug(`Arweave bundle = ${transaction.id}`);
+            return transaction;
         }
-        else {
-            logger_1.default.info("🧐 Running as an validator ...");
-            this.validator(validateFunction, this.config);
+        catch (error) {
+            logger_1.default.error("❌ Received an error while trying to create a block proposal:", error);
+            process.exit(1);
         }
     }
-    async uploader(uploadFunction, config) {
-        const uploaderLogger = logger_1.default.getChildLogger({
-            name: "Uploader",
-        });
-        const node = new rxjs_1.Observable((subscriber) => {
-            // @ts-ignore
-            subscriber.upload = subscriber.next;
-            // @ts-ignore
-            uploadFunction(subscriber, config, uploaderLogger);
-        });
-        node.subscribe(async (item) => {
-            // Push item to buffer.
-            const i = this.buffer.push(item);
-            logger_1.default.debug(`Received a new data item (${i} / ${this.metadata.bundleSize}).`);
-            // Check buffer length.
-            if (this.buffer.length >= this.metadata.bundleSize) {
-                uploaderLogger.info("📦 Creating bundle ...");
-                // Clear the buffer.
-                const tempBuffer = this.buffer;
-                this.buffer = [];
-                // Upload buffer to Arweave.
-                uploaderLogger.debug("Uploading bundle to Arweave.");
-                const transaction = await this.client.createTransaction({
-                    data: JSON.stringify(tempBuffer),
+    async submitBlockProposal(transaction, instructions) {
+        try {
+            // manual gas limit for resources exhausted error
+            const tx = await this.pool.submitBlockProposal((0, arweave_2.toBytes)(transaction.id), +transaction.data_size, instructions.fromHeight, instructions.toHeight, {
+                gasLimit: 10000000,
+                gasPrice: await (0, helpers_1.getGasPrice)(this.pool, this.gasMultiplier),
+            });
+            logger_1.default.info("Submitting new block proposal.");
+            logger_1.default.debug(`Transaction = ${tx.hash}`);
+        }
+        catch (error) {
+            logger_1.default.error("❌ Received an error while submitting block proposal:", error);
+            process.exit(1);
+        }
+    }
+    async waitForNextBlockInstructions() {
+        return new Promise((resolve) => {
+            this.pool.on("NextBlockInstructions", (uploader, fromHeight, toHeight) => {
+                resolve({
+                    uploader,
+                    fromHeight,
+                    toHeight,
                 });
-                transaction.addTag("Application", "KYVE - Testnet");
-                transaction.addTag("Pool", this.pool.address);
-                transaction.addTag("@kyve/core", package_json_1.version);
-                transaction.addTag(this.runtime, this.version);
-                transaction.addTag("Bundle-Size", this.metadata.bundleSize);
-                transaction.addTag("Content-Type", "application/json");
-                await this.client.transactions.sign(transaction, this.keyfile);
-                const balance = await this.client.wallets.getBalance(await this.client.wallets.getAddress(this.keyfile));
-                if (+transaction.reward > +balance) {
-                    uploaderLogger.error("❌ You do not have enough funds in your Arweave wallet.");
-                    process.exit();
-                }
-                await this.client.transactions.post(transaction);
-                uploaderLogger.info(`💾 Uploaded bundle to Arweave. Transaction = ${transaction.id}`);
-                // Create a new vote.
-                uploaderLogger.debug(`Attempting to register a bundle.`);
-                try {
-                    // manual gas limit for resources exhausted error
-                    const registerTransaction = (await this.pool.register((0, arweave_2.toBytes)(transaction.id), +transaction.data_size, {
-                        gasLimit: 10000000,
-                        gasPrice: await (0, helpers_1.getGasPrice)(this.pool, this.gasMultiplier),
-                    }));
-                    uploaderLogger.info(`⬆️  Creating a new proposal. Transaction = ${registerTransaction.hash}`);
-                }
-                catch (error) {
-                    uploaderLogger.error("❌ Received an error while trying to register a bundle:", error);
-                    process.exit(1);
-                }
-            }
-        });
-    }
-    async listener() {
-        const listenerLogger = logger_1.default.getChildLogger({
-            name: "Listener",
-        });
-        return new rxjs_1.Observable((subscriber) => {
-            this.pool.on("ProposalStarted", async (_transaction, _bytes) => {
-                var _a;
-                const transaction = (0, arweave_2.fromBytes)(_transaction);
-                listenerLogger.info(`⬇️  Received a new proposal. Bundle = ${transaction}`);
-                const [isValidator, paused] = await Promise.all([
-                    this.pool.isValidator((_a = this.node) === null || _a === void 0 ? void 0 : _a.address),
-                    this.pool.paused(),
-                ]);
-                if (!paused) {
-                    if (isValidator) {
-                        const res = await this.client.transactions.getStatus(transaction);
-                        if (res.status === 200 || res.status === 202) {
-                            try {
-                                const _data = (await this.client.transactions.getData(transaction, {
-                                    decode: true,
-                                }));
-                                const bytes = _data.byteLength;
-                                const bundle = JSON.parse(new TextDecoder("utf-8", {
-                                    fatal: true,
-                                }).decode(_data));
-                                if (+_bytes === +bytes) {
-                                    listenerLogger.debug("Bytes match, forwarding bundle to the validate function.");
-                                    subscriber.next({
-                                        transaction,
-                                        bundle,
-                                    });
-                                }
-                                else {
-                                    listenerLogger.debug(`Bytes don't match (${_bytes} vs ${bytes}).`);
-                                    this.vote({
-                                        transaction,
-                                        valid: false,
-                                    });
-                                }
-                            }
-                            catch (err) {
-                                listenerLogger.error(`❌ Error fetching bundle from Arweave: ${err}`);
-                            }
-                        }
-                        else {
-                            listenerLogger.error("❌ Error fetching bundle from Arweave.");
-                        }
-                    }
-                    else {
-                        logger_1.default.warn("⚠️  Stake not high enough to participate as validator. Skipping proposal ...");
-                    }
-                }
-                else {
-                    logger_1.default.warn("⚠️  Pool is paused. Skipping proposal ...");
-                }
             });
         });
     }
-    async validator(validateFunction, config) {
-        const validatorLogger = logger_1.default.getChildLogger({
-            name: "Validator",
-        });
-        const listener = await this.listener();
-        const node = new rxjs_1.Observable((subscriber) => {
-            // @ts-ignore
-            subscriber.vote = subscriber.next;
-            // @ts-ignore
-            validateFunction(listener, subscriber, config, validatorLogger);
-        });
-        node.subscribe((item) => this.vote(item));
-    }
-    async vote(input) {
-        const voteLogger = logger_1.default.getChildLogger({
-            name: "Vote",
-        });
-        voteLogger.info(`🗳  Voting "${input.valid ? "valid" : "invalid"}" on bundle ${input.transaction}.`);
+    async validateCurrentBlockProposal(uploadBundle) {
+        const blockProposal = { ...(await this.pool._currentBlockProposal()) };
+        const transaction = (0, arweave_2.fromBytes)(blockProposal._tx);
+        const uploadBytes = blockProposal._bytes;
         try {
-            await this.pool.vote((0, arweave_2.toBytes)(input.transaction), input.valid, {
-                gasLimit: await this.pool.estimateGas.vote((0, arweave_2.toBytes)(input.transaction), input.valid),
+            const { status } = await this.client.transactions.getStatus(transaction);
+            if (status === 200 || status === 202) {
+                const _data = (await this.client.transactions.getData(transaction, {
+                    decode: true,
+                }));
+                const downloadBytes = _data.byteLength;
+                const downloadBundle = JSON.parse(new TextDecoder("utf-8", {
+                    fatal: true,
+                }).decode(_data));
+                if (+uploadBytes === +downloadBytes) {
+                    const uploadBundleHash = (0, object_hash_1.default)(JSON.parse(JSON.stringify(uploadBundle)));
+                    const downloadBundleHash = (0, object_hash_1.default)(JSON.parse(JSON.stringify(downloadBundle)));
+                    this.vote({
+                        transaction,
+                        valid: uploadBundleHash === downloadBundleHash,
+                    });
+                }
+                else {
+                    logger_1.default.debug(`Bytes don't match. Uploaded data size = ${uploadBytes} Downloaded data size = ${downloadBytes}`);
+                    this.vote({
+                        transaction,
+                        valid: false,
+                    });
+                }
+            }
+        }
+        catch (err) {
+            logger_1.default.error(`❌ Error fetching bundle from Arweave: ${err}`);
+        }
+    }
+    async vote(vote) {
+        logger_1.default.info(`🖋 Voting "${vote.valid ? "valid" : "invalid"}" on bundle ${vote.transaction} ...`);
+        try {
+            await this.pool.vote((0, arweave_2.toBytes)(vote.transaction), vote.valid, {
+                gasLimit: await this.pool.estimateGas.vote((0, arweave_2.toBytes)(vote.transaction), vote.valid),
                 gasPrice: await (0, helpers_1.getGasPrice)(this.pool, this.gasMultiplier),
             });
         }
         catch (error) {
-            voteLogger.error("❌ Received an error while trying to vote:", error);
+            logger_1.default.error("❌ Received an error while trying to vote:", error);
         }
     }
     logNodeInfo() {

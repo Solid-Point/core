@@ -5,6 +5,15 @@ export declare type Tag = {
     value: string;
 };
 export declare type Tags = Tag[];
+export declare type Vote = {
+    transaction: string;
+    valid: boolean;
+};
+export declare type BlockInstructions = {
+    uploader: string;
+    fromHeight: number;
+    toHeight: number;
+};
 export interface UploadFunctionReturn {
     data: string;
     tags?: Tags;
@@ -12,7 +21,7 @@ export interface UploadFunctionReturn {
 export interface UploadFunctionSubscriber {
     upload(value?: UploadFunctionReturn): void;
 }
-export declare type UploadFunction<ConfigType> = (uploader: UploadFunctionSubscriber, config: ConfigType, logger: Logger) => void;
+export declare type BundlerFunction<ConfigType> = (config: ConfigType, fromHeight: number, toHeight: number) => Promise<any>;
 export declare type Bundle = UploadFunctionReturn[];
 export interface ListenFunctionReturn {
     transaction: string;
