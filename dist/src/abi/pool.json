@@ -18,22 +18,12 @@
             },
             {
                 "internalType": "uint256",
-                "name": "maxValidators",
+                "name": "startHeight",
                 "type": "uint256"
             },
             {
                 "internalType": "uint256",
-                "name": "maxFunders",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "uploadLimit",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "slashThreshold",
+                "name": "bundleSize",
                 "type": "uint256"
             },
             {
@@ -49,6 +39,49 @@
         ],
         "stateMutability": "nonpayable",
         "type": "constructor"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "bytes32",
+                "name": "tx",
+                "type": "bytes32"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "byteSize",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "uploader",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "enum Pool.Status",
+                "name": "status",
+                "type": "uint8"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "validVotes",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "invalidVotes",
+                "type": "uint256"
+            }
+        ],
+        "name": "Activity",
+        "type": "event"
     },
     {
         "anonymous": false,
@@ -86,6 +119,62 @@
             }
         ],
         "name": "AdminRemoved",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "uploader",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "bytes32",
+                "name": "tx",
+                "type": "bytes32"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "byteSize",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "fromHeight",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "toHeight",
+                "type": "uint256"
+            }
+        ],
+        "name": "BlockProposed",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "previous",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "current",
+                "type": "uint256"
+            }
+        ],
+        "name": "BundleSizeChanged",
         "type": "event"
     },
     {
@@ -186,25 +275,6 @@
                 "type": "uint256"
             }
         ],
-        "name": "GracePeriodChanged",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "previous",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "current",
-                "type": "uint256"
-            }
-        ],
         "name": "IdleCostChanged",
         "type": "event"
     },
@@ -232,44 +302,6 @@
         "inputs": [
             {
                 "indexed": false,
-                "internalType": "uint256",
-                "name": "previous",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "current",
-                "type": "uint256"
-            }
-        ],
-        "name": "MaxFundersChanged",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "previous",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "current",
-                "type": "uint256"
-            }
-        ],
-        "name": "MaxVotesChanged",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": false,
                 "internalType": "string",
                 "name": "previous",
                 "type": "string"
@@ -289,18 +321,24 @@
         "inputs": [
             {
                 "indexed": false,
+                "internalType": "address",
+                "name": "uploader",
+                "type": "address"
+            },
+            {
+                "indexed": false,
                 "internalType": "uint256",
-                "name": "previous",
+                "name": "fromHeight",
                 "type": "uint256"
             },
             {
                 "indexed": false,
                 "internalType": "uint256",
-                "name": "current",
+                "name": "toHeight",
                 "type": "uint256"
             }
         ],
-        "name": "MinimumStakeChanged",
+        "name": "NextBlockInstructions",
         "type": "event"
     },
     {
@@ -347,31 +385,6 @@
             {
                 "indexed": false,
                 "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "bytes32",
-                "name": "tx",
-                "type": "bytes32"
-            }
-        ],
-        "name": "PayedOut",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "node",
-                "type": "address"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
                 "name": "points",
                 "type": "uint256"
             },
@@ -383,87 +396,6 @@
             }
         ],
         "name": "PointsIncreased",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": false,
-                "internalType": "bytes32",
-                "name": "tx",
-                "type": "bytes32"
-            },
-            {
-                "indexed": false,
-                "internalType": "string",
-                "name": "status",
-                "type": "string"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "votesValid",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "votesInvalid",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "totalPayout",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "byteSize",
-                "type": "uint256"
-            }
-        ],
-        "name": "ProposalEnded",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": false,
-                "internalType": "bytes32",
-                "name": "tx",
-                "type": "bytes32"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "byteSize",
-                "type": "uint256"
-            }
-        ],
-        "name": "ProposalStarted",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "previous",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "current",
-                "type": "uint256"
-            }
-        ],
-        "name": "SlashThresholdChanged",
         "type": "event"
     },
     {
@@ -559,25 +491,6 @@
         "inputs": [
             {
                 "indexed": false,
-                "internalType": "uint256",
-                "name": "previous",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "current",
-                "type": "uint256"
-            }
-        ],
-        "name": "UploadLimitChanged",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": false,
                 "internalType": "address",
                 "name": "previous",
                 "type": "address"
@@ -619,7 +532,59 @@
     },
     {
         "inputs": [],
+        "name": "MAX_FUNDERS",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "MAX_VALIDATORS",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "SLASH_THRESHOLD",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
         "name": "_averageProposalTime",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "_bundleSize",
         "outputs": [
             {
                 "internalType": "uint256",
@@ -663,6 +628,77 @@
         "type": "function"
     },
     {
+        "inputs": [],
+        "name": "_currentBlockInstructions",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "_uploader",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_fromHeight",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_toHeight",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "_currentBlockProposal",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "_uploader",
+                "type": "address"
+            },
+            {
+                "internalType": "bytes32",
+                "name": "_tx",
+                "type": "bytes32"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_bytes",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_fromHeight",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_toHeight",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_start",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_validLength",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_invalidLength",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
         "inputs": [
             {
                 "internalType": "address",
@@ -671,6 +707,19 @@
             }
         ],
         "name": "_fundingAmounts",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "_height",
         "outputs": [
             {
                 "internalType": "uint256",
@@ -735,32 +784,6 @@
     },
     {
         "inputs": [],
-        "name": "_maxFunders",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "_maxValidators",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
         "name": "_metadata",
         "outputs": [
             {
@@ -786,39 +809,6 @@
                 "internalType": "address",
                 "name": "",
                 "type": "address"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "_openProposal",
-        "outputs": [
-            {
-                "internalType": "bytes32",
-                "name": "_tx",
-                "type": "bytes32"
-            },
-            {
-                "internalType": "uint256",
-                "name": "_bytes",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "_start",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "_validLength",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "_invalidLength",
-                "type": "uint256"
             }
         ],
         "stateMutability": "view",
@@ -870,19 +860,6 @@
         "type": "function"
     },
     {
-        "inputs": [],
-        "name": "_slashThreshold",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
         "inputs": [
             {
                 "internalType": "address",
@@ -928,32 +905,6 @@
         "type": "function"
     },
     {
-        "inputs": [],
-        "name": "_uploadLimit",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "_uploader",
-        "outputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
         "inputs": [
             {
                 "internalType": "address",
@@ -993,6 +944,13 @@
             }
         ],
         "name": "claim",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "claimGenesisUploaderSlot",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -1161,16 +1119,6 @@
                         "internalType": "address",
                         "name": "poolAddress",
                         "type": "address"
-                    },
-                    {
-                        "internalType": "bool",
-                        "name": "isUploader",
-                        "type": "bool"
-                    },
-                    {
-                        "internalType": "bool",
-                        "name": "isValidator",
-                        "type": "bool"
                     }
                 ],
                 "internalType": "struct Pool.NodeState",
@@ -1222,22 +1170,12 @@
                 "components": [
                     {
                         "internalType": "uint256",
-                        "name": "maxValidators",
+                        "name": "height",
                         "type": "uint256"
                     },
                     {
                         "internalType": "uint256",
-                        "name": "maxFunders",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "uploadLimit",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "slashThreshold",
+                        "name": "bundleSize",
                         "type": "uint256"
                     },
                     {
@@ -1269,11 +1207,6 @@
                         "internalType": "uint256",
                         "name": "minStake",
                         "type": "uint256"
-                    },
-                    {
-                        "internalType": "address",
-                        "name": "uploader",
-                        "type": "address"
                     },
                     {
                         "internalType": "address",
@@ -1322,6 +1255,19 @@
     {
         "inputs": [
             {
+                "internalType": "address",
+                "name": "admin",
+                "type": "address"
+            }
+        ],
+        "name": "removeAdmin",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
                 "internalType": "bytes32",
                 "name": "_tx",
                 "type": "bytes32"
@@ -1330,22 +1276,19 @@
                 "internalType": "uint256",
                 "name": "_bytes",
                 "type": "uint256"
-            }
-        ],
-        "name": "register",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
+            },
             {
-                "internalType": "address",
-                "name": "admin",
-                "type": "address"
+                "internalType": "uint256",
+                "name": "_fromHeight",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_toHeight",
+                "type": "uint256"
             }
         ],
-        "name": "removeAdmin",
+        "name": "submitBlockProposal",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -1399,6 +1342,19 @@
     {
         "inputs": [
             {
+                "internalType": "uint256",
+                "name": "bundlesize",
+                "type": "uint256"
+            }
+        ],
+        "name": "updateBundleSize",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
                 "internalType": "string",
                 "name": "config",
                 "type": "string"
@@ -1438,64 +1394,12 @@
     {
         "inputs": [
             {
-                "internalType": "uint256",
-                "name": "maxFunders",
-                "type": "uint256"
-            }
-        ],
-        "name": "updateMaxFunders",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "maxValidators",
-                "type": "uint256"
-            }
-        ],
-        "name": "updateMaxValidators",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
                 "internalType": "string",
                 "name": "metadata",
                 "type": "string"
             }
         ],
         "name": "updateMetadata",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "slashThreshold",
-                "type": "uint256"
-            }
-        ],
-        "name": "updateSlashThreshold",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "uploadLimit",
-                "type": "uint256"
-            }
-        ],
-        "name": "updateUploadLimit",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
