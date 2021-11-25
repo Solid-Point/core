@@ -48,7 +48,6 @@ class KYVE {
   private name: string;
   private gasMultiplier: string;
 
-  private buffer: Bundle = [];
   private metadata: any;
   private settings: any;
   private config: any;
@@ -182,6 +181,8 @@ class KYVE {
           instructions = await this.getCurrentBlockInstructions();
         }
 
+        console.log("1. ", instructions);
+
         if (instructions.uploader === ethers.constants.AddressZero) {
           logger.info("🔗 Claiming uploader slot for genesis block ...");
 
@@ -190,6 +191,8 @@ class KYVE {
 
           instructions = await this.getCurrentBlockInstructions();
         }
+
+        console.log("2. ", instructions);
 
         logger.info("📚 Creating bundle ...");
 
@@ -215,6 +218,8 @@ class KYVE {
         }
 
         instructions = nextInstructions;
+
+        console.log("3. ", instructions);
       }
     };
 
@@ -234,7 +239,7 @@ class KYVE {
   }
 
   private async uploadBundleToArweave(
-    bundle: any,
+    bundle: any[],
     instructions: BlockInstructions
   ): Promise<Transaction> {
     try {

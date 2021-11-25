@@ -30,7 +30,6 @@ const object_hash_1 = __importDefault(require("object-hash"));
 __exportStar(require("./utils"), exports);
 class KYVE {
     constructor(poolAddress, runtime, version, stakeAmount, privateKey, keyfile, name, endpoint, gasMultiplier = "1") {
-        this.buffer = [];
         this.client = new arweave_1.default({
             host: "arweave.net",
             protocol: "https",
@@ -117,12 +116,14 @@ class KYVE {
                 if (instructions === null) {
                     instructions = await this.getCurrentBlockInstructions();
                 }
+                console.log("1. ", instructions);
                 if (instructions.uploader === ethers_1.ethers.constants.AddressZero) {
                     logger_1.default.info("🔗 Claiming uploader slot for genesis block ...");
                     const tx = await this.pool.claimGenesisUploaderSlot();
                     await tx.wait();
                     instructions = await this.getCurrentBlockInstructions();
                 }
+                console.log("2. ", instructions);
                 logger_1.default.info("📚 Creating bundle ...");
                 uploadBundle = await createBundle(this.config, instructions.fromHeight, instructions.toHeight);
                 if (instructions.uploader === ((_a = this.node) === null || _a === void 0 ? void 0 : _a.address)) {
@@ -135,6 +136,7 @@ class KYVE {
                     this.validateCurrentBlockProposal(uploadBundle);
                 }
                 instructions = nextInstructions;
+                console.log("3. ", instructions);
             }
         };
         runner();

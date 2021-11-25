@@ -13,7 +13,6 @@ declare class KYVE {
     private keyfile?;
     private name;
     private gasMultiplier;
-    private buffer;
     private metadata;
     private settings;
     private config;
