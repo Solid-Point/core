@@ -110,38 +110,41 @@ class KYVE {
                     instructions = await this.getCurrentBlockInstructions();
                 }
                 console.log("1. ", instructions);
-                if (instructions.uploader === ethers_1.ethers.constants.AddressZero) {
-                    logger_1.default.info("🔗 Claiming uploader slot for genesis block ...");
-                    const tx = await this.pool.claimGenesisUploaderSlot();
-                    await tx.wait();
-                    instructions = await this.getCurrentBlockInstructions();
-                }
-                console.log("2. ", instructions);
                 logger_1.default.info("📚 Creating bundle ...");
                 uploadBundle = await createBundle(this.config, instructions.fromHeight, instructions.toHeight);
                 if (instructions.uploader === ((_a = this.node) === null || _a === void 0 ? void 0 : _a.address)) {
+                    // TODO: find out how to wait for most of validators to vote
+                    await (0, helpers_1.sleep)(10000);
                     // create block proposal if node is chosen uploader
                     transaction = await this.uploadBundleToArweave(uploadBundle, instructions);
                     await this.submitBlockProposal(transaction, instructions);
+                    instructions = await this.waitForNextBlockInstructions();
                 }
-                const nextInstructions = await this.waitForNextBlockInstructions();
-                if (instructions.uploader !== ((_b = this.node) === null || _b === void 0 ? void 0 : _b.address)) {
-                    this.validateCurrentBlockProposal(uploadBundle);
+                else if (instructions.uploader === ethers_1.ethers.constants.AddressZero) {
+                    // create genesis block proposal if chain is empty
+                    transaction = await this.uploadBundleToArweave(uploadBundle, instructions);
+                    await this.submitGenesisBlock(transaction, instructions);
+                    instructions = await this.waitForNextBlockInstructions();
                 }
-                instructions = nextInstructions;
-                console.log("3. ", instructions);
+                else {
+                    instructions = await this.waitForNextBlockInstructions();
+                    if (instructions.uploader !== ((_b = this.node) === null || _b === void 0 ? void 0 : _b.address)) {
+                        this.validateCurrentBlockProposal(uploadBundle);
+                    }
+                }
+                console.log("2. ", instructions);
             }
         };
         runner();
     }
     async getCurrentBlockInstructions() {
         const instructions = {
-            ...(await this.pool._currentBlockInstructions()),
+            ...(await this.pool.nextBlockInstructions()),
         };
         return {
-            uploader: instructions._uploader,
-            fromHeight: instructions._fromHeight,
-            toHeight: instructions._toHeight,
+            uploader: instructions.uploader,
+            fromHeight: instructions.fromHeight.toNumber(),
+            toHeight: instructions.toHeight.toNumber(),
         };
     }
     async uploadBundleToArweave(bundle, instructions) {
@@ -188,21 +191,36 @@ class KYVE {
             process.exit(1);
         }
     }
+    async submitGenesisBlock(transaction, instructions) {
+        try {
+            // manual gas limit for resources exhausted error
+            const tx = await this.pool.submitGenesisBlock((0, arweave_2.toBytes)(transaction.id), +transaction.data_size, instructions.fromHeight, instructions.toHeight, {
+                gasLimit: 10000000,
+                gasPrice: await (0, helpers_1.getGasPrice)(this.pool, this.gasMultiplier),
+            });
+            logger_1.default.info("Submitting genesis block proposal.");
+            logger_1.default.debug(`Transaction = ${tx.hash}`);
+        }
+        catch (error) {
+            logger_1.default.error("❌ Received an error while submitting genesis block proposal:", error);
+            process.exit(1);
+        }
+    }
     async waitForNextBlockInstructions() {
         return new Promise((resolve) => {
             this.pool.on("NextBlockInstructions", (uploader, fromHeight, toHeight) => {
                 resolve({
                     uploader,
-                    fromHeight,
-                    toHeight,
+                    fromHeight: fromHeight.toNumber(),
+                    toHeight: toHeight.toNumber(),
                 });
             });
         });
     }
     async validateCurrentBlockProposal(uploadBundle) {
-        const blockProposal = { ...(await this.pool._currentBlockProposal()) };
-        const transaction = (0, arweave_2.fromBytes)(blockProposal._tx);
-        const uploadBytes = blockProposal._bytes;
+        const blockProposal = { ...(await this.pool.openBlockProposal()) };
+        const transaction = (0, arweave_2.fromBytes)(blockProposal.txId);
+        const uploadBytes = blockProposal.byteSize;
         try {
             const { status } = await this.client.transactions.getStatus(transaction);
             if (status === 200 || status === 202) {
@@ -254,54 +272,72 @@ class KYVE {
         logger_1.default.info(`🚀 Starting node ...\n\t${formatInfoLogs("Name")} = ${this.name}\n\t${formatInfoLogs("Address")} = ${this.wallet.address}\n\t${formatInfoLogs("Pool")} = ${this.pool.address}\n\t${formatInfoLogs("Desired Stake")} = ${this.stake} $KYVE\n\n\t${formatInfoLogs("@kyve/core")} = v${package_json_1.version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}`);
     }
     async setupListeners() {
-        var _a, _b, _c;
-        // Listen to new contract changes.
-        this.pool.on("ConfigChanged", () => {
-            logger_1.default.warn("⚠️  Config changed. Exiting ...");
-            process.exit();
-        });
-        this.pool.on("MetadataChanged", async () => {
-            await this.fetchPoolState();
-        });
-        this.pool.on("Paused", () => {
-            var _a;
-            if (((_a = this.node) === null || _a === void 0 ? void 0 : _a.address) === this.settings.uploader) {
-                logger_1.default.warn("⚠️  Pool is now paused. Exiting ...");
-                process.exit();
-            }
-        });
-        this.pool.on("UploaderChanged", (previous) => {
-            var _a;
-            if (((_a = this.node) === null || _a === void 0 ? void 0 : _a.address) === previous) {
-                logger_1.default.warn("⚠️  Uploader changed. Exiting ...");
-                process.exit();
-            }
-        });
-        // Listen to new payouts.
-        const payoutLogger = logger_1.default.getChildLogger({
-            name: "Payout",
-        });
-        this.pool.on(this.pool.filters.PayedOut((_a = this.node) === null || _a === void 0 ? void 0 : _a.address), (_, _amount, _transaction) => {
-            const transaction = (0, arweave_2.fromBytes)(_transaction);
-            payoutLogger.info(`💸 Received a reward of ${(0, helpers_1.toHumanReadable)((0, helpers_1.toBN)(_amount))} $KYVE. Bundle = ${transaction}`);
-        });
-        // Listen to new points.
-        const pointsLogger = logger_1.default.getChildLogger({
-            name: "Points",
-        });
-        this.pool.on(this.pool.filters.PointsIncreased((_b = this.node) === null || _b === void 0 ? void 0 : _b.address), (_, _points, _transaction) => {
-            const transaction = (0, arweave_2.fromBytes)(_transaction);
-            pointsLogger.warn(`⚠️  Received a new slashing point (${_points.toString()} / ${this.settings.slashThreshold}). Bundle = ${transaction}`);
-        });
-        // Listen to new slashes.
-        const slashLogger = logger_1.default.getChildLogger({
-            name: "Slash",
-        });
-        this.pool.on(this.pool.filters.Slashed((_c = this.node) === null || _c === void 0 ? void 0 : _c.address), (_, _amount, _transaction) => {
-            const transaction = (0, arweave_2.fromBytes)(_transaction);
-            slashLogger.warn(`🚫 Node has been slashed. Lost ${(0, helpers_1.toHumanReadable)((0, helpers_1.toBN)(_amount))} $KYVE. Bundle = ${transaction}`);
-            process.exit();
-        });
+        // // Listen to new contract changes.
+        // this.pool.on("ConfigChanged", () => {
+        //   logger.warn("⚠️  Config changed. Exiting ...");
+        //   process.exit();
+        // });
+        // this.pool.on("MetadataChanged", async () => {
+        //   await this.fetchPoolState();
+        // });
+        // this.pool.on("Paused", () => {
+        //   if (this.node?.address === this.settings.uploader) {
+        //     logger.warn("⚠️  Pool is now paused. Exiting ...");
+        //     process.exit();
+        //   }
+        // });
+        // this.pool.on("UploaderChanged", (previous: string) => {
+        //   if (this.node?.address === previous) {
+        //     logger.warn("⚠️  Uploader changed. Exiting ...");
+        //     process.exit();
+        //   }
+        // });
+        // // Listen to new payouts.
+        // const payoutLogger = logger.getChildLogger({
+        //   name: "Payout",
+        // });
+        // this.pool.on(
+        //   this.pool.filters.PayedOut(this.node?.address),
+        //   (_, _amount: ethers.BigNumber, _transaction: string) => {
+        //     const transaction = fromBytes(_transaction);
+        //     payoutLogger.info(
+        //       `💸 Received a reward of ${toHumanReadable(
+        //         toBN(_amount)
+        //       )} $KYVE. Bundle = ${transaction}`
+        //     );
+        //   }
+        // );
+        // // Listen to new points.
+        // const pointsLogger = logger.getChildLogger({
+        //   name: "Points",
+        // });
+        // this.pool.on(
+        //   this.pool.filters.PointsIncreased(this.node?.address),
+        //   (_, _points: ethers.BigNumber, _transaction: string) => {
+        //     const transaction = fromBytes(_transaction);
+        //     pointsLogger.warn(
+        //       `⚠️  Received a new slashing point (${_points.toString()} / ${
+        //         this.settings.slashThreshold
+        //       }). Bundle = ${transaction}`
+        //     );
+        //   }
+        // );
+        // // Listen to new slashes.
+        // const slashLogger = logger.getChildLogger({
+        //   name: "Slash",
+        // });
+        // this.pool.on(
+        //   this.pool.filters.Slashed(this.node?.address),
+        //   (_, _amount: ethers.BigNumber, _transaction: string) => {
+        //     const transaction = fromBytes(_transaction);
+        //     slashLogger.warn(
+        //       `🚫 Node has been slashed. Lost ${toHumanReadable(
+        //         toBN(_amount)
+        //       )} $KYVE. Bundle = ${transaction}`
+        //     );
+        //     process.exit();
+        //   }
+        // );
     }
     async fetchPoolState() {
         const stateLogger = logger_1.default.getChildLogger({
@@ -361,7 +397,7 @@ class KYVE {
     }
     async setupNodeContract() {
         var _a;
-        let nodeAddress = await this.pool._nodeOwners(this.wallet.address);
+        let nodeAddress = await this.pool.nodeOwners(this.wallet.address);
         let parsedStake;
         let tx;
         logger_1.default.info("🌐 Joining KYVE Network ...");
@@ -373,7 +409,7 @@ class KYVE {
                 });
                 logger_1.default.debug(`Creating new contract. Transaction = ${tx.hash}`);
                 await tx.wait();
-                nodeAddress = await this.pool._nodeOwners(this.wallet.address);
+                nodeAddress = await this.pool.nodeOwners(this.wallet.address);
             }
             catch (error) {
                 logger_1.default.error("❌ Could not create node contract:", error);

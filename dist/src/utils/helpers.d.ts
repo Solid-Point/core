@@ -6,3 +6,4 @@ export declare const toHumanReadable: (amount: BigNumber) => string;
 export declare const toEthersBN: (amount: BigNumber) => ethers.BigNumber;
 export declare const toBN: (amount: ethers.BigNumber) => BigNumber;
 export declare const getGasPrice: (pool: Contract, gasMultiplier: string) => Promise<ethers.BigNumber>;
+export declare const sleep: (ms: number) => Promise<unknown>;

@@ -27,6 +27,7 @@ declare class KYVE {
     private getCurrentBlockInstructions;
     private uploadBundleToArweave;
     private submitBlockProposal;
+    private submitGenesisBlock;
     private waitForNextBlockInstructions;
     private validateCurrentBlockProposal;
     private vote;

@@ -3,37 +3,37 @@
         "inputs": [
             {
                 "internalType": "address",
-                "name": "creator",
+                "name": "_creator",
                 "type": "address"
             },
             {
                 "internalType": "string",
-                "name": "metadata",
+                "name": "_metadata",
                 "type": "string"
             },
             {
                 "internalType": "string",
-                "name": "config",
+                "name": "_config",
                 "type": "string"
             },
             {
                 "internalType": "uint256",
-                "name": "startHeight",
+                "name": "_startHeight",
                 "type": "uint256"
             },
             {
                 "internalType": "uint256",
-                "name": "bundleSize",
+                "name": "_bundleSize",
                 "type": "uint256"
             },
             {
                 "internalType": "uint256",
-                "name": "idleCost",
+                "name": "_idleCost",
                 "type": "uint256"
             },
             {
                 "internalType": "uint256",
-                "name": "kyvePerByte",
+                "name": "_kyvePerByte",
                 "type": "uint256"
             }
         ],
@@ -571,20 +571,7 @@
     },
     {
         "inputs": [],
-        "name": "_averageProposalTime",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "_bundleSize",
+        "name": "START_HEIGHT",
         "outputs": [
             {
                 "internalType": "uint256",
@@ -599,316 +586,7 @@
         "inputs": [
             {
                 "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "name": "_claimableAmounts",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "_config",
-        "outputs": [
-            {
-                "internalType": "string",
-                "name": "",
-                "type": "string"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "_currentBlockInstructions",
-        "outputs": [
-            {
-                "internalType": "address",
-                "name": "_uploader",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256",
-                "name": "_fromHeight",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "_toHeight",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "_currentBlockProposal",
-        "outputs": [
-            {
-                "internalType": "address",
-                "name": "_uploader",
-                "type": "address"
-            },
-            {
-                "internalType": "bytes32",
-                "name": "_tx",
-                "type": "bytes32"
-            },
-            {
-                "internalType": "uint256",
-                "name": "_bytes",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "_fromHeight",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "_toHeight",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "_start",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "_validLength",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "_invalidLength",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "name": "_fundingAmounts",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "_height",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "_idleCost",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "_kyvePerByte",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "_lowestFunder",
-        "outputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "_lowestValidator",
-        "outputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "_metadata",
-        "outputs": [
-            {
-                "internalType": "string",
-                "name": "",
-                "type": "string"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "name": "_nodeOwners",
-        "outputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "name": "_points",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "_proposals",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "_value",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "_registry",
-        "outputs": [
-            {
-                "internalType": "contract IRegistry",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "name": "_stakingAmounts",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "_totalFunded",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "_totalStaked",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "admin",
+                "name": "_admin",
                 "type": "address"
             }
         ],
@@ -919,7 +597,7 @@
     },
     {
         "inputs": [],
-        "name": "admins",
+        "name": "adminsList",
         "outputs": [
             {
                 "internalType": "address[]",
@@ -931,15 +609,41 @@
         "type": "function"
     },
     {
+        "inputs": [],
+        "name": "averageBlockTime",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "bundleSize",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
         "inputs": [
             {
                 "internalType": "address",
-                "name": "recipient",
+                "name": "_recipient",
                 "type": "address"
             },
             {
                 "internalType": "uint256",
-                "name": "amount",
+                "name": "_amount",
                 "type": "uint256"
             }
         ],
@@ -949,17 +653,42 @@
         "type": "function"
     },
     {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "claimableAmounts",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
         "inputs": [],
-        "name": "claimGenesisUploaderSlot",
-        "outputs": [],
-        "stateMutability": "nonpayable",
+        "name": "config",
+        "outputs": [
+            {
+                "internalType": "string",
+                "name": "",
+                "type": "string"
+            }
+        ],
+        "stateMutability": "view",
         "type": "function"
     },
     {
         "inputs": [
             {
                 "internalType": "uint256",
-                "name": "commission",
+                "name": "_commission",
                 "type": "uint256"
             }
         ],
@@ -972,7 +701,7 @@
         "inputs": [
             {
                 "internalType": "uint256",
-                "name": "amount",
+                "name": "_amount",
                 "type": "uint256"
             }
         ],
@@ -985,12 +714,12 @@
         "inputs": [
             {
                 "internalType": "address",
-                "name": "nodeAddress",
+                "name": "_nodeAddress",
                 "type": "address"
             },
             {
                 "internalType": "uint256",
-                "name": "amount",
+                "name": "_amount",
                 "type": "uint256"
             }
         ],
@@ -1007,7 +736,7 @@
                 "type": "address"
             }
         ],
-        "name": "delegatorNodes",
+        "name": "delegatorNodesList",
         "outputs": [
             {
                 "internalType": "address[]",
@@ -1022,7 +751,7 @@
         "inputs": [
             {
                 "internalType": "uint256",
-                "name": "amount",
+                "name": "_amount",
                 "type": "uint256"
             }
         ],
@@ -1033,12 +762,57 @@
     },
     {
         "inputs": [],
-        "name": "funders",
+        "name": "fundersList",
         "outputs": [
             {
                 "internalType": "address[]",
                 "name": "",
                 "type": "address[]"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "fundingAmounts",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "height",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "idleCost",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
             }
         ],
         "stateMutability": "view",
@@ -1058,6 +832,100 @@
                 "internalType": "bool",
                 "name": "",
                 "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "kyvePerByte",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "lowestFunder",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "lowestValidator",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "metadata",
+        "outputs": [
+            {
+                "internalType": "string",
+                "name": "",
+                "type": "string"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "nextBlockInstructions",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "uploader",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "fromHeight",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "toHeight",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "nodeOwners",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
             }
         ],
         "stateMutability": "view",
@@ -1131,12 +999,60 @@
     },
     {
         "inputs": [],
-        "name": "nodes",
+        "name": "nodesList",
         "outputs": [
             {
                 "internalType": "address[]",
                 "name": "",
                 "type": "address[]"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "openBlockProposal",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "uploader",
+                "type": "address"
+            },
+            {
+                "internalType": "bytes32",
+                "name": "txId",
+                "type": "bytes32"
+            },
+            {
+                "internalType": "uint256",
+                "name": "byteSize",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "fromHeight",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "toHeight",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "start",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "validLength",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "invalidLength",
+                "type": "uint256"
             }
         ],
         "stateMutability": "view",
@@ -1157,6 +1073,25 @@
                 "internalType": "bool",
                 "name": "",
                 "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "points",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
             }
         ],
         "stateMutability": "view",
@@ -1253,10 +1188,23 @@
         "type": "function"
     },
     {
+        "inputs": [],
+        "name": "registry",
+        "outputs": [
+            {
+                "internalType": "contract IRegistry",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
         "inputs": [
             {
                 "internalType": "address",
-                "name": "admin",
+                "name": "_admin",
                 "type": "address"
             }
         ],
@@ -1268,27 +1216,54 @@
     {
         "inputs": [
             {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "stakingAmounts",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
                 "internalType": "bytes32",
-                "name": "_tx",
+                "name": "_txId",
                 "type": "bytes32"
             },
             {
                 "internalType": "uint256",
-                "name": "_bytes",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "_fromHeight",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "_toHeight",
+                "name": "_byteSize",
                 "type": "uint256"
             }
         ],
         "name": "submitBlockProposal",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes32",
+                "name": "_txId",
+                "type": "bytes32"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_byteSize",
+                "type": "uint256"
+            }
+        ],
+        "name": "submitGenesisBlockProposal",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -1301,6 +1276,32 @@
                 "internalType": "address",
                 "name": "",
                 "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "totalFunded",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "totalStaked",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
             }
         ],
         "stateMutability": "view",
@@ -1323,7 +1324,7 @@
         "inputs": [
             {
                 "internalType": "address",
-                "name": "nodeAddress",
+                "name": "_nodeAddress",
                 "type": "address"
             }
         ],
@@ -1343,7 +1344,7 @@
         "inputs": [
             {
                 "internalType": "uint256",
-                "name": "bundlesize",
+                "name": "_bundleSize",
                 "type": "uint256"
             }
         ],
@@ -1356,7 +1357,7 @@
         "inputs": [
             {
                 "internalType": "string",
-                "name": "config",
+                "name": "_config",
                 "type": "string"
             }
         ],
@@ -1369,7 +1370,7 @@
         "inputs": [
             {
                 "internalType": "uint256",
-                "name": "idleCost",
+                "name": "_idleCost",
                 "type": "uint256"
             }
         ],
@@ -1382,7 +1383,7 @@
         "inputs": [
             {
                 "internalType": "uint256",
-                "name": "kyvePerByte",
+                "name": "_kyvePerByte",
                 "type": "uint256"
             }
         ],
@@ -1395,7 +1396,7 @@
         "inputs": [
             {
                 "internalType": "string",
-                "name": "metadata",
+                "name": "_metadata",
                 "type": "string"
             }
         ],
@@ -1405,21 +1406,8 @@
         "type": "function"
     },
     {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "uploader",
-                "type": "address"
-            }
-        ],
-        "name": "updateUploader",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
         "inputs": [],
-        "name": "validators",
+        "name": "validatorsList",
         "outputs": [
             {
                 "internalType": "address[]",
@@ -1434,7 +1422,7 @@
         "inputs": [
             {
                 "internalType": "bytes32",
-                "name": "_tx",
+                "name": "_txId",
                 "type": "bytes32"
             },
             {

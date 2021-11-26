@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getGasPrice = exports.toBN = exports.toEthersBN = exports.toHumanReadable = exports.Pool = exports.Token = void 0;
+exports.sleep = exports.getGasPrice = exports.toBN = exports.toEthersBN = exports.toHumanReadable = exports.Pool = exports.Token = void 0;
 const bignumber_js_1 = require("bignumber.js");
 const ethers_1 = require("ethers");
 const pool_json_1 = __importDefault(require("../abi/pool.json"));
@@ -32,3 +32,7 @@ const getGasPrice = async (pool, gasMultiplier) => {
     return (0, exports.toEthersBN)((0, exports.toBN)(await pool.provider.getGasPrice()).multipliedBy(new bignumber_js_1.BigNumber(gasMultiplier).toFixed(2)));
 };
 exports.getGasPrice = getGasPrice;
+const sleep = (ms) => {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+};
+exports.sleep = sleep;
