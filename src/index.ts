@@ -173,59 +173,57 @@ class KYVE {
     let proposal: BlockProposal | null = null;
     let instructions: BlockInstructions | null = null;
 
-    const runner = async () => {
-      while (true) {
-        logger.debug(`Running as ${this.node?.address}`);
-        proposal = await this.getBlockProposal();
-        console.log(proposal);
+    while (true) {
+      proposal = await this.getBlockProposal();
+      console.log(proposal);
 
-        // TODO: check if already voted
-        if (
-          proposal.uploader !== ethers.constants.AddressZero &&
-          proposal.uploader !== this.node?.address
-        ) {
-          logger.debug(
-            `Creating bundle for vote (${proposal.fromHeight} - ${proposal.toHeight})`
-          );
-          const downloadBundle = await createBundle(
-            this.config,
-            proposal.fromHeight,
-            proposal.toHeight
-          );
+      // TODO: check if already voted
+      // vote on current block proposal
+      if (
+        proposal.uploader !== ethers.constants.AddressZero &&
+        proposal.uploader !== this.node?.address
+      ) {
+        logger.debug(
+          `Creating bundle for block validation (${proposal.fromHeight} - ${proposal.toHeight}) ...`
+        );
+        const downloadBundle = await createBundle(
+          this.config,
+          proposal.fromHeight,
+          proposal.toHeight
+        );
 
-          await this.validateCurrentBlockProposal(downloadBundle);
-        }
-
-        instructions = await this.getBlockInstructions();
-        console.log(instructions);
-
-        if (
-          instructions.uploader === ethers.constants.AddressZero ||
-          instructions.uploader === this.node?.address
-        ) {
-          logger.debug(
-            `Creating bundle for submit (${instructions.fromHeight} - ${instructions.toHeight})`
-          );
-          const uploadBundle = await createBundle(
-            this.config,
-            instructions.fromHeight,
-            instructions.toHeight
-          );
-
-          const transaction = await this.uploadBundleToArweave(
-            uploadBundle,
-            instructions
-          );
-
-          await this.submitBlockProposal(transaction);
-        }
-
-        logger.debug("Waiting for next block instructions");
-        await this.waitForNextBlockInstructions();
+        await this.validateCurrentBlockProposal(downloadBundle, proposal);
       }
-    };
 
-    runner();
+      instructions = await this.getBlockInstructions();
+      console.log(instructions);
+
+      // create next block proposal if node is selected
+      if (
+        instructions.uploader === ethers.constants.AddressZero ||
+        instructions.uploader === this.node?.address
+      ) {
+        logger.debug(
+          `Creating bundle for block proposal (${instructions.fromHeight} - ${instructions.toHeight}) ...`
+        );
+        const uploadBundle = await createBundle(
+          this.config,
+          instructions.fromHeight,
+          instructions.toHeight
+        );
+
+        const transaction = await this.uploadBundleToArweave(
+          uploadBundle,
+          instructions
+        );
+
+        await this.submitBlockProposal(transaction);
+      }
+
+      // wait for next voting round to begin
+      logger.debug("Waiting for next block instructions ...");
+      await this.waitForNextBlockInstructions();
+    }
   }
 
   private async getBlockProposal(): Promise<BlockProposal> {
@@ -290,8 +288,6 @@ class KYVE {
 
       await this.client.transactions.post(transaction);
 
-      logger.debug(`Arweave bundle = ${transaction.id}`);
-
       return transaction;
     } catch (error) {
       logger.error(
@@ -305,7 +301,7 @@ class KYVE {
   private async submitBlockProposal(transaction: Transaction) {
     try {
       // manual gas limit for resources exhausted error
-      const tx = await this.pool.submitBlockProposal(
+      await this.pool.submitBlockProposal(
         toBytes(transaction.id),
         +transaction.data_size,
         {
@@ -314,8 +310,7 @@ class KYVE {
         }
       );
 
-      logger.info("Submitting new block proposal.");
-      logger.debug(`Transaction = ${tx.hash}`);
+      logger.debug(`Submitting block proposal ${transaction.id} ...`);
     } catch (error) {
       logger.error(
         "❌ Received an error while submitting block proposal:",
@@ -344,8 +339,11 @@ class KYVE {
     });
   }
 
-  private async validateCurrentBlockProposal(uploadBundle: any) {
-    const proposal = await this.getBlockProposal();
+  private async validateCurrentBlockProposal(
+    uploadBundle: any[],
+    proposal: BlockProposal
+  ) {
+    logger.debug(`Validating bundle ${proposal.txId} ...`);
 
     try {
       const { status } = await this.client.transactions.getStatus(
@@ -363,8 +361,6 @@ class KYVE {
           }).decode(_data)
         );
 
-        console.log(+proposal.byteSize, +downloadBytes);
-
         if (+proposal.byteSize === +downloadBytes) {
           const uploadBundleHash = hash(
             JSON.parse(JSON.stringify(uploadBundle))
@@ -373,15 +369,13 @@ class KYVE {
             JSON.parse(JSON.stringify(downloadBundle))
           );
 
-          console.log(uploadBundleHash, downloadBundleHash);
-
           this.vote({
             transaction: proposal.txId,
             valid: uploadBundleHash === downloadBundleHash,
           });
         } else {
           logger.debug(
-            `Bytes don't match. Uploaded data size = ${proposal.byteSize} Downloaded data size = ${downloadBytes}`
+            `Bytes don't match. Uploaded bytes = ${proposal.byteSize} - downloaded bytes = ${downloadBytes}`
           );
 
           this.vote({
@@ -397,7 +391,7 @@ class KYVE {
 
   private async vote(vote: Vote) {
     logger.info(
-      `🖋 Voting "${vote.valid ? "valid" : "invalid"}" on bundle ${
+      `🖋  Voting ${vote.valid ? "valid" : "invalid"} on bundle ${
         vote.transaction
       } ...`
     );
