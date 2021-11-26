@@ -175,13 +175,18 @@ class KYVE {
 
     const runner = async () => {
       while (true) {
+        logger.debug(`Running as ${this.node?.address}`);
         proposal = await this.getBlockProposal();
         console.log(proposal);
 
+        // TODO: check if already voted
         if (
           proposal.uploader !== ethers.constants.AddressZero &&
           proposal.uploader !== this.node?.address
         ) {
+          logger.debug(
+            `Creating bundle for vote (${proposal.fromHeight} - ${proposal.toHeight})`
+          );
           const downloadBundle = await createBundle(
             this.config,
             proposal.fromHeight,
@@ -198,6 +203,9 @@ class KYVE {
           instructions.uploader === ethers.constants.AddressZero ||
           instructions.uploader === this.node?.address
         ) {
+          logger.debug(
+            `Creating bundle for submit (${instructions.fromHeight} - ${instructions.toHeight})`
+          );
           const uploadBundle = await createBundle(
             this.config,
             instructions.fromHeight,
@@ -212,6 +220,7 @@ class KYVE {
           await this.submitBlockProposal(transaction);
         }
 
+        logger.debug("Waiting for next block instructions");
         await this.waitForNextBlockInstructions();
       }
     };
@@ -316,29 +325,6 @@ class KYVE {
     }
   }
 
-  private async submitGenesisBlockProposal(transaction: Transaction) {
-    try {
-      // manual gas limit for resources exhausted error
-      const tx = await this.pool.submitGenesisBlockProposal(
-        toBytes(transaction.id),
-        +transaction.data_size,
-        {
-          gasLimit: 10000000,
-          gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
-        }
-      );
-
-      logger.info("Submitting genesis block proposal.");
-      logger.debug(`Transaction = ${tx.hash}`);
-    } catch (error) {
-      logger.error(
-        "❌ Received an error while submitting genesis block proposal:",
-        error
-      );
-      process.exit(1);
-    }
-  }
-
   private async waitForNextBlockInstructions(): Promise<BlockInstructions> {
     return new Promise((resolve) => {
       this.pool.on(
@@ -377,6 +363,8 @@ class KYVE {
           }).decode(_data)
         );
 
+        console.log(+proposal.byteSize, +downloadBytes);
+
         if (+proposal.byteSize === +downloadBytes) {
           const uploadBundleHash = hash(
             JSON.parse(JSON.stringify(uploadBundle))
@@ -384,6 +372,8 @@ class KYVE {
           const downloadBundleHash = hash(
             JSON.parse(JSON.stringify(downloadBundle))
           );
+
+          console.log(uploadBundleHash, downloadBundleHash);
 
           this.vote({
             transaction: proposal.txId,
