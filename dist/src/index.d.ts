@@ -24,10 +24,11 @@ declare class KYVE {
     }>;
     start<ConfigType>(createBundle: BundlerFunction<ConfigType>): Promise<void>;
     private run;
-    private getCurrentBlockInstructions;
+    private getBlockProposal;
+    private getBlockInstructions;
     private uploadBundleToArweave;
     private submitBlockProposal;
-    private submitGenesisBlock;
+    private submitGenesisBlockProposal;
     private waitForNextBlockInstructions;
     private validateCurrentBlockProposal;
     private vote;

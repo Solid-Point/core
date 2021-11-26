@@ -16,6 +16,17 @@ export type BlockInstructions = {
   toHeight: number;
 };
 
+export type BlockProposal = {
+  uploader: string;
+  txId: string;
+  byteSize: number;
+  fromHeight: number;
+  toHeight: number;
+  start: number;
+  validLength: number;
+  invalidLength: number;
+};
+
 export type BundlerFunction<ConfigType> = (
   config: ConfigType,
   fromHeight: number,

@@ -18,7 +18,12 @@ import {
   starWars,
   uniqueNamesGenerator,
 } from "unique-names-generator";
-import { BlockInstructions, BundlerFunction, Vote } from "./faces";
+import {
+  BlockInstructions,
+  BlockProposal,
+  BundlerFunction,
+  Vote,
+} from "./faces";
 import { CLI } from "./utils";
 import { fromBytes, toBytes } from "./utils/arweave";
 import logger from "./utils/logger";
@@ -165,67 +170,75 @@ class KYVE {
   }
 
   private async run<ConfigType>(createBundle: BundlerFunction<ConfigType>) {
+    let proposal: BlockProposal | null = null;
     let instructions: BlockInstructions | null = null;
-    let uploadBundle: any = null;
-    let transaction: Transaction | null = null;
 
     const runner = async () => {
       while (true) {
-        if (instructions === null) {
-          instructions = await this.getCurrentBlockInstructions();
+        proposal = await this.getBlockProposal();
+        console.log(proposal);
+
+        if (
+          proposal.uploader !== ethers.constants.AddressZero &&
+          proposal.uploader !== this.node?.address
+        ) {
+          const downloadBundle = await createBundle(
+            this.config,
+            proposal.fromHeight,
+            proposal.toHeight
+          );
+
+          await this.validateCurrentBlockProposal(downloadBundle);
         }
 
-        console.log("1. ", instructions);
+        instructions = await this.getBlockInstructions();
+        console.log(instructions);
 
-        logger.info("📚 Creating bundle ...");
+        if (
+          instructions.uploader === ethers.constants.AddressZero ||
+          instructions.uploader === this.node?.address
+        ) {
+          const uploadBundle = await createBundle(
+            this.config,
+            instructions.fromHeight,
+            instructions.toHeight
+          );
 
-        uploadBundle = await createBundle(
-          this.config,
-          instructions.fromHeight,
-          instructions.toHeight
-        );
-
-        if (instructions.uploader === this.node?.address) {
-          // TODO: find out how to wait for most of validators to vote
-          await sleep(10000);
-
-          // create block proposal if node is chosen uploader
-          transaction = await this.uploadBundleToArweave(
+          const transaction = await this.uploadBundleToArweave(
             uploadBundle,
             instructions
           );
 
-          await this.submitBlockProposal(transaction, instructions);
-
-          instructions = await this.waitForNextBlockInstructions();
-        } else if (instructions.uploader === ethers.constants.AddressZero) {
-          // create genesis block proposal if chain is empty
-          transaction = await this.uploadBundleToArweave(
-            uploadBundle,
-            instructions
-          );
-
-          await this.submitGenesisBlock(transaction, instructions);
-
-          instructions = await this.waitForNextBlockInstructions();
-        } else {
-          instructions = await this.waitForNextBlockInstructions();
-
-          if (instructions.uploader !== this.node?.address) {
-            this.validateCurrentBlockProposal(uploadBundle);
-          }
+          await this.submitBlockProposal(transaction);
         }
 
-        console.log("2. ", instructions);
+        await this.waitForNextBlockInstructions();
       }
     };
 
     runner();
   }
 
-  private async getCurrentBlockInstructions(): Promise<BlockInstructions> {
+  private async getBlockProposal(): Promise<BlockProposal> {
+    const proposal = {
+      ...(await this.pool.blockProposal()),
+    };
+
+    return {
+      uploader: proposal.uploader,
+      txId: fromBytes(proposal.txId),
+      byteSize: proposal.byteSize.toNumber(),
+      fromHeight: proposal.fromHeight.toNumber(),
+      toHeight: proposal.toHeight.toNumber(),
+      start: proposal.start.toNumber(),
+      validLength: proposal.validLength.toNumber(),
+      invalidLength: proposal.invalidLength.toNumber(),
+    };
+  }
+
+  private async getBlockInstructions(): Promise<BlockInstructions> {
     const instructions = {
-      ...(await this.pool.nextBlockInstructions()),
+      ...(await this.pool.blockInstructions()),
     };
 
     return {
@@ -280,17 +293,12 @@ class KYVE {
     }
   }
 
-  private async submitBlockProposal(
-    transaction: Transaction,
-    instructions: BlockInstructions
-  ) {
+  private async submitBlockProposal(transaction: Transaction) {
     try {
       // manual gas limit for resources exhausted error
       const tx = await this.pool.submitBlockProposal(
         toBytes(transaction.id),
         +transaction.data_size,
-        instructions.fromHeight,
-        instructions.toHeight,
         {
           gasLimit: 10000000,
           gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
@@ -308,17 +316,12 @@ class KYVE {
     }
   }
 
-  private async submitGenesisBlock(
-    transaction: Transaction,
-    instructions: BlockInstructions
-  ) {
+  private async submitGenesisBlockProposal(transaction: Transaction) {
     try {
       // manual gas limit for resources exhausted error
-      const tx = await this.pool.submitGenesisBlock(
+      const tx = await this.pool.submitGenesisBlockProposal(
         toBytes(transaction.id),
         +transaction.data_size,
-        instructions.fromHeight,
-        instructions.toHeight,
         {
           gasLimit: 10000000,
           gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
@@ -356,15 +359,15 @@ class KYVE {
   }
 
   private async validateCurrentBlockProposal(uploadBundle: any) {
-    const blockProposal = { ...(await this.pool.openBlockProposal()) };
-    const transaction = fromBytes(blockProposal.txId);
-    const uploadBytes = blockProposal.byteSize;
+    const proposal = await this.getBlockProposal();
 
     try {
-      const { status } = await this.client.transactions.getStatus(transaction);
+      const { status } = await this.client.transactions.getStatus(
+        proposal.txId
+      );
 
       if (status === 200 || status === 202) {
-        const _data = (await this.client.transactions.getData(transaction, {
+        const _data = (await this.client.transactions.getData(proposal.txId, {
           decode: true,
         })) as Uint8Array;
         const downloadBytes = _data.byteLength;
@@ -374,7 +377,7 @@ class KYVE {
           }).decode(_data)
         );
 
-        if (+uploadBytes === +downloadBytes) {
+        if (+proposal.byteSize === +downloadBytes) {
           const uploadBundleHash = hash(
             JSON.parse(JSON.stringify(uploadBundle))
           );
@@ -383,16 +386,16 @@ class KYVE {
           );
 
           this.vote({
-            transaction,
+            transaction: proposal.txId,
             valid: uploadBundleHash === downloadBundleHash,
           });
         } else {
           logger.debug(
-            `Bytes don't match. Uploaded data size = ${uploadBytes} Downloaded data size = ${downloadBytes}`
+            `Bytes don't match. Uploaded data size = ${proposal.byteSize} Downloaded data size = ${downloadBytes}`
           );
 
           this.vote({
-            transaction,
+            transaction: proposal.txId,
             valid: false,
           });
         }

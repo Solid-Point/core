@@ -12,4 +12,14 @@ export declare type BlockInstructions = {
     fromHeight: number;
     toHeight: number;
 };
+export declare type BlockProposal = {
+    uploader: string;
+    txId: string;
+    byteSize: number;
+    fromHeight: number;
+    toHeight: number;
+    start: number;
+    validLength: number;
+    invalidLength: number;
+};
 export declare type BundlerFunction<ConfigType> = (config: ConfigType, fromHeight: number, toHeight: number) => Promise<any[]>;

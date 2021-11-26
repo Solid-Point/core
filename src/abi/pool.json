@@ -623,6 +623,77 @@
   },
   {
     "inputs": [],
+    "name": "blockInstructions",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "uploader",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "fromHeight",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "toHeight",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "blockProposal",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "uploader",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "txId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "byteSize",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "fromHeight",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "toHeight",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "start",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "validLength",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "invalidLength",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "bundleSize",
     "outputs": [
       {
@@ -890,29 +961,6 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "nextBlockInstructions",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "uploader",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "fromHeight",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "toHeight",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "internalType": "address",
@@ -1005,54 +1053,6 @@
         "internalType": "address[]",
         "name": "",
         "type": "address[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "openBlockProposal",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "uploader",
-        "type": "address"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "txId",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "uint256",
-        "name": "byteSize",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "fromHeight",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "toHeight",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "start",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "validLength",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "invalidLength",
-        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -1246,24 +1246,6 @@
       }
     ],
     "name": "submitBlockProposal",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "_txId",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_byteSize",
-        "type": "uint256"
-      }
-    ],
-    "name": "submitGenesisBlockProposal",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
