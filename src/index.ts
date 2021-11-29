@@ -172,12 +172,12 @@ class KYVE {
   private async run<ConfigType>(createBundle: BundlerFunction<ConfigType>) {
     let proposal: BlockProposal | null = null;
     let instructions: BlockInstructions | null = null;
+    let uploadTimeout: any;
 
     while (true) {
       proposal = await this.getBlockProposal();
       console.log(proposal);
 
-      // TODO: check if already voted
       // vote on current block proposal
       if (
         proposal.uploader !== ethers.constants.AddressZero &&
@@ -222,7 +222,16 @@ class KYVE {
 
       // wait for next voting round to begin
       logger.debug("Waiting for next block instructions ...");
+
+      // TODO: fetch upload timeout from contract
+      uploadTimeout = setInterval(async () => {
+        logger.debug("Reached upload timeout. Claiming uploader role ...");
+        this.pool.claimUploaderRole();
+      }, this.settings.uploadTimeout * 1000);
+
       await this.waitForNextBlockInstructions();
+
+      clearTimeout(uploadTimeout);
     }
   }
 

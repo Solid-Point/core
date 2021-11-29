@@ -103,10 +103,10 @@ class KYVE {
         var _a, _b;
         let proposal = null;
         let instructions = null;
+        let uploadTimeout;
         while (true) {
             proposal = await this.getBlockProposal();
             console.log(proposal);
-            // TODO: check if already voted
             // vote on current block proposal
             if (proposal.uploader !== ethers_1.ethers.constants.AddressZero &&
                 proposal.uploader !== ((_a = this.node) === null || _a === void 0 ? void 0 : _a.address)) {
@@ -126,7 +126,13 @@ class KYVE {
             }
             // wait for next voting round to begin
             logger_1.default.debug("Waiting for next block instructions ...");
+            // TODO: fetch upload timeout from contract
+            uploadTimeout = setInterval(async () => {
+                logger_1.default.debug("Reached upload timeout. Claiming uploader role ...");
+                this.pool.claimUploaderRole();
+            }, this.settings.uploadTimeout * 1000);
             await this.waitForNextBlockInstructions();
+            clearTimeout(uploadTimeout);
         }
     }
     async getBlockProposal() {
