@@ -127,10 +127,13 @@ class KYVE {
             // wait for next voting round to begin
             logger_1.default.debug("Waiting for next block instructions ...");
             // TODO: fetch upload timeout from contract
-            uploadTimeout = setInterval(async () => {
-                logger_1.default.debug("Reached upload timeout. Claiming uploader role ...");
-                this.pool.claimUploaderRole();
-            }, this.settings.uploadTimeout * 1000);
+            uploadTimeout = setTimeout(async () => {
+                var _a;
+                if ((instructions === null || instructions === void 0 ? void 0 : instructions.uploader) !== ((_a = this.node) === null || _a === void 0 ? void 0 : _a.address)) {
+                    logger_1.default.debug("Reached upload timeout. Claiming uploader role ...");
+                    await this.pool.claimUploaderRole();
+                }
+            }, this.settings.uploadTimeout.toNumber() * 1000);
             await this.waitForNextBlockInstructions();
             clearTimeout(uploadTimeout);
         }
@@ -369,6 +372,7 @@ class KYVE {
             process.exit(1);
         }
         this.settings = _poolState;
+        console.log(this.settings);
         stateLogger.debug("Successfully fetched pool state.");
     }
     async checkVersionRequirements() {
