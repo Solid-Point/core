@@ -1,6 +1,8 @@
 import { Command } from "commander";
 import { Tags } from "../faces";
 
+export { fetchLatestArweaveTransaction } from "./arweave";
+
 export const getTagByName = (name: string, tags?: Tags): string | undefined => {
   if (tags) {
     const tag = tags.find((tag) => tag.name === name);
