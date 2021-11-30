@@ -172,13 +172,20 @@ class KYVE {
   private async run<ConfigType>(createBundle: BundlerFunction<ConfigType>) {
     let proposal: BlockProposal | null = null;
     let instructions: BlockInstructions | null = null;
-    let lastInstructions: BlockInstructions | null = null;
     let uploadTimeout: NodeJS.Timeout;
 
     while (true) {
       console.log(`Running as ${this.node?.address}`);
       instructions = await this.getBlockInstructions();
       console.log(instructions);
+
+      if (
+        instructions.uploader === ethers.constants.AddressZero ||
+        instructions.uploader === this.node?.address
+      ) {
+        logger.debug("Selected as uploader, waiting for nodes to vote ...");
+        await sleep(30000);
+      }
 
       logger.debug(
         `Creating bundle (${instructions.fromHeight} - ${instructions.toHeight}) ...`
@@ -225,67 +232,6 @@ class KYVE {
       ) {
         await this.validateCurrentBlockProposal(bundle, proposal);
       }
-
-      // proposal = await this.getBlockProposal();
-      // console.log(proposal);
-
-      // // vote on current block proposal
-      // if (
-      //   proposal.uploader !== ethers.constants.AddressZero &&
-      //   proposal.uploader !== this.node?.address
-      // ) {
-      //   logger.debug(
-      //     `Creating bundle for block validation (${proposal.fromHeight} - ${proposal.toHeight}) ...`
-      //   );
-      //   const downloadBundle = await createBundle(
-      //     this.config,
-      //     proposal.fromHeight,
-      //     proposal.toHeight
-      //   );
-
-      //   await this.validateCurrentBlockProposal(downloadBundle, proposal);
-      // }
-
-      // instructions = await this.getBlockInstructions();
-      // console.log(instructions);
-
-      // // create next block proposal if node is selected
-      // if (
-      //   instructions.uploader === ethers.constants.AddressZero ||
-      //   instructions.uploader === this.node?.address
-      // ) {
-      //   logger.debug(
-      //     `Creating bundle for block proposal (${instructions.fromHeight} - ${instructions.toHeight}) ...`
-      //   );
-      //   const uploadBundle = await createBundle(
-      //     this.config,
-      //     instructions.fromHeight,
-      //     instructions.toHeight
-      //   );
-
-      //   const transaction = await this.uploadBundleToArweave(
-      //     uploadBundle,
-      //     instructions
-      //   );
-
-      //   await this.submitBlockProposal(transaction);
-      // }
-
-      // // wait for next voting round to begin
-      // logger.debug("Waiting for next block instructions ...");
-
-      // // TODO: fetch upload timeout from contract
-      // uploadTimeout = setTimeout(async () => {
-      //   if (instructions?.uploader !== this.node?.address) {
-      //     logger.debug("Reached upload timeout. Claiming uploader role ...");
-      //     const tx = await this.pool.claimUploaderRole();
-      //     logger.debug(`Transaction = ${tx.hash}`);
-      //   }
-      // }, this.settings.uploadTimeout.toNumber() * 1000);
-
-      // await this.waitForNextBlockInstructions();
-
-      // clearTimeout(uploadTimeout);
     }
   }
 
