@@ -227,7 +227,8 @@ class KYVE {
       uploadTimeout = setTimeout(async () => {
         if (instructions?.uploader !== this.node?.address) {
           logger.debug("Reached upload timeout. Claiming uploader role ...");
-          await this.pool.claimUploaderRole();
+          const tx = await this.pool.claimUploaderRole();
+          logger.debug(`Transaction = ${tx.hash}`);
         }
       }, this.settings.uploadTimeout.toNumber() * 1000);
 
@@ -312,7 +313,7 @@ class KYVE {
   private async submitBlockProposal(transaction: Transaction) {
     try {
       // manual gas limit for resources exhausted error
-      await this.pool.submitBlockProposal(
+      const tx = await this.pool.submitBlockProposal(
         toBytes(transaction.id),
         +transaction.data_size,
         {
@@ -322,6 +323,7 @@ class KYVE {
       );
 
       logger.debug(`Submitting block proposal ${transaction.id} ...`);
+      logger.debug(`Transaction = ${tx.hash}`);
     } catch (error) {
       logger.error(
         "❌ Received an error while submitting block proposal:",
@@ -408,13 +410,14 @@ class KYVE {
     );
 
     try {
-      await this.pool.vote(toBytes(vote.transaction), vote.valid, {
+      const tx = await this.pool.vote(toBytes(vote.transaction), vote.valid, {
         gasLimit: await this.pool.estimateGas.vote(
           toBytes(vote.transaction),
           vote.valid
         ),
         gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
       });
+      logger.debug(`Transaction = ${tx.hash}`);
     } catch (error) {
       logger.error("❌ Received an error while trying to vote:", error);
     }

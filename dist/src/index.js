@@ -131,7 +131,8 @@ class KYVE {
                 var _a;
                 if ((instructions === null || instructions === void 0 ? void 0 : instructions.uploader) !== ((_a = this.node) === null || _a === void 0 ? void 0 : _a.address)) {
                     logger_1.default.debug("Reached upload timeout. Claiming uploader role ...");
-                    await this.pool.claimUploaderRole();
+                    const tx = await this.pool.claimUploaderRole();
+                    logger_1.default.debug(`Transaction = ${tx.hash}`);
                 }
             }, this.settings.uploadTimeout.toNumber() * 1000);
             await this.waitForNextBlockInstructions();
@@ -194,11 +195,12 @@ class KYVE {
     async submitBlockProposal(transaction) {
         try {
             // manual gas limit for resources exhausted error
-            await this.pool.submitBlockProposal((0, arweave_2.toBytes)(transaction.id), +transaction.data_size, {
+            const tx = await this.pool.submitBlockProposal((0, arweave_2.toBytes)(transaction.id), +transaction.data_size, {
                 gasLimit: 10000000,
                 gasPrice: await (0, helpers_1.getGasPrice)(this.pool, this.gasMultiplier),
             });
             logger_1.default.debug(`Submitting block proposal ${transaction.id} ...`);
+            logger_1.default.debug(`Transaction = ${tx.hash}`);
         }
         catch (error) {
             logger_1.default.error("❌ Received an error while submitting block proposal:", error);
@@ -252,10 +254,11 @@ class KYVE {
     async vote(vote) {
         logger_1.default.info(`🖋  Voting ${vote.valid ? "valid" : "invalid"} on bundle ${vote.transaction} ...`);
         try {
-            await this.pool.vote((0, arweave_2.toBytes)(vote.transaction), vote.valid, {
+            const tx = await this.pool.vote((0, arweave_2.toBytes)(vote.transaction), vote.valid, {
                 gasLimit: await this.pool.estimateGas.vote((0, arweave_2.toBytes)(vote.transaction), vote.valid),
                 gasPrice: await (0, helpers_1.getGasPrice)(this.pool, this.gasMultiplier),
             });
+            logger_1.default.debug(`Transaction = ${tx.hash}`);
         }
         catch (error) {
             logger_1.default.error("❌ Received an error while trying to vote:", error);
