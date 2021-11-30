@@ -172,7 +172,7 @@ class KYVE {
   private async run<ConfigType>(createBundle: BundlerFunction<ConfigType>) {
     let proposal: BlockProposal | null = null;
     let instructions: BlockInstructions | null = null;
-    let uploadTimeout: any;
+    let uploadTimeout: NodeJS.Timeout;
 
     while (true) {
       proposal = await this.getBlockProposal();
@@ -382,7 +382,7 @@ class KYVE {
             JSON.parse(JSON.stringify(downloadBundle))
           );
 
-          this.vote({
+          await this.vote({
             transaction: proposal.txId,
             valid: uploadBundleHash === downloadBundleHash,
           });
@@ -391,7 +391,7 @@ class KYVE {
             `Bytes don't match. Uploaded bytes = ${proposal.byteSize} - downloaded bytes = ${downloadBytes}`
           );
 
-          this.vote({
+          await this.vote({
             transaction: proposal.txId,
             valid: false,
           });
