@@ -48,12 +48,12 @@ export class CLI extends Command {
       "-g, --gas-multiplier <string>",
       "The amount that you want to multiply the default gas price by. [optional]"
     );
+    this.option("-st, --send-statistics <boolean>", "Send statistics.", true);
     this.option(
-      "-st, --send-statistics <boolean>",
-      "Send statistics. [optional, default = true]",
-      true
+      "-v, --verbose",
+      "Include if you want logs to be verbose.",
+      false
     );
-    this.option("--verbose", undefined, false);
-    this.version(packageVersion, "-v, --version");
+    this.version(packageVersion, "--version");
   }
 }
