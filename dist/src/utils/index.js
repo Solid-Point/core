@@ -1,7 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CLI = exports.getTagByName = void 0;
+exports.CLI = exports.getTagByName = exports.fetchLatestArweaveTransaction = void 0;
 const commander_1 = require("commander");
+var arweave_1 = require("./arweave");
+Object.defineProperty(exports, "fetchLatestArweaveTransaction", { enumerable: true, get: function () { return arweave_1.fetchLatestArweaveTransaction; } });
 const getTagByName = (name, tags) => {
     if (tags) {
         const tag = tags.find((tag) => tag.name === name);

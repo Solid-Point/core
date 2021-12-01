@@ -10,7 +10,10 @@
 
 ### Existing integrations
 
+- [Celo](https://github.com/KYVENetwork/celo)
+- [Cosmos](https://github.com/KYVENetwork/cosmos)
 - [EVM](https://github.com/KYVENetwork/evm)
+- [Solana Snapshots](https://github.com/KYVENetwork/solana-snapshots)
 
 ### Creating a custom integration
 
