@@ -17,7 +17,7 @@ declare class KYVE {
     private settings;
     private config;
     private client;
-    constructor(poolAddress: string, runtime: string, version: string, stakeAmount: string, privateKey: string, keyfile?: JWKInterface, name?: string, endpoint?: string, gasMultiplier?: string);
+    constructor(poolAddress: string, runtime: string, version: string, stakeAmount: string, privateKey: string, keyfile?: JWKInterface, name?: string, endpoint?: string, gasMultiplier?: string, verbose?: boolean);
     static generate(cli?: CLI): Promise<{
         node: KYVE;
         options: OptionValues;

@@ -53,6 +53,7 @@ export class CLI extends Command {
       "Send statistics. [optional, default = true]",
       true
     );
+    this.option("--verbose <boolean>", "[optional, default = false]", false);
     this.version(packageVersion, "-v, --version");
   }
 }

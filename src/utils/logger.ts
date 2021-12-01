@@ -1,5 +1,4 @@
-import { ILogObject, Logger } from "tslog";
-import { appendFileSync } from "fs";
+import { Logger } from "tslog";
 
 const logger = new Logger({
   displayFilePath: "hidden",

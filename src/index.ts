@@ -72,7 +72,8 @@ class KYVE {
     keyfile?: JWKInterface,
     name?: string,
     endpoint?: string,
-    gasMultiplier: string = "1"
+    gasMultiplier: string = "1",
+    verbose: boolean = false
   ) {
     const provider = new ethers.providers.StaticJsonRpcProvider(
       endpoint || "https://rpc.testnet.moonbeam.network",
@@ -114,6 +115,10 @@ class KYVE {
       appendFileSync(`./logs/${this.name}.txt`, JSON.stringify(log) + "\n");
     };
 
+    logger.setSettings({
+      minLevel: verbose ? undefined : "info",
+    });
+
     logger.attachTransport({
       silly: logToTransport,
       debug: logToTransport,
@@ -144,7 +149,8 @@ class KYVE {
       options.keyfile && JSON.parse(readFileSync(options.keyfile, "utf-8")),
       options.name,
       options.endpoint,
-      options.gasMultiplier
+      options.gasMultiplier,
+      options.verbose
     );
 
     return {

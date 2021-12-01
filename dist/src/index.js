@@ -29,7 +29,7 @@ const package_json_1 = require("../package.json");
 const object_hash_1 = __importDefault(require("object-hash"));
 __exportStar(require("./utils"), exports);
 class KYVE {
-    constructor(poolAddress, runtime, version, stakeAmount, privateKey, keyfile, name, endpoint, gasMultiplier = "1") {
+    constructor(poolAddress, runtime, version, stakeAmount, privateKey, keyfile, name, endpoint, gasMultiplier = "1", verbose = false) {
         this.client = new arweave_1.default({
             host: "arweave.net",
             protocol: "https",
@@ -65,6 +65,9 @@ class KYVE {
         const logToTransport = (log) => {
             (0, fs_1.appendFileSync)(`./logs/${this.name}.txt`, JSON.stringify(log) + "\n");
         };
+        logger_1.default.setSettings({
+            minLevel: verbose ? undefined : "info",
+        });
         logger_1.default.attachTransport({
             silly: logToTransport,
             debug: logToTransport,
@@ -83,7 +86,7 @@ class KYVE {
         const options = cli.opts();
         const node = new KYVE(options.pool, cli.runtime, cli.packageVersion, options.stake, options.privateKey, 
         // if there is a keyfile flag defined, we load it from disk.
-        options.keyfile && JSON.parse((0, fs_1.readFileSync)(options.keyfile, "utf-8")), options.name, options.endpoint, options.gasMultiplier);
+        options.keyfile && JSON.parse((0, fs_1.readFileSync)(options.keyfile, "utf-8")), options.name, options.endpoint, options.gasMultiplier, options.verbose);
         return {
             node,
             options,
