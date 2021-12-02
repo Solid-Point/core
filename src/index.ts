@@ -729,7 +729,7 @@ class KYVE {
         logger.debug(`Updating commission. Transaction = ${tx.hash}`);
 
         await tx.wait();
-        logger.info("📉 Successfully updated commission.");
+        logger.info("💼 Successfully updated commission.");
       } catch (error) {
         logger.error(
           "❌ Received an error while trying to update commission:",

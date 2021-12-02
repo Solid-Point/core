@@ -498,7 +498,7 @@ class KYVE {
                 });
                 logger_1.default.debug(`Updating commission. Transaction = ${tx.hash}`);
                 await tx.wait();
-                logger_1.default.info("📉 Successfully updated commission.");
+                logger_1.default.info("💼 Successfully updated commission.");
             }
             catch (error) {
                 logger_1.default.error("❌ Received an error while trying to update commission:", error);

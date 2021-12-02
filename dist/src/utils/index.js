@@ -21,7 +21,7 @@ class CLI extends commander_1.Command {
         this.packageVersion = packageVersion;
         this.requiredOption("-p, --pool <string>", "The address of the pool you want to run on.");
         this.requiredOption("-s, --stake <number>", "The amount of tokens you want to stake.");
-        this.requiredOption("-c, --commision <number>", "The commission rate of your node.");
+        this.requiredOption("-c, --commission <number>", "The commission rate of your node.");
         this.requiredOption("-pk, --private-key <string>", "Your Ethereum private key that holds $KYVE.");
         this.option("-k, --keyfile <string>", "The path to your Arweave keyfile. [optional]");
         this.option("-n, --name <string>", "The identifier name of the node. [optional, default = random]");

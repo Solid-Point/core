@@ -31,7 +31,7 @@ export class CLI extends Command {
       "The amount of tokens you want to stake."
     );
     this.requiredOption(
-      "-c, --commision <number>",
+      "-c, --commission <number>",
       "The commission rate of your node."
     );
     this.requiredOption(
