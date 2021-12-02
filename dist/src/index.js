@@ -351,7 +351,7 @@ class KYVE {
         stateLogger.debug("Attempting to fetch pool state.");
         let _poolState;
         try {
-            _poolState = await this.pool.poolState();
+            _poolState = await this.pool.pool();
         }
         catch (error) {
             stateLogger.error("❌ Received an error while trying to fetch the pool state:", error);
