@@ -23,8 +23,6 @@ export type BlockProposal = {
   fromHeight: number;
   toHeight: number;
   start: number;
-  validLength: number;
-  invalidLength: number;
 };
 
 export type BundlerFunction<ConfigType> = (

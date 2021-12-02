@@ -252,8 +252,6 @@ class KYVE {
       fromHeight: proposal.fromHeight.toNumber(),
       toHeight: proposal.toHeight.toNumber(),
       start: proposal.start.toNumber(),
-      validLength: proposal.validLength.toNumber(),
-      invalidLength: proposal.invalidLength.toNumber(),
     };
   }
 

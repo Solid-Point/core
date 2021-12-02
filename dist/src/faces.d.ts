@@ -19,7 +19,5 @@ export declare type BlockProposal = {
     fromHeight: number;
     toHeight: number;
     start: number;
-    validLength: number;
-    invalidLength: number;
 };
 export declare type BundlerFunction<ConfigType> = (config: ConfigType, fromHeight: number, toHeight: number) => Promise<any[]>;
