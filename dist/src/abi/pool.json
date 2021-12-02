@@ -187,31 +187,6 @@
         "inputs": [
             {
                 "indexed": false,
-                "internalType": "address",
-                "name": "node",
-                "type": "address"
-            },
-            {
-                "indexed": false,
-                "internalType": "address",
-                "name": "recipient",
-                "type": "address"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-            }
-        ],
-        "name": "Claimed",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": false,
                 "internalType": "string",
                 "name": "previous",
                 "type": "string"
@@ -243,6 +218,31 @@
             }
         ],
         "name": "Defunded",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "node",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "delegator",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "Delegated",
         "type": "event"
     },
     {
@@ -313,25 +313,6 @@
         "inputs": [
             {
                 "indexed": false,
-                "internalType": "address",
-                "name": "node",
-                "type": "address"
-            },
-            {
-                "indexed": false,
-                "internalType": "address",
-                "name": "creator",
-                "type": "address"
-            }
-        ],
-        "name": "NodeCreated",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": false,
                 "internalType": "uint256",
                 "name": "previous",
                 "type": "uint256"
@@ -381,7 +362,7 @@
                 "type": "bytes32"
             }
         ],
-        "name": "PointsIncreased",
+        "name": "ReceivedPoint",
         "type": "event"
     },
     {
@@ -406,22 +387,16 @@
                 "type": "bytes32"
             }
         ],
-        "name": "Slashed",
+        "name": "ReceivedSlash",
         "type": "event"
     },
     {
         "anonymous": false,
         "inputs": [
             {
-                "indexed": true,
-                "internalType": "address",
-                "name": "node",
-                "type": "address"
-            },
-            {
                 "indexed": false,
                 "internalType": "address",
-                "name": "delegator",
+                "name": "staker",
                 "type": "address"
             },
             {
@@ -459,6 +434,31 @@
             {
                 "indexed": false,
                 "internalType": "address",
+                "name": "node",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "delegator",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "Undelegated",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "address",
                 "name": "account",
                 "type": "address"
             }
@@ -470,15 +470,9 @@
         "anonymous": false,
         "inputs": [
             {
-                "indexed": true,
-                "internalType": "address",
-                "name": "node",
-                "type": "address"
-            },
-            {
                 "indexed": false,
                 "internalType": "address",
-                "name": "delegator",
+                "name": "staker",
                 "type": "address"
             },
             {
@@ -696,12 +690,22 @@
             },
             {
                 "internalType": "uint256",
-                "name": "validLength",
+                "name": "valid",
                 "type": "uint256"
             },
             {
                 "internalType": "uint256",
-                "name": "invalidLength",
+                "name": "invalid",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "validVotes",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "invalidVotes",
                 "type": "uint256"
             }
         ],
@@ -722,19 +726,8 @@
         "type": "function"
     },
     {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "_recipient",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256",
-                "name": "_amount",
-                "type": "uint256"
-            }
-        ],
-        "name": "claim",
+        "inputs": [],
+        "name": "claimCommissionRewards",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -744,25 +737,6 @@
         "name": "claimUploaderRole",
         "outputs": [],
         "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "name": "claimableAmounts",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
         "type": "function"
     },
     {
@@ -782,19 +756,6 @@
         "inputs": [
             {
                 "internalType": "uint256",
-                "name": "_commission",
-                "type": "uint256"
-            }
-        ],
-        "name": "createNode",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
                 "name": "_amount",
                 "type": "uint256"
             }
@@ -808,7 +769,7 @@
         "inputs": [
             {
                 "internalType": "address",
-                "name": "_nodeAddress",
+                "name": "_node",
                 "type": "address"
             },
             {
@@ -830,7 +791,7 @@
                 "type": "address"
             }
         ],
-        "name": "delegatorNodesList",
+        "name": "delegatedNodesList",
         "outputs": [
             {
                 "internalType": "address[]",
@@ -903,7 +864,7 @@
         "inputs": [
             {
                 "internalType": "address",
-                "name": "node",
+                "name": "_node",
                 "type": "address"
             }
         ],
@@ -933,7 +894,7 @@
     },
     {
         "inputs": [],
-        "name": "lowestValidator",
+        "name": "lowestStaker",
         "outputs": [
             {
                 "internalType": "address",
@@ -961,68 +922,14 @@
         "inputs": [
             {
                 "internalType": "address",
-                "name": "",
+                "name": "_node",
                 "type": "address"
             }
         ],
-        "name": "nodeOwners",
-        "outputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "node",
-                "type": "address"
-            }
-        ],
-        "name": "nodeState",
+        "name": "node",
         "outputs": [
             {
                 "components": [
-                    {
-                        "internalType": "uint256",
-                        "name": "apy",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "totalStaked",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "commission",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "totalDelegators",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "totalSlashes",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "totalPoints",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "proposalsValidated",
-                        "type": "uint256"
-                    },
                     {
                         "internalType": "address",
                         "name": "nodeAddress",
@@ -1032,6 +939,51 @@
                         "internalType": "address",
                         "name": "poolAddress",
                         "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "validProposalsCreated",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "personalStake",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "points",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "slashes",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "delegators",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "commission",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "commissionRewards",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "totalDelegation",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "votingPowerPercentage",
+                        "type": "uint256"
                     }
                 ],
                 "internalType": "struct Pool.NodeState",
@@ -1043,13 +995,69 @@
         "type": "function"
     },
     {
-        "inputs": [],
-        "name": "nodesList",
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "nodeState",
         "outputs": [
             {
-                "internalType": "address[]",
-                "name": "",
-                "type": "address[]"
+                "internalType": "uint256",
+                "name": "validProposalsCreated",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "personalStake",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "points",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "slashes",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "delegators",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "commission",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "commissionRewards",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "totalDelegationRewards",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "normalization",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "totalDelegation",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "votingPower",
+                "type": "uint256"
             }
         ],
         "stateMutability": "view",
@@ -1089,27 +1097,8 @@
         "type": "function"
     },
     {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "name": "points",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
         "inputs": [],
-        "name": "poolState",
+        "name": "pool",
         "outputs": [
             {
                 "components": [
@@ -1145,7 +1134,7 @@
                     },
                     {
                         "internalType": "uint256",
-                        "name": "totalFunded",
+                        "name": "totalFunds",
                         "type": "uint256"
                     },
                     {
@@ -1155,12 +1144,17 @@
                     },
                     {
                         "internalType": "uint256",
-                        "name": "totalStaked",
+                        "name": "totalStake",
                         "type": "uint256"
                     },
                     {
                         "internalType": "uint256",
                         "name": "minStake",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "totalDelegation",
                         "type": "uint256"
                     },
                     {
@@ -1176,11 +1170,6 @@
                     {
                         "internalType": "address[]",
                         "name": "validators",
-                        "type": "address[]"
-                    },
-                    {
-                        "internalType": "address[]",
-                        "name": "nodes",
                         "type": "address[]"
                     },
                     {
@@ -1236,20 +1225,14 @@
     {
         "inputs": [
             {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "name": "stakingAmounts",
-        "outputs": [
-            {
                 "internalType": "uint256",
-                "name": "",
+                "name": "_amount",
                 "type": "uint256"
             }
         ],
-        "stateMutability": "view",
+        "name": "stake",
+        "outputs": [],
+        "stateMutability": "nonpayable",
         "type": "function"
     },
     {
@@ -1298,7 +1281,7 @@
     },
     {
         "inputs": [],
-        "name": "totalFunded",
+        "name": "totalDelegation",
         "outputs": [
             {
                 "internalType": "uint256",
@@ -1311,7 +1294,33 @@
     },
     {
         "inputs": [],
-        "name": "totalStaked",
+        "name": "totalFunds",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "totalStake",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "totalVotingPower",
         "outputs": [
             {
                 "internalType": "uint256",
@@ -1339,7 +1348,7 @@
         "inputs": [
             {
                 "internalType": "address",
-                "name": "_nodeAddress",
+                "name": "_node",
                 "type": "address"
             }
         ],
@@ -1359,11 +1368,37 @@
         "inputs": [
             {
                 "internalType": "uint256",
+                "name": "_amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "unstake",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
                 "name": "_bundleSize",
                 "type": "uint256"
             }
         ],
         "name": "updateBundleSize",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_commission",
+                "type": "uint256"
+            }
+        ],
+        "name": "updateCommission",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"

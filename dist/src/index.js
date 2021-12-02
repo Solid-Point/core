@@ -24,12 +24,11 @@ const utils_1 = require("./utils");
 const arweave_2 = require("./utils/arweave");
 const logger_1 = __importDefault(require("./utils/logger"));
 const helpers_1 = require("./utils/helpers");
-const node_json_1 = __importDefault(require("./abi/node.json"));
 const package_json_1 = require("../package.json");
 const object_hash_1 = __importDefault(require("object-hash"));
 __exportStar(require("./utils"), exports);
 class KYVE {
-    constructor(poolAddress, runtime, version, stakeAmount, privateKey, keyfile, name, endpoint, gasMultiplier = "1", verbose = false) {
+    constructor(poolAddress, runtime, version, stakeAmount, commissionAmount, privateKey, keyfile, name, endpoint, gasMultiplier = "1", verbose = false) {
         this.client = new arweave_1.default({
             host: "arweave.net",
             protocol: "https",
@@ -40,10 +39,10 @@ class KYVE {
         });
         this.wallet = new ethers_1.Wallet(privateKey, provider);
         this.pool = (0, helpers_1.Pool)(poolAddress, this.wallet);
-        this.node = null;
         this.runtime = runtime;
         this.version = version;
         this.stake = stakeAmount;
+        this.commission = commissionAmount;
         this.keyfile = keyfile;
         this.gasMultiplier = gasMultiplier;
         if (name) {
@@ -84,7 +83,7 @@ class KYVE {
         }
         await cli.parseAsync();
         const options = cli.opts();
-        const node = new KYVE(options.pool, cli.runtime, cli.packageVersion, options.stake, options.privateKey, 
+        const node = new KYVE(options.pool, cli.runtime, cli.packageVersion, options.stake, options.commission, options.privateKey, 
         // if there is a keyfile flag defined, we load it from disk.
         options.keyfile && JSON.parse((0, fs_1.readFileSync)(options.keyfile, "utf-8")), options.name, options.endpoint, options.gasMultiplier, options.verbose);
         return {
@@ -97,22 +96,22 @@ class KYVE {
         await this.fetchPoolState();
         await this.checkVersionRequirements();
         await this.checkRuntimeRequirements();
-        await this.setupNodeContract();
+        await this.setupNodeStake();
+        await this.setupNodeCommission();
         await this.setupListeners();
         await this.run(createBundle);
         logger_1.default.info("💤 Exiting node ...");
     }
     async run(createBundle) {
-        var _a, _b, _c, _d;
         let proposal = null;
         let instructions = null;
         let uploadTimeout;
         while (true) {
-            console.log(`Running as ${(_a = this.node) === null || _a === void 0 ? void 0 : _a.address}`);
+            console.log(`Running as ${this.wallet.address}`);
             instructions = await this.getBlockInstructions();
             console.log(instructions);
             if (instructions.uploader === ethers_1.ethers.constants.AddressZero ||
-                instructions.uploader === ((_b = this.node) === null || _b === void 0 ? void 0 : _b.address)) {
+                instructions.uploader === this.wallet.address) {
                 logger_1.default.debug("Selected as uploader, waiting for nodes to vote ...");
                 await (0, helpers_1.sleep)(30000);
             }
@@ -120,13 +119,12 @@ class KYVE {
             // TODO: save last instructions and bundle
             const bundle = await createBundle(this.config, instructions.fromHeight, instructions.toHeight);
             if (instructions.uploader === ethers_1.ethers.constants.AddressZero ||
-                instructions.uploader === ((_c = this.node) === null || _c === void 0 ? void 0 : _c.address)) {
+                instructions.uploader === this.wallet.address) {
                 const transaction = await this.uploadBundleToArweave(bundle, instructions);
                 await this.submitBlockProposal(transaction);
             }
             uploadTimeout = setTimeout(async () => {
-                var _a;
-                if ((instructions === null || instructions === void 0 ? void 0 : instructions.uploader) !== ((_a = this.node) === null || _a === void 0 ? void 0 : _a.address)) {
+                if ((instructions === null || instructions === void 0 ? void 0 : instructions.uploader) !== this.wallet.address) {
                     logger_1.default.debug("Reached upload timeout. Claiming uploader role ...");
                     const tx = await this.pool.claimUploaderRole({
                         gasLimit: await this.pool.estimateGas.claimUploaderRole(),
@@ -141,7 +139,7 @@ class KYVE {
             proposal = await this.getBlockProposal();
             console.log(proposal);
             if (proposal.uploader !== ethers_1.ethers.constants.AddressZero &&
-                proposal.uploader !== ((_d = this.node) === null || _d === void 0 ? void 0 : _d.address)) {
+                proposal.uploader !== this.wallet.address) {
                 await this.validateCurrentBlockProposal(bundle, proposal);
             }
         }
@@ -403,30 +401,10 @@ class KYVE {
             process.exit(1);
         }
     }
-    async setupNodeContract() {
-        var _a;
-        let nodeAddress = await this.pool.nodeOwners(this.wallet.address);
+    async setupNodeStake() {
         let parsedStake;
-        let tx;
         logger_1.default.info("🌐 Joining KYVE Network ...");
-        if (ethers_1.constants.AddressZero === nodeAddress) {
-            try {
-                tx = await this.pool.createNode(10, {
-                    gasLimit: await this.pool.estimateGas.createNode(10),
-                    gasPrice: await (0, helpers_1.getGasPrice)(this.pool, this.gasMultiplier),
-                });
-                logger_1.default.debug(`Creating new contract. Transaction = ${tx.hash}`);
-                await tx.wait();
-                nodeAddress = await this.pool.nodeOwners(this.wallet.address);
-            }
-            catch (error) {
-                logger_1.default.error("❌ Could not create node contract:", error);
-                process.exit(1);
-            }
-        }
-        this.node = new ethers_1.Contract(nodeAddress, node_json_1.default, this.wallet);
-        logger_1.default.info(`✅ Connected to node ${nodeAddress}`);
-        let nodeStake = await ((_a = this.node) === null || _a === void 0 ? void 0 : _a.delegationAmount(this.wallet.address));
+        let nodeStake = (0, helpers_1.toBN)((await this.pool.nodeState(this.wallet.address)).personalStake);
         try {
             parsedStake = new bignumber_js_1.default(this.stake).multipliedBy(new bignumber_js_1.default(10).exponentiatedBy(18));
             if (parsedStake.isZero()) {
@@ -438,19 +416,21 @@ class KYVE {
             logger_1.default.error("❌ Provided invalid staking amount:", error);
             process.exit(1);
         }
-        if (nodeStake.isZero()) {
-            await this.selfDelegate(parsedStake);
+        if (parsedStake.gt(nodeStake)) {
+            // Stake the difference.
+            const diff = parsedStake.minus(nodeStake);
+            await this.selfStake(diff);
         }
-        else if (!(0, helpers_1.toEthersBN)(parsedStake).eq(nodeStake)) {
-            await this.selfUndelegate();
-            await this.selfDelegate(parsedStake);
+        else if (parsedStake.lt(nodeStake)) {
+            // Unstake the difference.
+            const diff = nodeStake.minus(parsedStake);
+            await this.selfUnstake(diff);
         }
         else {
             logger_1.default.info("👌 Already staked with the correct amount.");
         }
     }
-    async selfDelegate(amount) {
-        var _a, _b;
+    async selfStake(amount) {
         const token = await (0, helpers_1.Token)(this.pool);
         let tx;
         const balance = (0, helpers_1.toBN)((await token.balanceOf(this.wallet.address)));
@@ -466,8 +446,8 @@ class KYVE {
             logger_1.default.debug(`Approving ${(0, helpers_1.toHumanReadable)(amount)} $KYVE to be spent. Transaction = ${tx.hash}`);
             await tx.wait();
             logger_1.default.info("👍 Successfully approved.");
-            tx = await this.pool.delegate((_a = this.node) === null || _a === void 0 ? void 0 : _a.address, (0, helpers_1.toEthersBN)(amount), {
-                gasLimit: await this.pool.estimateGas.delegate((_b = this.node) === null || _b === void 0 ? void 0 : _b.address, (0, helpers_1.toEthersBN)(amount)),
+            tx = await this.pool.stake((0, helpers_1.toEthersBN)(amount), {
+                gasLimit: await this.pool.estimateGas.stake((0, helpers_1.toEthersBN)(amount)),
                 gasPrice: await (0, helpers_1.getGasPrice)(this.pool, this.gasMultiplier),
             });
             logger_1.default.debug(`Staking ${(0, helpers_1.toHumanReadable)(amount)} $KYVE. Transaction = ${tx.hash}`);
@@ -479,12 +459,11 @@ class KYVE {
             process.exit(1);
         }
     }
-    async selfUndelegate() {
-        var _a, _b;
+    async selfUnstake(amount) {
         let tx;
         try {
-            tx = await this.pool.undelegate((_a = this.node) === null || _a === void 0 ? void 0 : _a.address, {
-                gasLimit: await this.pool.estimateGas.undelegate((_b = this.node) === null || _b === void 0 ? void 0 : _b.address),
+            tx = await this.pool.unstake((0, helpers_1.toEthersBN)(amount), {
+                gasLimit: await this.pool.estimateGas.unstake((0, helpers_1.toEthersBN)(amount)),
                 gasPrice: await (0, helpers_1.getGasPrice)(this.pool, this.gasMultiplier),
             });
             logger_1.default.debug(`Unstaking. Transaction = ${tx.hash}`);
@@ -494,6 +473,40 @@ class KYVE {
         catch (error) {
             logger_1.default.error("❌ Received an error while trying to unstake:", error);
             process.exit(1);
+        }
+    }
+    async setupNodeCommission() {
+        let parsedCommission;
+        logger_1.default.info("👥 Setting node commission ...");
+        let nodeCommission = (0, helpers_1.toBN)((await this.pool.nodeState(this.wallet.address)).commission);
+        try {
+            parsedCommission = new bignumber_js_1.default(this.commission).multipliedBy(new bignumber_js_1.default(10).exponentiatedBy(18));
+            if (parsedCommission.lt(0) && parsedCommission.gt(100)) {
+                logger_1.default.error("❌ Desired commission must be between 0 and 100.");
+                process.exit(1);
+            }
+        }
+        catch (error) {
+            logger_1.default.error("❌ Provided invalid commission amount:", error);
+            process.exit(1);
+        }
+        if (!parsedCommission.eq(nodeCommission)) {
+            try {
+                const tx = await this.pool.updateCommission((0, helpers_1.toEthersBN)(parsedCommission), {
+                    gasLimit: await this.pool.estimateGas.updateCommission((0, helpers_1.toEthersBN)(parsedCommission)),
+                    gasPrice: await (0, helpers_1.getGasPrice)(this.pool, this.gasMultiplier),
+                });
+                logger_1.default.debug(`Updating commission. Transaction = ${tx.hash}`);
+                await tx.wait();
+                logger_1.default.info("📉 Successfully updated commission.");
+            }
+            catch (error) {
+                logger_1.default.error("❌ Received an error while trying to update commission:", error);
+                process.exit(1);
+            }
+        }
+        else {
+            logger_1.default.info("👌 Already staked with the correct commission.");
         }
     }
 }

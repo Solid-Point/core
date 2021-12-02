@@ -31,6 +31,10 @@ export class CLI extends Command {
       "The amount of tokens you want to stake."
     );
     this.requiredOption(
+      "-c, --commision <number>",
+      "The commission rate of your node."
+    );
+    this.requiredOption(
       "-pk, --private-key <string>",
       "Your Ethereum private key that holds $KYVE."
     );

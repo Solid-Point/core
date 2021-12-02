@@ -5,10 +5,10 @@ import { CLI } from "./utils";
 export * from "./utils";
 declare class KYVE {
     private pool;
-    private node;
     private runtime;
     private version;
     private stake;
+    private commission;
     private wallet;
     private keyfile?;
     private name;
@@ -17,7 +17,7 @@ declare class KYVE {
     private settings;
     private config;
     private client;
-    constructor(poolAddress: string, runtime: string, version: string, stakeAmount: string, privateKey: string, keyfile?: JWKInterface, name?: string, endpoint?: string, gasMultiplier?: string, verbose?: boolean);
+    constructor(poolAddress: string, runtime: string, version: string, stakeAmount: string, commissionAmount: string, privateKey: string, keyfile?: JWKInterface, name?: string, endpoint?: string, gasMultiplier?: string, verbose?: boolean);
     static generate(cli?: CLI): Promise<{
         node: KYVE;
         options: OptionValues;
@@ -36,8 +36,9 @@ declare class KYVE {
     private fetchPoolState;
     private checkVersionRequirements;
     private checkRuntimeRequirements;
-    private setupNodeContract;
-    private selfDelegate;
-    private selfUndelegate;
+    private setupNodeStake;
+    private selfStake;
+    private selfUnstake;
+    private setupNodeCommission;
 }
 export default KYVE;
