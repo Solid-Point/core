@@ -103,28 +103,28 @@ class KYVE {
         logger_1.default.info("💤 Exiting node ...");
     }
     async run(createBundle) {
-        let proposal = null;
-        let instructions = null;
+        let blockProposal = null;
+        let blockInstructions = null;
         let uploadTimeout;
         while (true) {
             console.log(`Running as ${this.wallet.address}`);
-            instructions = await this.getBlockInstructions();
-            console.log(instructions);
-            if (instructions.uploader === ethers_1.ethers.constants.AddressZero ||
-                instructions.uploader === this.wallet.address) {
+            blockInstructions = await this.getBlockInstructions();
+            console.log(blockInstructions);
+            if (blockInstructions.uploader === ethers_1.ethers.constants.AddressZero ||
+                blockInstructions.uploader === this.wallet.address) {
                 logger_1.default.debug("Selected as uploader, waiting for nodes to vote ...");
                 await (0, helpers_1.sleep)(30000);
             }
-            logger_1.default.debug(`Creating bundle (${instructions.fromHeight} - ${instructions.toHeight}) ...`);
+            logger_1.default.debug(`Creating bundle (${blockInstructions.fromHeight} - ${blockInstructions.toHeight}) ...`);
             // TODO: save last instructions and bundle
-            const bundle = await createBundle(this.config, instructions.fromHeight, instructions.toHeight);
-            if (instructions.uploader === ethers_1.ethers.constants.AddressZero ||
-                instructions.uploader === this.wallet.address) {
-                const transaction = await this.uploadBundleToArweave(bundle, instructions);
+            const bundle = await createBundle(this.config, blockInstructions.fromHeight, blockInstructions.toHeight);
+            if (blockInstructions.uploader === ethers_1.ethers.constants.AddressZero ||
+                blockInstructions.uploader === this.wallet.address) {
+                const transaction = await this.uploadBundleToArweave(bundle, blockInstructions);
                 await this.submitBlockProposal(transaction);
             }
             uploadTimeout = setTimeout(async () => {
-                if ((instructions === null || instructions === void 0 ? void 0 : instructions.uploader) !== this.wallet.address) {
+                if ((blockInstructions === null || blockInstructions === void 0 ? void 0 : blockInstructions.uploader) !== this.wallet.address) {
                     logger_1.default.debug("Reached upload timeout. Claiming uploader role ...");
                     const tx = await this.pool.claimUploaderRole({
                         gasLimit: await this.pool.estimateGas.claimUploaderRole(),
@@ -136,11 +136,11 @@ class KYVE {
             logger_1.default.debug("Waiting for next block instructions ...");
             await this.waitForNextBlockInstructions();
             clearTimeout(uploadTimeout);
-            proposal = await this.getBlockProposal();
-            console.log(proposal);
-            if (proposal.uploader !== ethers_1.ethers.constants.AddressZero &&
-                proposal.uploader !== this.wallet.address) {
-                await this.validateCurrentBlockProposal(bundle, proposal);
+            blockProposal = await this.getBlockProposal();
+            console.log(blockProposal);
+            if (blockProposal.uploader !== ethers_1.ethers.constants.AddressZero &&
+                blockProposal.uploader !== this.wallet.address) {
+                await this.validateCurrentBlockProposal(bundle, blockProposal);
             }
         }
     }
