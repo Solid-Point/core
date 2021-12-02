@@ -128,7 +128,10 @@ class KYVE {
                 var _a;
                 if ((instructions === null || instructions === void 0 ? void 0 : instructions.uploader) !== ((_a = this.node) === null || _a === void 0 ? void 0 : _a.address)) {
                     logger_1.default.debug("Reached upload timeout. Claiming uploader role ...");
-                    const tx = await this.pool.claimUploaderRole();
+                    const tx = await this.pool.claimUploaderRole({
+                        gasLimit: await this.pool.estimateGas.claimUploaderRole(),
+                        gasPrice: await (0, helpers_1.getGasPrice)(this.pool, this.gasMultiplier),
+                    });
                     logger_1.default.debug(`Transaction = ${tx.hash}`);
                 }
             }, this.settings.uploadTimeout.toNumber() * 1000);

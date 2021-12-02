@@ -219,7 +219,10 @@ class KYVE {
       uploadTimeout = setTimeout(async () => {
         if (instructions?.uploader !== this.node?.address) {
           logger.debug("Reached upload timeout. Claiming uploader role ...");
-          const tx = await this.pool.claimUploaderRole();
+          const tx = await this.pool.claimUploaderRole({
+            gasLimit: await this.pool.estimateGas.claimUploaderRole(),
+            gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
+          });
           logger.debug(`Transaction = ${tx.hash}`);
         }
       }, this.settings.uploadTimeout.toNumber() * 1000);
