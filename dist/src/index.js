@@ -259,6 +259,7 @@ class KYVE {
         const canVote = await this.pool.canVote(this.wallet.address);
         if (!canVote) {
             logger_1.default.info("⚠️  Node does not have any voting power. Please find delegators ...");
+            return;
         }
         try {
             const tx = await this.pool.vote((0, arweave_2.toBytes)(vote.transaction), vote.valid, {

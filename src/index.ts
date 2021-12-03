@@ -414,6 +414,7 @@ class KYVE {
       logger.info(
         "⚠️  Node does not have any voting power. Please find delegators ..."
       );
+      return;
     }
 
     try {
