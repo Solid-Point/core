@@ -412,7 +412,7 @@ class KYVE {
     const canVote: boolean = await this.pool.canVote(this.wallet.address);
     if (!canVote) {
       logger.info(
-        "⚠️  Node does not have any voting power. Please find delegators ..."
+        "⚠️  Node has no voting power because it has no delegators. Skipping vote ..."
       );
       return;
     }

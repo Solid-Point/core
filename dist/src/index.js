@@ -258,7 +258,7 @@ class KYVE {
         logger_1.default.info(`🖋  Voting ${vote.valid ? "valid" : "invalid"} on bundle ${vote.transaction} ...`);
         const canVote = await this.pool.canVote(this.wallet.address);
         if (!canVote) {
-            logger_1.default.info("⚠️  Node does not have any voting power. Please find delegators ...");
+            logger_1.default.info("⚠️  Node has no voting power because it has no delegators. Skipping vote ...");
             return;
         }
         try {
