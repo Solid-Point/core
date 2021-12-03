@@ -409,6 +409,13 @@ class KYVE {
       } ...`
     );
 
+    const canVote: boolean = await this.pool.canVote(this.wallet.address);
+    if (!canVote) {
+      logger.info(
+        "⚠️  Node does not have any voting power. Please find delegators ..."
+      );
+    }
+
     try {
       const tx = await this.pool.vote(toBytes(vote.transaction), vote.valid, {
         gasLimit: await this.pool.estimateGas.vote(
@@ -445,7 +452,7 @@ class KYVE {
   private async setupListeners() {
     // // Listen to new contract changes.
     // this.pool.on("ConfigChanged", () => {
-    //   logger.warn("⚠️  Config changed. Exiting ...");
+    // logger.warn("⚠️  Config changed. Exiting ...");
     //   process.exit();
     // });
     // this.pool.on("MetadataChanged", async () => {

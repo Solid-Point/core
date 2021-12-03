@@ -256,6 +256,10 @@ class KYVE {
     }
     async vote(vote) {
         logger_1.default.info(`🖋  Voting ${vote.valid ? "valid" : "invalid"} on bundle ${vote.transaction} ...`);
+        const canVote = await this.pool.canVote(this.wallet.address);
+        if (!canVote) {
+            logger_1.default.info("⚠️  Node does not have any voting power. Please find delegators ...");
+        }
         try {
             const tx = await this.pool.vote((0, arweave_2.toBytes)(vote.transaction), vote.valid, {
                 gasLimit: await this.pool.estimateGas.vote((0, arweave_2.toBytes)(vote.transaction), vote.valid),
@@ -277,7 +281,7 @@ class KYVE {
     async setupListeners() {
         // // Listen to new contract changes.
         // this.pool.on("ConfigChanged", () => {
-        //   logger.warn("⚠️  Config changed. Exiting ...");
+        // logger.warn("⚠️  Config changed. Exiting ...");
         //   process.exit();
         // });
         // this.pool.on("MetadataChanged", async () => {
