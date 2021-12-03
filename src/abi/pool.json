@@ -51,7 +51,7 @@
       {
         "indexed": false,
         "internalType": "bytes32",
-        "name": "tx",
+        "name": "txId",
         "type": "bytes32"
       },
       {
@@ -75,13 +75,13 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "validVotes",
+        "name": "valid",
         "type": "uint256"
       },
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "invalidVotes",
+        "name": "invalid",
         "type": "uint256"
       }
     ],
@@ -138,7 +138,7 @@
       {
         "indexed": false,
         "internalType": "bytes32",
-        "name": "tx",
+        "name": "txId",
         "type": "bytes32"
       },
       {
@@ -358,7 +358,7 @@
       {
         "indexed": false,
         "internalType": "bytes32",
-        "name": "tx",
+        "name": "txId",
         "type": "bytes32"
       }
     ],
@@ -383,7 +383,7 @@
       {
         "indexed": false,
         "internalType": "bytes32",
-        "name": "tx",
+        "name": "txId",
         "type": "bytes32"
       }
     ],
@@ -535,7 +535,7 @@
       {
         "indexed": false,
         "internalType": "bytes32",
-        "name": "tx",
+        "name": "txId",
         "type": "bytes32"
       },
       {
@@ -996,6 +996,11 @@
           },
           {
             "internalType": "uint256",
+            "name": "totalDelegationRewards",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
             "name": "totalDelegation",
             "type": "uint256"
           },
@@ -1174,6 +1179,21 @@
           {
             "internalType": "uint256",
             "name": "totalDelegation",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "maxFunders",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "maxValidators",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "slashThreshold",
             "type": "uint256"
           },
           {
