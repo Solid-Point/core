@@ -40,5 +40,6 @@ declare class KYVE {
     private selfStake;
     private selfUnstake;
     private setupNodeCommission;
+    private calculateUploaderWaitingTime;
 }
 export default KYVE;

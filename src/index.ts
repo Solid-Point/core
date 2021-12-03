@@ -185,8 +185,13 @@ class KYVE {
         blockInstructions.uploader === ethers.constants.AddressZero ||
         blockInstructions.uploader === this.wallet.address
       ) {
-        logger.debug("Selected as uploader, waiting for nodes to vote ...");
-        await sleep(30000);
+        const waitingTime = this.calculateUploaderWaitingTime();
+        logger.debug(
+          `Selected as uploader, waiting ${Math.ceil(
+            waitingTime / 1000
+          )}s for nodes to vote ...`
+        );
+        await sleep(waitingTime);
       }
 
       logger.debug(
@@ -755,6 +760,12 @@ class KYVE {
     } else {
       logger.info("👌 Already staked with the correct commission.");
     }
+  }
+
+  private calculateUploaderWaitingTime() {
+    const waitingTime = Math.log2(this.settings.bundleSize) * 5;
+    if (waitingTime > 30) return waitingTime * 1000;
+    return 30 * 1000;
   }
 }
 

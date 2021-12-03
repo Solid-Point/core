@@ -112,8 +112,9 @@ class KYVE {
             console.log(blockInstructions);
             if (blockInstructions.uploader === ethers_1.ethers.constants.AddressZero ||
                 blockInstructions.uploader === this.wallet.address) {
-                logger_1.default.debug("Selected as uploader, waiting for nodes to vote ...");
-                await (0, helpers_1.sleep)(30000);
+                const waitingTime = this.calculateUploaderWaitingTime();
+                logger_1.default.debug(`Selected as uploader, waiting ${Math.ceil(waitingTime / 1000)}s for nodes to vote ...`);
+                await (0, helpers_1.sleep)(waitingTime);
             }
             logger_1.default.debug(`Creating bundle (${blockInstructions.fromHeight} - ${blockInstructions.toHeight}) ...`);
             // TODO: save last instructions and bundle
@@ -515,6 +516,12 @@ class KYVE {
         else {
             logger_1.default.info("👌 Already staked with the correct commission.");
         }
+    }
+    calculateUploaderWaitingTime() {
+        const waitingTime = Math.log2(this.settings.bundleSize) * 5;
+        if (waitingTime > 30)
+            return waitingTime * 1000;
+        return 30 * 1000;
     }
 }
 exports.default = KYVE;
