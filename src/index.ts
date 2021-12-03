@@ -613,6 +613,15 @@ class KYVE {
       process.exit(1);
     }
 
+    if (parsedStake.lt(toBN(this.settings.minStake))) {
+      logger.error(
+        `❌ Desired stake is lower than the minimum stake. Desired Stake = ${toHumanReadable(
+          parsedStake
+        )}, Minimum Stake = ${toHumanReadable(toBN(this.settings.minStake))}`
+      );
+      process.exit();
+    }
+
     if (parsedStake.gt(nodeStake)) {
       // Stake the difference.
       const diff = parsedStake.minus(nodeStake);

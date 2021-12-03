@@ -414,6 +414,10 @@ class KYVE {
             logger_1.default.error("❌ Provided invalid staking amount:", error);
             process.exit(1);
         }
+        if (parsedStake.lt((0, helpers_1.toBN)(this.settings.minStake))) {
+            logger_1.default.error(`❌ Desired stake is lower than the minimum stake. Desired Stake = ${(0, helpers_1.toHumanReadable)(parsedStake)}, Minimum Stake = ${(0, helpers_1.toHumanReadable)((0, helpers_1.toBN)(this.settings.minStake))}`);
+            process.exit();
+        }
         if (parsedStake.gt(nodeStake)) {
             // Stake the difference.
             const diff = parsedStake.minus(nodeStake);
