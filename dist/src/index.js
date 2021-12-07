@@ -91,7 +91,7 @@ class KYVE {
             options,
         };
     }
-    async start(createBundle) {
+    async start(bundle, validate) {
         this.logNodeInfo();
         await this.fetchPoolState();
         await this.checkVersionRequirements();
@@ -99,50 +99,77 @@ class KYVE {
         await this.setupNodeStake();
         await this.setupNodeCommission();
         await this.setupListeners();
-        await this.run(createBundle);
-        logger_1.default.info("💤 Exiting node ...");
+        await this.run(bundle, validate ? validate : this.defaultValidate);
     }
-    async run(createBundle) {
+    async run(bundle, validate) {
         let blockProposal = null;
         let blockInstructions = null;
         let uploadTimeout;
-        while (true) {
-            console.log(`Running as ${this.wallet.address}`);
-            blockInstructions = await this.getBlockInstructions();
-            console.log(blockInstructions);
-            if (blockInstructions.uploader === ethers_1.ethers.constants.AddressZero ||
-                blockInstructions.uploader === this.wallet.address) {
-                const waitingTime = this.calculateUploaderWaitingTime();
-                logger_1.default.debug(`Selected as uploader, waiting ${Math.ceil(waitingTime / 1000)}s for nodes to vote ...`);
-                await (0, helpers_1.sleep)(waitingTime);
-            }
-            logger_1.default.debug(`Creating bundle (${blockInstructions.fromHeight} - ${blockInstructions.toHeight}) ...`);
-            // TODO: save last instructions and bundle
-            const bundle = await createBundle(this.config, blockInstructions.fromHeight, blockInstructions.toHeight);
-            if (blockInstructions.uploader === ethers_1.ethers.constants.AddressZero ||
-                blockInstructions.uploader === this.wallet.address) {
-                const transaction = await this.uploadBundleToArweave(bundle, blockInstructions);
-                await this.submitBlockProposal(transaction);
-            }
-            uploadTimeout = setTimeout(async () => {
-                if ((blockInstructions === null || blockInstructions === void 0 ? void 0 : blockInstructions.uploader) !== this.wallet.address) {
-                    logger_1.default.debug("Reached upload timeout. Claiming uploader role ...");
-                    const tx = await this.pool.claimUploaderRole({
-                        gasLimit: await this.pool.estimateGas.claimUploaderRole(),
-                        gasPrice: await (0, helpers_1.getGasPrice)(this.pool, this.gasMultiplier),
-                    });
-                    logger_1.default.debug(`Transaction = ${tx.hash}`);
+        try {
+            while (true) {
+                console.log(`Running as ${this.wallet.address}`);
+                blockInstructions = await this.getBlockInstructions();
+                console.log(blockInstructions);
+                if (blockInstructions.uploader === ethers_1.ethers.constants.AddressZero ||
+                    blockInstructions.uploader === this.wallet.address) {
+                    const waitingTime = this.calculateUploaderWaitingTime();
+                    logger_1.default.debug(`Selected as uploader, waiting ${Math.ceil(waitingTime / 1000)}s for nodes to vote ...`);
+                    await (0, helpers_1.sleep)(waitingTime);
                 }
-            }, this.settings.uploadTimeout.toNumber() * 1000);
-            logger_1.default.debug("Waiting for next block instructions ...");
-            await this.waitForNextBlockInstructions();
-            clearTimeout(uploadTimeout);
-            blockProposal = await this.getBlockProposal();
-            console.log(blockProposal);
-            if (blockProposal.uploader !== ethers_1.ethers.constants.AddressZero &&
-                blockProposal.uploader !== this.wallet.address) {
-                await this.validateCurrentBlockProposal(bundle, blockProposal);
+                logger_1.default.debug(`Creating bundle (${blockInstructions.fromHeight} - ${blockInstructions.toHeight}) ...`);
+                // TODO: save last instructions and bundle
+                const uploadBundle = await bundle(this.config, blockInstructions.fromHeight, blockInstructions.toHeight);
+                if (blockInstructions.uploader === ethers_1.ethers.constants.AddressZero ||
+                    blockInstructions.uploader === this.wallet.address) {
+                    const transaction = await this.uploadBundleToArweave(uploadBundle, blockInstructions);
+                    if (transaction) {
+                        await this.submitBlockProposal(transaction);
+                    }
+                }
+                uploadTimeout = setTimeout(async () => {
+                    if ((blockInstructions === null || blockInstructions === void 0 ? void 0 : blockInstructions.uploader) !== this.wallet.address) {
+                        logger_1.default.debug("Reached upload timeout. Claiming uploader role ...");
+                        const tx = await this.pool.claimUploaderRole({
+                            gasLimit: await this.pool.estimateGas.claimUploaderRole(),
+                            gasPrice: await (0, helpers_1.getGasPrice)(this.pool, this.gasMultiplier),
+                        });
+                        logger_1.default.debug(`Transaction = ${tx.hash}`);
+                    }
+                }, this.settings.uploadTimeout.toNumber() * 1000);
+                logger_1.default.debug("Waiting for next block instructions ...");
+                await this.waitForNextBlockInstructions();
+                clearTimeout(uploadTimeout);
+                blockProposal = await this.getBlockProposal();
+                console.log(blockProposal);
+                if (blockProposal.uploader !== ethers_1.ethers.constants.AddressZero &&
+                    blockProposal.uploader !== this.wallet.address) {
+                    logger_1.default.debug(`Validating bundle ${blockProposal.txId} ...`);
+                    try {
+                        const { status } = await this.client.transactions.getStatus(blockProposal.txId);
+                        if (status === 200 || status === 202) {
+                            const _data = (await this.client.transactions.getData(blockProposal.txId, {
+                                decode: true,
+                            }));
+                            const downloadBytes = _data.byteLength;
+                            const downloadBundle = JSON.parse(new TextDecoder("utf-8", {
+                                fatal: true,
+                            }).decode(_data));
+                            await this.vote({
+                                transaction: blockProposal.txId,
+                                valid: await validate(JSON.parse(JSON.stringify(uploadBundle)), +blockProposal.byteSize, JSON.parse(JSON.stringify(downloadBundle)), +downloadBytes),
+                            });
+                        }
+                    }
+                    catch (error) {
+                        logger_1.default.error(`❌ Error fetching bundle from Arweave. Skipping vote ...`);
+                        logger_1.default.debug(error);
+                    }
+                }
             }
+        }
+        catch (error) {
+            logger_1.default.error(`❌ Runtime error. Exiting ...`);
+            logger_1.default.debug(error);
         }
     }
     async getBlockProposal() {
@@ -192,8 +219,9 @@ class KYVE {
             return transaction;
         }
         catch (error) {
-            logger_1.default.error("❌ Received an error while trying to create a block proposal:", error);
-            process.exit(1);
+            logger_1.default.error("❌ Received an error while trying to upload bundle to Arweave. Skipping upload ...");
+            logger_1.default.debug(error);
+            return null;
         }
     }
     async submitBlockProposal(transaction) {
@@ -207,8 +235,8 @@ class KYVE {
             logger_1.default.debug(`Transaction = ${tx.hash}`);
         }
         catch (error) {
-            logger_1.default.error("❌ Received an error while submitting block proposal:", error);
-            process.exit(1);
+            logger_1.default.error("❌ Received an error while submitting block proposal. Skipping submit ...");
+            logger_1.default.debug(error);
         }
     }
     async waitForNextBlockInstructions() {
@@ -222,38 +250,14 @@ class KYVE {
             });
         });
     }
-    async validateCurrentBlockProposal(uploadBundle, proposal) {
-        logger_1.default.debug(`Validating bundle ${proposal.txId} ...`);
-        try {
-            const { status } = await this.client.transactions.getStatus(proposal.txId);
-            if (status === 200 || status === 202) {
-                const _data = (await this.client.transactions.getData(proposal.txId, {
-                    decode: true,
-                }));
-                const downloadBytes = _data.byteLength;
-                const downloadBundle = JSON.parse(new TextDecoder("utf-8", {
-                    fatal: true,
-                }).decode(_data));
-                if (+proposal.byteSize === +downloadBytes) {
-                    const uploadBundleHash = (0, object_hash_1.default)(JSON.parse(JSON.stringify(uploadBundle)));
-                    const downloadBundleHash = (0, object_hash_1.default)(JSON.parse(JSON.stringify(downloadBundle)));
-                    await this.vote({
-                        transaction: proposal.txId,
-                        valid: uploadBundleHash === downloadBundleHash,
-                    });
-                }
-                else {
-                    logger_1.default.debug(`Bytes don't match. Uploaded bytes = ${proposal.byteSize} - downloaded bytes = ${downloadBytes}`);
-                    await this.vote({
-                        transaction: proposal.txId,
-                        valid: false,
-                    });
-                }
-            }
+    async defaultValidate(uploadBundle, uploadBytes, downloadBundle, downloadBytes) {
+        if (uploadBytes !== downloadBytes) {
+            return false;
         }
-        catch (err) {
-            logger_1.default.error(`❌ Error fetching bundle from Arweave: ${err}`);
+        if ((0, object_hash_1.default)(uploadBundle) !== (0, object_hash_1.default)(downloadBundle)) {
+            return false;
         }
+        return true;
     }
     async vote(vote) {
         logger_1.default.info(`🖋  Voting ${vote.valid ? "valid" : "invalid"} on bundle ${vote.transaction} ...`);
@@ -270,7 +274,8 @@ class KYVE {
             logger_1.default.debug(`Transaction = ${tx.hash}`);
         }
         catch (error) {
-            logger_1.default.error("❌ Received an error while trying to vote:", error);
+            logger_1.default.error("❌ Received an error while trying to vote. Skipping vote ...");
+            logger_1.default.debug(error);
         }
     }
     logNodeInfo() {

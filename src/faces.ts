@@ -1,7 +1,3 @@
-import { Logger } from "tslog";
-
-// Uploader types.
-
 export type Tag = { name: string; value: string };
 export type Tags = Tag[];
 
@@ -25,8 +21,15 @@ export type BlockProposal = {
   start: number;
 };
 
-export type BundlerFunction<ConfigType> = (
+export type BundleFunction<ConfigType> = (
   config: ConfigType,
   fromHeight: number,
   toHeight: number
 ) => Promise<any[]>;
+
+export type ValidateFunction = (
+  uploadBundle: any[],
+  uploadBytes: number,
+  downloadBundle: any[],
+  downloadBytes: number
+) => Promise<boolean>;
