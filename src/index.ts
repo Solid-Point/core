@@ -355,12 +355,14 @@ class KYVE {
 
   private async submitBlockProposal(transaction: Transaction) {
     try {
-      // manual gas limit for resources exhausted error
       const tx = await this.pool.submitBlockProposal(
         toBytes(transaction.id),
         +transaction.data_size,
         {
-          gasLimit: 10000000,
+          gasLimit: await this.pool.estimateGas.submitBlockProposal(
+            toBytes(transaction.id),
+            +transaction.data_size
+          ),
           gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
         }
       );
