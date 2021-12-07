@@ -228,20 +228,7 @@ class KYVE {
           }
         }
 
-        const uploadTimeout = setTimeout(async () => {
-          if (blockInstructions?.uploader !== this.wallet.address) {
-            logger.debug("Reached upload timeout. Claiming uploader role ...");
-            const tx = await this.pool.claimUploaderRole({
-              gasLimit: await this.pool.estimateGas.claimUploaderRole(),
-              gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
-            });
-            logger.debug(`Transaction = ${tx.hash}`);
-          }
-        }, this.poolState.uploadTimeout.toNumber() * 1000);
-
-        await this.waitForNextBlockInstructions();
-
-        clearTimeout(uploadTimeout);
+        await this.waitForNextBlockInstructions(blockInstructions);
 
         const blockProposal = await this.getBlockProposal();
 
@@ -388,24 +375,31 @@ class KYVE {
     }
   }
 
-  private async waitForNextBlockInstructions(): Promise<BlockInstructions> {
+  private async waitForNextBlockInstructions(
+    blockInstructions: BlockInstructions
+  ): Promise<BlockInstructions> {
     logger.debug("Waiting for next block instructions ...");
 
-    return new Promise((resolve) => {
-      this.pool.on(
-        "NextBlockInstructions",
-        (
-          uploader: string,
-          fromHeight: ethers.BigNumber,
-          toHeight: ethers.BigNumber
-        ) => {
-          resolve({
-            uploader,
-            fromHeight: fromHeight.toNumber(),
-            toHeight: toHeight.toNumber(),
+    const uploadTimeout = setTimeout(async () => {
+      try {
+        if (blockInstructions?.uploader !== this.wallet.address) {
+          logger.debug("Reached upload timeout. Claiming uploader role ...");
+          const tx = await this.pool.claimUploaderRole({
+            gasLimit: await this.pool.estimateGas.claimUploaderRole(),
+            gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
           });
+          logger.debug(`Transaction = ${tx.hash}`);
         }
-      );
+      } catch (error) {
+        logger.error(
+          "❌ Received an error while claiming uploader slot. Skipping claim ..."
+        );
+        logger.debug(error);
+      }
+    }, this.poolState.uploadTimeout.toNumber() * 1000);
+
+    return new Promise((resolve) => {
+      this.pool.on("NextBlockInstructions", resolve);
     });
   }
 
