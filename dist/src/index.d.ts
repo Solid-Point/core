@@ -13,9 +13,7 @@ declare class KYVE {
     private keyfile?;
     private name;
     private gasMultiplier;
-    private metadata;
-    private settings;
-    private config;
+    private poolState;
     private client;
     constructor(poolAddress: string, runtime: string, version: string, stakeAmount: string, commissionAmount: string, privateKey: string, keyfile?: JWKInterface, name?: string, endpoint?: string, gasMultiplier?: string, verbose?: boolean);
     static generate(cli?: CLI): Promise<{
@@ -32,8 +30,8 @@ declare class KYVE {
     private defaultValidate;
     private vote;
     private logNodeInfo;
-    private setupListeners;
     private fetchPoolState;
+    private checkIfNodeIsValidator;
     private checkVersionRequirements;
     private checkRuntimeRequirements;
     private setupNodeStake;

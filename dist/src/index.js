@@ -98,17 +98,19 @@ class KYVE {
         await this.checkRuntimeRequirements();
         await this.setupNodeStake();
         await this.setupNodeCommission();
-        await this.setupListeners();
         await this.run(bundle, validate ? validate : this.defaultValidate);
     }
     async run(bundle, validate) {
-        let blockProposal = null;
-        let blockInstructions = null;
-        let uploadTimeout;
         try {
             while (true) {
-                console.log(`Running as ${this.wallet.address}`);
-                blockInstructions = await this.getBlockInstructions();
+                this.fetchPoolState();
+                if (this.poolState.paused) {
+                    await (0, helpers_1.sleep)(60 * 1000);
+                    continue;
+                }
+                this.checkVersionRequirements();
+                this.checkIfNodeIsValidator();
+                const blockInstructions = await this.getBlockInstructions();
                 console.log(blockInstructions);
                 if (blockInstructions.uploader === ethers_1.ethers.constants.AddressZero ||
                     blockInstructions.uploader === this.wallet.address) {
@@ -118,7 +120,7 @@ class KYVE {
                 }
                 logger_1.default.debug(`Creating bundle (${blockInstructions.fromHeight} - ${blockInstructions.toHeight}) ...`);
                 // TODO: save last instructions and bundle
-                const uploadBundle = await bundle(this.config, blockInstructions.fromHeight, blockInstructions.toHeight);
+                const uploadBundle = await bundle(this.poolState.config, blockInstructions.fromHeight, blockInstructions.toHeight);
                 if (blockInstructions.uploader === ethers_1.ethers.constants.AddressZero ||
                     blockInstructions.uploader === this.wallet.address) {
                     const transaction = await this.uploadBundleToArweave(uploadBundle, blockInstructions);
@@ -126,7 +128,7 @@ class KYVE {
                         await this.submitBlockProposal(transaction);
                     }
                 }
-                uploadTimeout = setTimeout(async () => {
+                const uploadTimeout = setTimeout(async () => {
                     if ((blockInstructions === null || blockInstructions === void 0 ? void 0 : blockInstructions.uploader) !== this.wallet.address) {
                         logger_1.default.debug("Reached upload timeout. Claiming uploader role ...");
                         const tx = await this.pool.claimUploaderRole({
@@ -135,11 +137,10 @@ class KYVE {
                         });
                         logger_1.default.debug(`Transaction = ${tx.hash}`);
                     }
-                }, this.settings.uploadTimeout.toNumber() * 1000);
-                logger_1.default.debug("Waiting for next block instructions ...");
+                }, this.poolState.uploadTimeout.toNumber() * 1000);
                 await this.waitForNextBlockInstructions();
                 clearTimeout(uploadTimeout);
-                blockProposal = await this.getBlockProposal();
+                const blockProposal = await this.getBlockProposal();
                 console.log(blockProposal);
                 if (blockProposal.uploader !== ethers_1.ethers.constants.AddressZero &&
                     blockProposal.uploader !== this.wallet.address) {
@@ -240,6 +241,7 @@ class KYVE {
         }
     }
     async waitForNextBlockInstructions() {
+        logger_1.default.debug("Waiting for next block instructions ...");
         return new Promise((resolve) => {
             this.pool.on("NextBlockInstructions", (uploader, fromHeight, toHeight) => {
                 resolve({
@@ -285,124 +287,69 @@ class KYVE {
         };
         logger_1.default.info(`🚀 Starting node ...\n\t${formatInfoLogs("Name")} = ${this.name}\n\t${formatInfoLogs("Address")} = ${this.wallet.address}\n\t${formatInfoLogs("Pool")} = ${this.pool.address}\n\t${formatInfoLogs("Desired Stake")} = ${this.stake} $KYVE\n\n\t${formatInfoLogs("@kyve/core")} = v${package_json_1.version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}`);
     }
-    async setupListeners() {
-        // // Listen to new contract changes.
-        // this.pool.on("ConfigChanged", () => {
-        // logger.warn("⚠️  Config changed. Exiting ...");
-        //   process.exit();
-        // });
-        // this.pool.on("MetadataChanged", async () => {
-        //   await this.fetchPoolState();
-        // });
-        // this.pool.on("Paused", () => {
-        //   if (this.node?.address === this.settings.uploader) {
-        //     logger.warn("⚠️  Pool is now paused. Exiting ...");
-        //     process.exit();
-        //   }
-        // });
-        // this.pool.on("UploaderChanged", (previous: string) => {
-        //   if (this.node?.address === previous) {
-        //     logger.warn("⚠️  Uploader changed. Exiting ...");
-        //     process.exit();
-        //   }
-        // });
-        // // Listen to new payouts.
-        // const payoutLogger = logger.getChildLogger({
-        //   name: "Payout",
-        // });
-        // this.pool.on(
-        //   this.pool.filters.PayedOut(this.node?.address),
-        //   (_, _amount: ethers.BigNumber, _transaction: string) => {
-        //     const transaction = fromBytes(_transaction);
-        //     payoutLogger.info(
-        //       `💸 Received a reward of ${toHumanReadable(
-        //         toBN(_amount)
-        //       )} $KYVE. Bundle = ${transaction}`
-        //     );
-        //   }
-        // );
-        // // Listen to new points.
-        // const pointsLogger = logger.getChildLogger({
-        //   name: "Points",
-        // });
-        // this.pool.on(
-        //   this.pool.filters.PointsIncreased(this.node?.address),
-        //   (_, _points: ethers.BigNumber, _transaction: string) => {
-        //     const transaction = fromBytes(_transaction);
-        //     pointsLogger.warn(
-        //       `⚠️  Received a new slashing point (${_points.toString()} / ${
-        //         this.settings.slashThreshold
-        //       }). Bundle = ${transaction}`
-        //     );
-        //   }
-        // );
-        // // Listen to new slashes.
-        // const slashLogger = logger.getChildLogger({
-        //   name: "Slash",
-        // });
-        // this.pool.on(
-        //   this.pool.filters.Slashed(this.node?.address),
-        //   (_, _amount: ethers.BigNumber, _transaction: string) => {
-        //     const transaction = fromBytes(_transaction);
-        //     slashLogger.warn(
-        //       `🚫 Node has been slashed. Lost ${toHumanReadable(
-        //         toBN(_amount)
-        //       )} $KYVE. Bundle = ${transaction}`
-        //     );
-        //     process.exit();
-        //   }
-        // );
-    }
     async fetchPoolState() {
-        const stateLogger = logger_1.default.getChildLogger({
-            name: "PoolState",
-        });
-        stateLogger.debug("Attempting to fetch pool state.");
-        let _poolState;
+        logger_1.default.debug("Attempting to fetch pool state.");
         try {
-            _poolState = await this.pool.pool();
+            this.poolState = { ...(await this.pool.pool()) };
         }
         catch (error) {
-            stateLogger.error("❌ Received an error while trying to fetch the pool state:", error);
+            logger_1.default.error("❌ Received an error while trying to fetch the pool state:", error);
             process.exit(1);
         }
         try {
-            this.config = JSON.parse(_poolState.config);
+            this.poolState.config = JSON.parse(this.poolState.config);
         }
         catch (error) {
-            stateLogger.error("❌ Received an error while trying to parse the config:", error);
+            logger_1.default.error("❌ Received an error while trying to parse the config:", error);
             process.exit(1);
         }
         try {
-            const oldMetadata = this.metadata;
-            this.metadata = JSON.parse(_poolState.metadata);
-            if (oldMetadata &&
-                this.metadata.versions &&
-                oldMetadata.versions !== this.metadata.versions) {
-                logger_1.default.warn("⚠️  Version requirements changed. Exiting ...");
-                logger_1.default.info(`⏱  New version requirements are ${this.metadata.versions}.`);
-                process.exit();
+            this.poolState.metadata = JSON.parse(this.poolState.metadata);
+        }
+        catch (error) {
+            logger_1.default.error("❌ Received an error while trying to parse the metadata:", error);
+            process.exit(1);
+        }
+        console.log(this.poolState);
+        logger_1.default.info("ℹ Fetched pool state.");
+    }
+    async checkIfNodeIsValidator() {
+        try {
+            const isValidator = await this.pool.isValidator(this.wallet.address);
+            if (isValidator) {
+                logger_1.default.info("🔍  Node is running as a validator.");
+            }
+            else {
+                logger_1.default.error("❌ Node is no active validator. Exiting ...");
+                process.exit(1);
             }
         }
         catch (error) {
-            stateLogger.error("❌ Received an error while trying to parse the metadata:", error);
+            logger_1.default.error("❌ Received an error while trying to fetch validator info");
+            logger_1.default.debug(error);
             process.exit(1);
         }
-        this.settings = _poolState;
-        console.log(this.settings);
-        stateLogger.debug("Successfully fetched pool state.");
     }
     async checkVersionRequirements() {
-        if ((0, semver_1.satisfies)(this.version, this.metadata.versions || this.version)) {
-            logger_1.default.info("⏱  Pool version requirements met.");
+        var _a;
+        try {
+            if ((0, semver_1.satisfies)(this.version, ((_a = this.poolState.metadata) === null || _a === void 0 ? void 0 : _a.versions) || this.version)) {
+                logger_1.default.info("⏱  Pool version requirements met.");
+            }
+            else {
+                logger_1.default.error(`❌ Running an invalid version for the specified pool. Version requirements are ${this.poolState.metadata.versions}.`);
+                process.exit(1);
+            }
         }
-        else {
-            logger_1.default.error(`❌ Running an invalid version for the specified pool. Version requirements are ${this.metadata.versions}.`);
+        catch (error) {
+            logger_1.default.error("❌ Received an error while trying parse versions");
+            logger_1.default.debug(error);
             process.exit(1);
         }
     }
     async checkRuntimeRequirements() {
-        if (this.metadata.runtime === this.runtime) {
+        var _a;
+        if (((_a = this.poolState.metadata) === null || _a === void 0 ? void 0 : _a.runtime) === this.runtime) {
             logger_1.default.info(`💻 Running node on runtime ${this.runtime}.`);
         }
         else {
@@ -425,8 +372,8 @@ class KYVE {
             logger_1.default.error("❌ Provided invalid staking amount:", error);
             process.exit(1);
         }
-        if (parsedStake.lt((0, helpers_1.toBN)(this.settings.minStake))) {
-            logger_1.default.error(`❌ Desired stake is lower than the minimum stake. Desired Stake = ${(0, helpers_1.toHumanReadable)(parsedStake)}, Minimum Stake = ${(0, helpers_1.toHumanReadable)((0, helpers_1.toBN)(this.settings.minStake))}`);
+        if (parsedStake.lt((0, helpers_1.toBN)(this.poolState.minStake))) {
+            logger_1.default.error(`❌ Desired stake is lower than the minimum stake. Desired Stake = ${(0, helpers_1.toHumanReadable)(parsedStake)}, Minimum Stake = ${(0, helpers_1.toHumanReadable)((0, helpers_1.toBN)(this.poolState.minStake))}`);
             process.exit();
         }
         if (parsedStake.gt(nodeStake)) {
@@ -523,7 +470,7 @@ class KYVE {
         }
     }
     calculateUploaderWaitingTime() {
-        const waitingTime = Math.log2(this.settings.bundleSize) * 5;
+        const waitingTime = Math.log2(this.poolState.bundleSize) * 5;
         if (waitingTime > 30)
             return waitingTime * 1000;
         return 30 * 1000;
