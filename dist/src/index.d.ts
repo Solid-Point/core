@@ -32,8 +32,6 @@ declare class KYVE {
     private logNodeInfo;
     private fetchPoolState;
     private checkIfNodeIsValidator;
-    private checkVersionRequirements;
-    private checkRuntimeRequirements;
     private setupNodeStake;
     private selfStake;
     private selfUnstake;

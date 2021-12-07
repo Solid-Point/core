@@ -161,11 +161,10 @@ class KYVE {
 
     await this.fetchPoolState();
 
-    await this.checkVersionRequirements();
-    await this.checkRuntimeRequirements();
-
     await this.setupNodeStake();
     await this.setupNodeCommission();
+
+    await this.checkIfNodeIsValidator();
 
     await this.run(bundle, validate ? validate : this.defaultValidate);
   }
@@ -176,15 +175,15 @@ class KYVE {
   ) {
     try {
       while (true) {
-        this.fetchPoolState();
+        await this.fetchPoolState();
 
         if (this.poolState.paused) {
+          logger.info("💤  Pool is paused. Waiting ...");
           await sleep(60 * 1000);
           continue;
         }
 
-        this.checkVersionRequirements();
-        this.checkIfNodeIsValidator();
+        await this.checkIfNodeIsValidator();
 
         const blockInstructions = await this.getBlockInstructions();
 
@@ -511,29 +510,6 @@ class KYVE {
       process.exit(1);
     }
 
-    console.log(this.poolState);
-
-    logger.info("ℹ Fetched pool state.");
-  }
-
-  private async checkIfNodeIsValidator() {
-    try {
-      const isValidator = await this.pool.isValidator(this.wallet.address);
-
-      if (isValidator) {
-        logger.info("🔍  Node is running as a validator.");
-      } else {
-        logger.error("❌ Node is no active validator. Exiting ...");
-        process.exit(1);
-      }
-    } catch (error) {
-      logger.error("❌ Received an error while trying to fetch validator info");
-      logger.debug(error);
-      process.exit(1);
-    }
-  }
-
-  private async checkVersionRequirements() {
     try {
       if (
         satisfies(
@@ -553,13 +529,32 @@ class KYVE {
       logger.debug(error);
       process.exit(1);
     }
-  }
 
-  private async checkRuntimeRequirements() {
     if (this.poolState.metadata?.runtime === this.runtime) {
       logger.info(`💻 Running node on runtime ${this.runtime}.`);
     } else {
       logger.error("❌ Specified pool does not match the integration runtime.");
+      process.exit(1);
+    }
+
+    console.log(this.poolState);
+
+    logger.info("ℹ Fetched pool state.");
+  }
+
+  private async checkIfNodeIsValidator() {
+    try {
+      const isValidator = await this.pool.isValidator(this.wallet.address);
+
+      if (isValidator) {
+        logger.info("🔍  Node is running as a validator.");
+      } else {
+        logger.error("❌ Node is no active validator. Exiting ...");
+        process.exit(1);
+      }
+    } catch (error) {
+      logger.error("❌ Received an error while trying to fetch validator info");
+      logger.debug(error);
       process.exit(1);
     }
   }

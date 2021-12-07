@@ -94,22 +94,21 @@ class KYVE {
     async start(bundle, validate) {
         this.logNodeInfo();
         await this.fetchPoolState();
-        await this.checkVersionRequirements();
-        await this.checkRuntimeRequirements();
         await this.setupNodeStake();
         await this.setupNodeCommission();
+        await this.checkIfNodeIsValidator();
         await this.run(bundle, validate ? validate : this.defaultValidate);
     }
     async run(bundle, validate) {
         try {
             while (true) {
-                this.fetchPoolState();
+                await this.fetchPoolState();
                 if (this.poolState.paused) {
+                    logger_1.default.info("💤  Pool is paused. Waiting ...");
                     await (0, helpers_1.sleep)(60 * 1000);
                     continue;
                 }
-                this.checkVersionRequirements();
-                this.checkIfNodeIsValidator();
+                await this.checkIfNodeIsValidator();
                 const blockInstructions = await this.getBlockInstructions();
                 console.log(blockInstructions);
                 if (blockInstructions.uploader === ethers_1.ethers.constants.AddressZero ||
@@ -288,6 +287,7 @@ class KYVE {
         logger_1.default.info(`🚀 Starting node ...\n\t${formatInfoLogs("Name")} = ${this.name}\n\t${formatInfoLogs("Address")} = ${this.wallet.address}\n\t${formatInfoLogs("Pool")} = ${this.pool.address}\n\t${formatInfoLogs("Desired Stake")} = ${this.stake} $KYVE\n\n\t${formatInfoLogs("@kyve/core")} = v${package_json_1.version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}`);
     }
     async fetchPoolState() {
+        var _a, _b;
         logger_1.default.debug("Attempting to fetch pool state.");
         try {
             this.poolState = { ...(await this.pool.pool()) };
@@ -310,6 +310,27 @@ class KYVE {
             logger_1.default.error("❌ Received an error while trying to parse the metadata:", error);
             process.exit(1);
         }
+        try {
+            if ((0, semver_1.satisfies)(this.version, ((_a = this.poolState.metadata) === null || _a === void 0 ? void 0 : _a.versions) || this.version)) {
+                logger_1.default.info("⏱  Pool version requirements met.");
+            }
+            else {
+                logger_1.default.error(`❌ Running an invalid version for the specified pool. Version requirements are ${this.poolState.metadata.versions}.`);
+                process.exit(1);
+            }
+        }
+        catch (error) {
+            logger_1.default.error("❌ Received an error while trying parse versions");
+            logger_1.default.debug(error);
+            process.exit(1);
+        }
+        if (((_b = this.poolState.metadata) === null || _b === void 0 ? void 0 : _b.runtime) === this.runtime) {
+            logger_1.default.info(`💻 Running node on runtime ${this.runtime}.`);
+        }
+        else {
+            logger_1.default.error("❌ Specified pool does not match the integration runtime.");
+            process.exit(1);
+        }
         console.log(this.poolState);
         logger_1.default.info("ℹ Fetched pool state.");
     }
@@ -327,33 +348,6 @@ class KYVE {
         catch (error) {
             logger_1.default.error("❌ Received an error while trying to fetch validator info");
             logger_1.default.debug(error);
-            process.exit(1);
-        }
-    }
-    async checkVersionRequirements() {
-        var _a;
-        try {
-            if ((0, semver_1.satisfies)(this.version, ((_a = this.poolState.metadata) === null || _a === void 0 ? void 0 : _a.versions) || this.version)) {
-                logger_1.default.info("⏱  Pool version requirements met.");
-            }
-            else {
-                logger_1.default.error(`❌ Running an invalid version for the specified pool. Version requirements are ${this.poolState.metadata.versions}.`);
-                process.exit(1);
-            }
-        }
-        catch (error) {
-            logger_1.default.error("❌ Received an error while trying parse versions");
-            logger_1.default.debug(error);
-            process.exit(1);
-        }
-    }
-    async checkRuntimeRequirements() {
-        var _a;
-        if (((_a = this.poolState.metadata) === null || _a === void 0 ? void 0 : _a.runtime) === this.runtime) {
-            logger_1.default.info(`💻 Running node on runtime ${this.runtime}.`);
-        }
-        else {
-            logger_1.default.error("❌ Specified pool does not match the integration runtime.");
             process.exit(1);
         }
     }
