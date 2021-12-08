@@ -1,6 +1,6 @@
-const http = require("http");
-const url = require("url");
-const client = require("prom-client");
+import http from "http";
+import url from "url";
+import client, {register as globalRegister} from "prom-client";
 
 // Create a Registry which registers the metrics
 const register = new client.Registry();
@@ -21,11 +21,13 @@ const server = http.createServer(async (req: any, res: any) => {
   if (route === "/metrics") {
     // Return all metrics the Prometheus exposition format
     res.setHeader("Content-Type", register.contentType);
-    res.end(await register.metrics());
+    const defaultMetrics = await register.metrics();
+    const global = await globalRegister.metrics();
+    res.end(defaultMetrics + global);
   }
 });
 
 // Start the HTTP server which exposes the metrics on http://localhost:8080/metrics
 // server.listen(8080);
 
-export { client, server };
+export { client, server, register };
