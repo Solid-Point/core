@@ -77,13 +77,13 @@ class KYVE {
             fatal: logToTransport,
         });
     }
-    static async generate(cli) {
+    static async generateRuntime(Integration, cli) {
         if (!cli) {
             cli = new utils_1.CLI(process.env.KYVE_RUNTIME, process.env.KYVE_VERSION);
         }
         await cli.parseAsync();
         const options = cli.opts();
-        const node = new KYVE(options.pool, cli.runtime, cli.packageVersion, options.stake, options.commission, options.privateKey, 
+        const node = new Integration(options.pool, cli.runtime, cli.packageVersion, options.stake, options.commission, options.privateKey, 
         // if there is a keyfile flag defined, we load it from disk.
         options.keyfile && JSON.parse((0, fs_1.readFileSync)(options.keyfile, "utf-8")), options.name, options.endpoint, options.gasMultiplier, options.verbose);
         return {
