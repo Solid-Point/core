@@ -20,5 +20,5 @@ export declare type BlockProposal = {
     toHeight: number;
     start: number;
 };
-export declare type BundleFunction<ConfigType> = (config: ConfigType, fromHeight: number, toHeight: number) => Promise<any[]>;
+export declare type BundleFunction<ConfigType> = (config: ConfigType, blockInstructions: BlockInstructions) => Promise<any[]>;
 export declare type ValidateFunction = (uploadBundle: any[], uploadBytes: number, downloadBundle: any[], downloadBytes: number) => Promise<boolean>;

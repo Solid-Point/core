@@ -1,6 +1,6 @@
 import { JWKInterface } from "arweave/node/lib/wallet";
 import { OptionValues } from "commander";
-import { BundleFunction, ValidateFunction } from "./faces";
+import { BlockInstructions } from "./faces";
 import { CLI } from "./utils";
 export * from "./utils";
 declare class KYVE {
@@ -20,14 +20,15 @@ declare class KYVE {
         node: KYVE;
         options: OptionValues;
     }>;
-    start<ConfigType>(bundle: BundleFunction<ConfigType>, validate?: ValidateFunction): Promise<void>;
+    start(): Promise<void>;
     private run;
+    createBundle<Config>(config: Config, blockInstructions: BlockInstructions): Promise<any>;
+    validate(uploadBundle: any[], uploadBytes: number, downloadBundle: any[], downloadBytes: number): Promise<boolean>;
     private getBlockProposal;
     private getBlockInstructions;
     private uploadBundleToArweave;
     private submitBlockProposal;
     private waitForNextBlockInstructions;
-    private defaultValidate;
     private vote;
     private logNodeInfo;
     private fetchPoolState;

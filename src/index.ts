@@ -153,10 +153,7 @@ class KYVE {
     };
   }
 
-  async start<ConfigType>(
-    bundle: BundleFunction<ConfigType>,
-    validate?: ValidateFunction
-  ) {
+  async start() {
     this.logNodeInfo();
 
     await this.fetchPoolState();
@@ -166,13 +163,10 @@ class KYVE {
 
     await this.checkIfNodeIsValidator();
 
-    await this.run(bundle, validate ? validate : this.defaultValidate);
+    await this.run();
   }
 
-  private async run<ConfigType>(
-    bundle: BundleFunction<ConfigType>,
-    validate: ValidateFunction
-  ) {
+  private async run() {
     try {
       while (true) {
         await this.fetchPoolState();
@@ -208,10 +202,9 @@ class KYVE {
 
         // TODO: save last instructions and bundle
 
-        const uploadBundle = await bundle(
+        const uploadBundle = await this.createBundle(
           this.poolState.config,
-          blockInstructions.fromHeight,
-          blockInstructions.toHeight
+          blockInstructions
         );
 
         if (
@@ -261,7 +254,7 @@ class KYVE {
 
               await this.vote({
                 transaction: blockProposal.txId,
-                valid: await validate(
+                valid: await this.validate(
                   JSON.parse(JSON.stringify(uploadBundle)),
                   +blockProposal.byteSize,
                   JSON.parse(JSON.stringify(downloadBundle)),
@@ -281,6 +274,31 @@ class KYVE {
       logger.error(`❌ Runtime error. Exiting ...`);
       logger.debug(error);
     }
+  }
+
+  public async createBundle<Config>(
+    config: Config,
+    blockInstructions: BlockInstructions
+  ): Promise<any> {
+    logger.error(`❌ CreateBundle not implemented. Exiting ...`);
+    process.exit(1);
+  }
+
+  public async validate(
+    uploadBundle: any[],
+    uploadBytes: number,
+    downloadBundle: any[],
+    downloadBytes: number
+  ): Promise<boolean> {
+    if (uploadBytes !== downloadBytes) {
+      return false;
+    }
+
+    if (hash(uploadBundle) !== hash(downloadBundle)) {
+      return false;
+    }
+
+    return true;
   }
 
   private async getBlockProposal(): Promise<BlockProposal> {
@@ -403,23 +421,6 @@ class KYVE {
         resolve();
       });
     });
-  }
-
-  private async defaultValidate(
-    uploadBundle: any[],
-    uploadBytes: number,
-    downloadBundle: any[],
-    downloadBytes: number
-  ): Promise<boolean> {
-    if (uploadBytes !== downloadBytes) {
-      return false;
-    }
-
-    if (hash(uploadBundle) !== hash(downloadBundle)) {
-      return false;
-    }
-
-    return true;
   }
 
   private async vote(vote: Vote) {

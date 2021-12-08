@@ -91,15 +91,15 @@ class KYVE {
             options,
         };
     }
-    async start(bundle, validate) {
+    async start() {
         this.logNodeInfo();
         await this.fetchPoolState();
         await this.setupNodeStake();
         await this.setupNodeCommission();
         await this.checkIfNodeIsValidator();
-        await this.run(bundle, validate ? validate : this.defaultValidate);
+        await this.run();
     }
-    async run(bundle, validate) {
+    async run() {
         try {
             while (true) {
                 await this.fetchPoolState();
@@ -119,7 +119,7 @@ class KYVE {
                 }
                 logger_1.default.debug(`Creating bundle (${blockInstructions.fromHeight} - ${blockInstructions.toHeight}) ...`);
                 // TODO: save last instructions and bundle
-                const uploadBundle = await bundle(this.poolState.config, blockInstructions.fromHeight, blockInstructions.toHeight);
+                const uploadBundle = await this.createBundle(this.poolState.config, blockInstructions);
                 if (blockInstructions.uploader === ethers_1.ethers.constants.AddressZero ||
                     blockInstructions.uploader === this.wallet.address) {
                     const transaction = await this.uploadBundleToArweave(uploadBundle, blockInstructions);
@@ -145,7 +145,7 @@ class KYVE {
                             }).decode(_data));
                             await this.vote({
                                 transaction: blockProposal.txId,
-                                valid: await validate(JSON.parse(JSON.stringify(uploadBundle)), +blockProposal.byteSize, JSON.parse(JSON.stringify(downloadBundle)), +downloadBytes),
+                                valid: await this.validate(JSON.parse(JSON.stringify(uploadBundle)), +blockProposal.byteSize, JSON.parse(JSON.stringify(downloadBundle)), +downloadBytes),
                             });
                         }
                     }
@@ -160,6 +160,19 @@ class KYVE {
             logger_1.default.error(`❌ Runtime error. Exiting ...`);
             logger_1.default.debug(error);
         }
+    }
+    async createBundle(config, blockInstructions) {
+        logger_1.default.error(`❌ CreateBundle not implemented. Exiting ...`);
+        process.exit(1);
+    }
+    async validate(uploadBundle, uploadBytes, downloadBundle, downloadBytes) {
+        if (uploadBytes !== downloadBytes) {
+            return false;
+        }
+        if ((0, object_hash_1.default)(uploadBundle) !== (0, object_hash_1.default)(downloadBundle)) {
+            return false;
+        }
+        return true;
     }
     async getBlockProposal() {
         const proposal = {
@@ -251,15 +264,6 @@ class KYVE {
                 resolve();
             });
         });
-    }
-    async defaultValidate(uploadBundle, uploadBytes, downloadBundle, downloadBytes) {
-        if (uploadBytes !== downloadBytes) {
-            return false;
-        }
-        if ((0, object_hash_1.default)(uploadBundle) !== (0, object_hash_1.default)(downloadBundle)) {
-            return false;
-        }
-        return true;
     }
     async vote(vote) {
         logger_1.default.info(`🖋  Voting ${vote.valid ? "valid" : "invalid"} on bundle ${vote.transaction} ...`);

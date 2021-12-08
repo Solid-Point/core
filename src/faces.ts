@@ -23,8 +23,7 @@ export type BlockProposal = {
 
 export type BundleFunction<ConfigType> = (
   config: ConfigType,
-  fromHeight: number,
-  toHeight: number
+  blockInstructions: BlockInstructions
 ) => Promise<any[]>;
 
 export type ValidateFunction = (
