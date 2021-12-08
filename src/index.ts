@@ -57,6 +57,8 @@ class KYVE {
     cli.parse();
     const options = cli.opts();
 
+    console.log(options);
+
     const provider = new ethers.providers.StaticJsonRpcProvider(
       options.endpoint || "https://rpc.testnet.moonbeam.network",
       {
