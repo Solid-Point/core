@@ -533,8 +533,6 @@ class KYVE {
       process.exit(1);
     }
 
-    console.log(this.poolState);
-
     logger.info("ℹ Fetched pool state.");
   }
 

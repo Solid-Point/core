@@ -332,7 +332,6 @@ class KYVE {
             logger_1.default.error("❌ Specified pool does not match the integration runtime.");
             process.exit(1);
         }
-        console.log(this.poolState);
         logger_1.default.info("ℹ Fetched pool state.");
     }
     async checkIfNodeIsValidator() {
