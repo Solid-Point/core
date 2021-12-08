@@ -38,7 +38,6 @@ class KYVE {
         }
         cli.parse();
         const options = cli.opts();
-        console.log(options);
         const provider = new ethers_1.ethers.providers.StaticJsonRpcProvider(options.endpoint || "https://rpc.testnet.moonbeam.network", {
             chainId: 1287,
             name: "moonbase-alphanet",
@@ -51,7 +50,7 @@ class KYVE {
         this.commission = options.commission;
         this.keyfile =
             options.keyfile && JSON.parse((0, fs_1.readFileSync)(options.keyfile, "utf-8"));
-        this.gasMultiplier = options.gasMultiplier;
+        this.gasMultiplier = options.gasMultiplier || "1";
         if (options.name) {
             this.name = options.name;
         }
