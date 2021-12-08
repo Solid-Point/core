@@ -276,8 +276,8 @@ class KYVE {
     }
   }
 
-  public async createBundle<Config>(
-    config: Config,
+  public async createBundle(
+    config: any,
     blockInstructions: BlockInstructions
   ): Promise<any> {
     logger.error(`❌ CreateBundle not implemented. Exiting ...`);

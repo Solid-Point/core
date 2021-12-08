@@ -22,7 +22,7 @@ declare class KYVE {
     }>;
     start(): Promise<void>;
     private run;
-    createBundle<Config>(config: Config, blockInstructions: BlockInstructions): Promise<any>;
+    createBundle(config: any, blockInstructions: BlockInstructions): Promise<any>;
     validate(uploadBundle: any[], uploadBytes: number, downloadBundle: any[], downloadBytes: number): Promise<boolean>;
     private getBlockProposal;
     private getBlockInstructions;
