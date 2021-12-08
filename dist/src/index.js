@@ -216,7 +216,7 @@ class KYVE {
     async submitBlockProposal(transaction) {
         try {
             const tx = await this.pool.submitBlockProposal((0, arweave_2.toBytes)(transaction.id), +transaction.data_size, {
-                gasLimit: await this.pool.estimateGas.submitBlockProposal((0, arweave_2.toBytes)(transaction.id), +transaction.data_size),
+                gasLimit: ethers_1.ethers.BigNumber.from(1000000),
                 gasPrice: await (0, helpers_1.getGasPrice)(this.pool, this.gasMultiplier),
             });
             logger_1.default.debug(`Submitting block proposal ${transaction.id} ...`);

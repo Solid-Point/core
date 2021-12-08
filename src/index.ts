@@ -359,10 +359,7 @@ class KYVE {
         toBytes(transaction.id),
         +transaction.data_size,
         {
-          gasLimit: await this.pool.estimateGas.submitBlockProposal(
-            toBytes(transaction.id),
-            +transaction.data_size
-          ),
+          gasLimit: ethers.BigNumber.from(1000000),
           gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
         }
       );
