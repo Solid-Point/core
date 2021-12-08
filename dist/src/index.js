@@ -246,7 +246,10 @@ class KYVE {
             }
         }, this.poolState.uploadTimeout.toNumber() * 1000);
         return new Promise((resolve) => {
-            this.pool.on("NextBlockInstructions", resolve);
+            this.pool.on("NextBlockInstructions", () => {
+                clearTimeout(uploadTimeout);
+                resolve();
+            });
         });
     }
     async defaultValidate(uploadBundle, uploadBytes, downloadBundle, downloadBytes) {

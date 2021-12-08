@@ -379,7 +379,7 @@ class KYVE {
 
   private async waitForNextBlockInstructions(
     blockInstructions: BlockInstructions
-  ): Promise<BlockInstructions> {
+  ): Promise<void> {
     logger.debug("Waiting for next block instructions ...");
 
     const uploadTimeout = setTimeout(async () => {
@@ -401,7 +401,10 @@ class KYVE {
     }, this.poolState.uploadTimeout.toNumber() * 1000);
 
     return new Promise((resolve) => {
-      this.pool.on("NextBlockInstructions", resolve);
+      this.pool.on("NextBlockInstructions", () => {
+        clearTimeout(uploadTimeout);
+        resolve();
+      });
     });
   }
 
