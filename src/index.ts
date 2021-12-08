@@ -12,13 +12,7 @@ import {
   starWars,
   uniqueNamesGenerator,
 } from "unique-names-generator";
-import {
-  BlockInstructions,
-  BlockProposal,
-  BundleFunction,
-  ValidateFunction,
-  Vote,
-} from "./faces";
+import { BlockInstructions, BlockProposal, Vote } from "./faces";
 import { CLI } from "./utils";
 import { fromBytes, toBytes } from "./utils/arweave";
 import logger from "./utils/logger";
@@ -677,7 +671,7 @@ class KYVE {
         process.exit(1);
       }
     } else {
-      logger.info("👌 Already staked with the correct commission.");
+      logger.info("👌 Already set correct commission.");
     }
   }
 

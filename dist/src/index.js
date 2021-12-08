@@ -457,7 +457,7 @@ class KYVE {
             }
         }
         else {
-            logger_1.default.info("👌 Already staked with the correct commission.");
+            logger_1.default.info("👌 Already set correct commission.");
         }
     }
     calculateUploaderWaitingTime() {

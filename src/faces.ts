@@ -20,15 +20,3 @@ export type BlockProposal = {
   toHeight: number;
   start: number;
 };
-
-export type BundleFunction<ConfigType> = (
-  config: ConfigType,
-  blockInstructions: BlockInstructions
-) => Promise<any[]>;
-
-export type ValidateFunction = (
-  uploadBundle: any[],
-  uploadBytes: number,
-  downloadBundle: any[],
-  downloadBytes: number
-) => Promise<boolean>;
