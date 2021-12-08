@@ -1,5 +1,3 @@
-import { JWKInterface } from "arweave/node/lib/wallet";
-import { OptionValues } from "commander";
 import { BlockInstructions } from "./faces";
 import { CLI } from "./utils";
 export * from "./utils";
@@ -15,11 +13,7 @@ declare class KYVE {
     private gasMultiplier;
     private poolState;
     private client;
-    constructor(poolAddress: string, runtime: string, version: string, stakeAmount: string, commissionAmount: string, privateKey: string, keyfile?: JWKInterface, name?: string, endpoint?: string, gasMultiplier?: string, verbose?: boolean);
-    static generateRuntime(Integration: any, cli?: CLI): Promise<{
-        node: KYVE;
-        options: OptionValues;
-    }>;
+    constructor(cli?: CLI);
     start(): Promise<void>;
     private run;
     createBundle(config: any, blockInstructions: BlockInstructions): Promise<any>;

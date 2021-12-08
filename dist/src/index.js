@@ -28,25 +28,31 @@ const package_json_1 = require("../package.json");
 const object_hash_1 = __importDefault(require("object-hash"));
 __exportStar(require("./utils"), exports);
 class KYVE {
-    constructor(poolAddress, runtime, version, stakeAmount, commissionAmount, privateKey, keyfile, name, endpoint, gasMultiplier = "1", verbose = false) {
+    constructor(cli) {
         this.client = new arweave_1.default({
             host: "arweave.net",
             protocol: "https",
         });
-        const provider = new ethers_1.ethers.providers.StaticJsonRpcProvider(endpoint || "https://rpc.testnet.moonbeam.network", {
+        if (!cli) {
+            cli = new utils_1.CLI(process.env.KYVE_RUNTIME, process.env.KYVE_VERSION);
+        }
+        cli.parse();
+        const options = cli.opts();
+        const provider = new ethers_1.ethers.providers.StaticJsonRpcProvider(options.endpoint || "https://rpc.testnet.moonbeam.network", {
             chainId: 1287,
             name: "moonbase-alphanet",
         });
-        this.wallet = new ethers_1.Wallet(privateKey, provider);
-        this.pool = (0, helpers_1.Pool)(poolAddress, this.wallet);
-        this.runtime = runtime;
-        this.version = version;
-        this.stake = stakeAmount;
-        this.commission = commissionAmount;
-        this.keyfile = keyfile;
-        this.gasMultiplier = gasMultiplier;
-        if (name) {
-            this.name = name;
+        this.wallet = new ethers_1.Wallet(options.privateKey, provider);
+        this.pool = (0, helpers_1.Pool)(options.pool, this.wallet);
+        this.runtime = cli.runtime;
+        this.version = cli.packageVersion;
+        this.stake = options.stake;
+        this.commission = options.commissionAmount;
+        this.keyfile =
+            options.keyfile && JSON.parse((0, fs_1.readFileSync)(options.keyfile, "utf-8"));
+        this.gasMultiplier = options.gasMultiplier;
+        if (options.name) {
+            this.name = options.name;
         }
         else {
             const r = new prando_1.default(this.wallet.address + this.pool.address);
@@ -65,7 +71,7 @@ class KYVE {
             (0, fs_1.appendFileSync)(`./logs/${this.name}.txt`, JSON.stringify(log) + "\n");
         };
         logger_1.default.setSettings({
-            minLevel: verbose ? undefined : "info",
+            minLevel: options.verbose ? undefined : "info",
         });
         logger_1.default.attachTransport({
             silly: logToTransport,
@@ -76,20 +82,6 @@ class KYVE {
             error: logToTransport,
             fatal: logToTransport,
         });
-    }
-    static async generateRuntime(Integration, cli) {
-        if (!cli) {
-            cli = new utils_1.CLI(process.env.KYVE_RUNTIME, process.env.KYVE_VERSION);
-        }
-        await cli.parseAsync();
-        const options = cli.opts();
-        const node = new Integration(options.pool, cli.runtime, cli.packageVersion, options.stake, options.commission, options.privateKey, 
-        // if there is a keyfile flag defined, we load it from disk.
-        options.keyfile && JSON.parse((0, fs_1.readFileSync)(options.keyfile, "utf-8")), options.name, options.endpoint, options.gasMultiplier, options.verbose);
-        return {
-            node,
-            options,
-        };
     }
     async start() {
         this.logNodeInfo();

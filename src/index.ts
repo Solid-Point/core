@@ -55,39 +55,34 @@ class KYVE {
     protocol: "https",
   });
 
-  constructor(
-    poolAddress: string,
-    runtime: string,
-    version: string,
-    stakeAmount: string,
-    commissionAmount: string,
-    privateKey: string,
-    keyfile?: JWKInterface,
-    name?: string,
-    endpoint?: string,
-    gasMultiplier: string = "1",
-    verbose: boolean = false
-  ) {
+  constructor(cli?: CLI) {
+    if (!cli) {
+      cli = new CLI(process.env.KYVE_RUNTIME!, process.env.KYVE_VERSION!);
+    }
+    cli.parse();
+    const options = cli.opts();
+
     const provider = new ethers.providers.StaticJsonRpcProvider(
-      endpoint || "https://rpc.testnet.moonbeam.network",
+      options.endpoint || "https://rpc.testnet.moonbeam.network",
       {
         chainId: 1287,
         name: "moonbase-alphanet",
       }
     );
 
-    this.wallet = new Wallet(privateKey, provider);
+    this.wallet = new Wallet(options.privateKey, provider);
 
-    this.pool = Pool(poolAddress, this.wallet);
-    this.runtime = runtime;
-    this.version = version;
-    this.stake = stakeAmount;
-    this.commission = commissionAmount;
-    this.keyfile = keyfile;
-    this.gasMultiplier = gasMultiplier;
+    this.pool = Pool(options.pool, this.wallet);
+    this.runtime = cli.runtime;
+    this.version = cli.packageVersion;
+    this.stake = options.stake;
+    this.commission = options.commissionAmount;
+    this.keyfile =
+      options.keyfile && JSON.parse(readFileSync(options.keyfile, "utf-8"));
+    this.gasMultiplier = options.gasMultiplier;
 
-    if (name) {
-      this.name = name;
+    if (options.name) {
+      this.name = options.name;
     } else {
       const r = new Prando(this.wallet.address + this.pool.address);
 
@@ -109,7 +104,7 @@ class KYVE {
     };
 
     logger.setSettings({
-      minLevel: verbose ? undefined : "info",
+      minLevel: options.verbose ? undefined : "info",
     });
 
     logger.attachTransport({
@@ -121,37 +116,6 @@ class KYVE {
       error: logToTransport,
       fatal: logToTransport,
     });
-  }
-
-  static async generateRuntime(
-    Integration: any,
-    cli?: CLI
-  ): Promise<{ node: KYVE; options: OptionValues }> {
-    if (!cli) {
-      cli = new CLI(process.env.KYVE_RUNTIME!, process.env.KYVE_VERSION!);
-    }
-    await cli.parseAsync();
-    const options = cli.opts();
-
-    const node = new Integration(
-      options.pool,
-      cli.runtime,
-      cli.packageVersion,
-      options.stake,
-      options.commission,
-      options.privateKey,
-      // if there is a keyfile flag defined, we load it from disk.
-      options.keyfile && JSON.parse(readFileSync(options.keyfile, "utf-8")),
-      options.name,
-      options.endpoint,
-      options.gasMultiplier,
-      options.verbose
-    );
-
-    return {
-      node,
-      options,
-    };
   }
 
   async start() {
