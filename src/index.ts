@@ -123,7 +123,8 @@ class KYVE {
     });
   }
 
-  static async generate(
+  static async generateRuntime(
+    Integration: any,
     cli?: CLI
   ): Promise<{ node: KYVE; options: OptionValues }> {
     if (!cli) {
@@ -132,7 +133,7 @@ class KYVE {
     await cli.parseAsync();
     const options = cli.opts();
 
-    const node = new this(
+    const node = new Integration(
       options.pool,
       cli.runtime,
       cli.packageVersion,
