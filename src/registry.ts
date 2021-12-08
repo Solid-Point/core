@@ -28,7 +28,4 @@ const server = http.createServer(async (req: any, res: any) => {
 // Start the HTTP server which exposes the metrics on http://localhost:8080/metrics
 // server.listen(8080);
 
-export {
-  client,
-  server
-}
+export { client, server };
