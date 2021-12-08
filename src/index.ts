@@ -132,7 +132,7 @@ class KYVE {
     await cli.parseAsync();
     const options = cli.opts();
 
-    const node = new KYVE(
+    const node = new this(
       options.pool,
       cli.runtime,
       cli.packageVersion,
