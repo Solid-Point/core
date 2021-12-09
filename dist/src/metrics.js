@@ -32,9 +32,6 @@ exports.client = prom_client_1.default;
 prom_client_1.default.collectDefaultMetrics({
     labels: { app: "kyve-core" },
 });
-prom_client_1.default.register.setDefaultLabels({
-    app: process.env.KYVE_RUNTIME,
-});
 // HTTP server which exposes the metrics on http://localhost:8080/metrics
 exports.server = http_1.default.createServer(async (req, res) => {
     // Retrieve route from request object

@@ -8,9 +8,9 @@ client.collectDefaultMetrics({
   labels: { app: "kyve-core" },
 });
 
-client.register.setDefaultLabels({
-  app: process.env.KYVE_RUNTIME,
-});
+// client.register.setDefaultLabels({
+//  app: process.env.KYVE_RUNTIME,
+// });
 
 export { client };
 
