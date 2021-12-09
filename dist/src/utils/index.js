@@ -27,7 +27,8 @@ class CLI extends commander_1.Command {
         this.option("-n, --name <string>", "The identifier name of the node. [optional, default = random]");
         this.option("-e, --endpoint <string>", "A custom Moonbase Alpha endpoint. [optional]");
         this.option("-g, --gas-multiplier <string>", "The amount that you want to multiply the default gas price by. [optional]");
-        this.option("-st, --send-statistics <boolean>", "Send statistics.", true);
+        this.option("-st, --send-statistics", "Send statistics.");
+        this.option("-m, --metrics", "Run Prometheus metrics server.");
         this.option("-v, --verbose", "Include if you want logs to be verbose.", false);
         this.version(packageVersion, "--version");
     }

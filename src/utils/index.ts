@@ -54,12 +54,8 @@ export class CLI extends Command {
       "-g, --gas-multiplier <string>",
       "The amount that you want to multiply the default gas price by. [optional]"
     );
-    this.option("-st, --send-statistics <boolean>", "Send statistics.", true);
-    this.option(
-      "-m, --metrics <boolean>",
-      "Run Prometheus metrics server.",
-      true
-    );
+    this.option("-st, --send-statistics", "Send statistics.");
+    this.option("-m, --metrics", "Run Prometheus metrics server.");
     this.option(
       "-v, --verbose",
       "Include if you want logs to be verbose.",

@@ -48,6 +48,7 @@ class KYVE {
   private name: string;
   private gasMultiplier: string;
   private poolState: any;
+  private runMetrics: boolean;
 
   public static metrics = client;
 
@@ -82,6 +83,9 @@ class KYVE {
     this.keyfile =
       options.keyfile && JSON.parse(readFileSync(options.keyfile, "utf-8"));
     this.gasMultiplier = options.gasMultiplier || "1";
+    this.runMetrics = options.metrics;
+
+    console.log(options);
 
     if (options.name) {
       this.name = options.name;
@@ -445,23 +449,27 @@ class KYVE {
   }
 
   private setupMetrics() {
-    logger.info("🔬 Starting metric server on: http://localhost:8080/metrics");
+    if (this.runMetrics) {
+      logger.info(
+        "🔬 Starting metric server on: http://localhost:8080/metrics"
+      );
 
-    // HTTP server which exposes the metrics on http://localhost:8080/metrics
-    http
-      .createServer(async (req: any, res: any) => {
-        // Retrieve route from request object
-        const route = url.parse(req.url).pathname;
+      // HTTP server which exposes the metrics on http://localhost:8080/metrics
+      http
+        .createServer(async (req: any, res: any) => {
+          // Retrieve route from request object
+          const route = url.parse(req.url).pathname;
 
-        if (route === "/metrics") {
-          // Return all metrics the Prometheus exposition format
-          res.setHeader("Content-Type", register.contentType);
-          const defaultMetrics = await register.metrics();
-          const other = await KYVE.metrics.register.metrics();
-          res.end(defaultMetrics + "\n" + other);
-        }
-      })
-      .listen(8080);
+          if (route === "/metrics") {
+            // Return all metrics the Prometheus exposition format
+            res.setHeader("Content-Type", register.contentType);
+            const defaultMetrics = await register.metrics();
+            const other = await KYVE.metrics.register.metrics();
+            res.end(defaultMetrics + "\n" + other);
+          }
+        })
+        .listen(8080);
+    }
   }
 
   private async fetchPoolState() {

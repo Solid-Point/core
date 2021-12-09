@@ -69,6 +69,8 @@ class KYVE {
         this.keyfile =
             options.keyfile && JSON.parse((0, fs_1.readFileSync)(options.keyfile, "utf-8"));
         this.gasMultiplier = options.gasMultiplier || "1";
+        this.runMetrics = options.metrics;
+        console.log(options);
         if (options.name) {
             this.name = options.name;
         }
@@ -304,21 +306,23 @@ class KYVE {
         logger_1.default.info(`🚀 Starting node ...\n\t${formatInfoLogs("Name")} = ${this.name}\n\t${formatInfoLogs("Address")} = ${this.wallet.address}\n\t${formatInfoLogs("Pool")} = ${this.pool.address}\n\t${formatInfoLogs("Desired Stake")} = ${this.stake} $KYVE\n\n\t${formatInfoLogs("@kyve/core")} = v${package_json_1.version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}`);
     }
     setupMetrics() {
-        logger_1.default.info("🔬 Starting metric server on: http://localhost:8080/metrics");
-        // HTTP server which exposes the metrics on http://localhost:8080/metrics
-        http_1.default
-            .createServer(async (req, res) => {
-            // Retrieve route from request object
-            const route = url_1.default.parse(req.url).pathname;
-            if (route === "/metrics") {
-                // Return all metrics the Prometheus exposition format
-                res.setHeader("Content-Type", prom_client_1.register.contentType);
-                const defaultMetrics = await prom_client_1.register.metrics();
-                const other = await KYVE.metrics.register.metrics();
-                res.end(defaultMetrics + "\n" + other);
-            }
-        })
-            .listen(8080);
+        if (this.runMetrics) {
+            logger_1.default.info("🔬 Starting metric server on: http://localhost:8080/metrics");
+            // HTTP server which exposes the metrics on http://localhost:8080/metrics
+            http_1.default
+                .createServer(async (req, res) => {
+                // Retrieve route from request object
+                const route = url_1.default.parse(req.url).pathname;
+                if (route === "/metrics") {
+                    // Return all metrics the Prometheus exposition format
+                    res.setHeader("Content-Type", prom_client_1.register.contentType);
+                    const defaultMetrics = await prom_client_1.register.metrics();
+                    const other = await KYVE.metrics.register.metrics();
+                    res.end(defaultMetrics + "\n" + other);
+                }
+            })
+                .listen(8080);
+        }
     }
     async fetchPoolState() {
         var _a, _b;

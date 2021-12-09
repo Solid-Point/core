@@ -13,6 +13,7 @@ declare class KYVE {
     private name;
     private gasMultiplier;
     private poolState;
+    private runMetrics;
     static metrics: typeof client;
     private arweave;
     constructor(cli?: CLI);
