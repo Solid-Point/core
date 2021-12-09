@@ -34,6 +34,7 @@ import {
 import { version } from "../package.json";
 import Transaction from "arweave/node/lib/transaction";
 import hash from "object-hash";
+import { server } from "./metrics";
 
 export * from "./utils";
 
@@ -157,6 +158,8 @@ class KYVE {
     bundle: BundleFunction<ConfigType>,
     validate?: ValidateFunction
   ) {
+    // start metric server
+    server.listen(8080);
     this.logNodeInfo();
 
     await this.fetchPoolState();

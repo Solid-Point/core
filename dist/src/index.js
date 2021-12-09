@@ -26,6 +26,7 @@ const logger_1 = __importDefault(require("./utils/logger"));
 const helpers_1 = require("./utils/helpers");
 const package_json_1 = require("../package.json");
 const object_hash_1 = __importDefault(require("object-hash"));
+const metrics_1 = require("./metrics");
 __exportStar(require("./utils"), exports);
 class KYVE {
     constructor(poolAddress, runtime, version, stakeAmount, commissionAmount, privateKey, keyfile, name, endpoint, gasMultiplier = "1", verbose = false) {
@@ -92,6 +93,8 @@ class KYVE {
         };
     }
     async start(bundle, validate) {
+        // start metric server
+        metrics_1.server.listen(8080);
         this.logNodeInfo();
         await this.fetchPoolState();
         await this.setupNodeStake();
