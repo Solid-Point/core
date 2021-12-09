@@ -26,6 +26,7 @@ const logger_1 = __importDefault(require("./utils/logger"));
 const helpers_1 = require("./utils/helpers");
 const package_json_1 = require("../package.json");
 const object_hash_1 = __importDefault(require("object-hash"));
+const metrics_1 = require("./metrics");
 __exportStar(require("./utils"), exports);
 class KYVE {
     constructor(cli) {
@@ -85,6 +86,9 @@ class KYVE {
     }
     async start() {
         this.logNodeInfo();
+        // start metric server
+        metrics_1.server.listen(8080);
+        logger_1.default.info("🔬 Starting metric server on port: 8080");
         await this.fetchPoolState();
         await this.setupNodeStake();
         await this.setupNodeCommission();
@@ -191,10 +195,11 @@ class KYVE {
     }
     async uploadBundleToArweave(bundle, instructions) {
         try {
-            logger_1.default.info("💾 Uploading bundle to Arweave ...");
+            logger_1.default.info("💾 Uploading bundle to Arweave.  ...");
             const transaction = await this.client.createTransaction({
                 data: JSON.stringify(bundle),
             });
+            logger_1.default.debug(`Bundle data size = ${transaction.data_size} Bytes`);
             transaction.addTag("Application", "KYVE - Testnet");
             transaction.addTag("Pool", this.pool.address);
             transaction.addTag("@kyve/core", package_json_1.version);

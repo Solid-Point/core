@@ -1,7 +1,6 @@
 import Arweave from "arweave";
 import { JWKInterface } from "arweave/node/lib/wallet";
 import BigNumber from "bignumber.js";
-import { OptionValues } from "commander";
 import { Contract, ContractTransaction, ethers, Wallet } from "ethers";
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from "fs";
 import Prando from "prando";
@@ -28,6 +27,7 @@ import {
 import { version } from "../package.json";
 import Transaction from "arweave/node/lib/transaction";
 import hash from "object-hash";
+import { server } from "./metrics";
 
 export * from "./utils";
 
@@ -115,6 +115,10 @@ class KYVE {
 
   async start() {
     this.logNodeInfo();
+
+    // start metric server
+    server.listen(8080);
+    logger.info("🔬 Starting metric server on port: 8080");
 
     await this.fetchPoolState();
 
