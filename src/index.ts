@@ -293,11 +293,13 @@ class KYVE {
     instructions: BlockInstructions
   ): Promise<Transaction | null> {
     try {
-      logger.info("💾 Uploading bundle to Arweave ...");
+      logger.info("💾 Uploading bundle to Arweave.  ...");
 
       const transaction = await this.client.createTransaction({
         data: JSON.stringify(bundle),
       });
+
+      logger.debug(`Bundle data size = ${transaction.data_size} Bytes`);
 
       transaction.addTag("Application", "KYVE - Testnet");
       transaction.addTag("Pool", this.pool.address);
