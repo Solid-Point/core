@@ -56,6 +56,11 @@ export class CLI extends Command {
     );
     this.option("-st, --send-statistics <boolean>", "Send statistics.", true);
     this.option(
+      "-m, --metrics <boolean>",
+      "Run Prometheus metrics server.",
+      true
+    );
+    this.option(
       "-v, --verbose",
       "Include if you want logs to be verbose.",
       false
