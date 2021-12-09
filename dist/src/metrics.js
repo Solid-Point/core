@@ -28,12 +28,13 @@ const http_1 = __importDefault(require("http"));
 const url_1 = __importDefault(require("url"));
 const prom_client_1 = __importStar(require("prom-client"));
 exports.client = prom_client_1.default;
-// Add a default label which is added to all metrics
-prom_client_1.default.register.setDefaultLabels({
-    app: "kyve-core",
-});
 // Enable the collection of default metrics
-prom_client_1.default.collectDefaultMetrics();
+prom_client_1.default.collectDefaultMetrics({
+    labels: { app: "kyve-core" },
+});
+prom_client_1.default.register.setDefaultLabels({
+    app: process.env.KYVE_RUNTIME,
+});
 // HTTP server which exposes the metrics on http://localhost:8080/metrics
 exports.server = http_1.default.createServer(async (req, res) => {
     // Retrieve route from request object

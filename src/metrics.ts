@@ -3,13 +3,14 @@ import http from "http";
 import url from "url";
 import client, { register } from "prom-client";
 
-// Add a default label which is added to all metrics
-client.register.setDefaultLabels({
-  app: "kyve-core",
+// Enable the collection of default metrics
+client.collectDefaultMetrics({
+  labels: { app: "kyve-core" },
 });
 
-// Enable the collection of default metrics
-client.collectDefaultMetrics();
+client.register.setDefaultLabels({
+  app: process.env.KYVE_RUNTIME,
+});
 
 export { client };
 
