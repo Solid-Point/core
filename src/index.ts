@@ -37,10 +37,6 @@ client.collectDefaultMetrics({
   labels: { app: "kyve-core" },
 });
 
-client.register.setDefaultLabels({
-  app: process.env.KYVE_RUNTIME,
-});
-
 class KYVE {
   private pool: Contract;
   private runtime: string;
@@ -53,7 +49,7 @@ class KYVE {
   private gasMultiplier: string;
   private poolState: any;
 
-  public static metricClient = client;
+  public static metrics = client;
 
   private arweave = new Arweave({
     host: "arweave.net",
@@ -461,7 +457,7 @@ class KYVE {
           // Return all metrics the Prometheus exposition format
           res.setHeader("Content-Type", register.contentType);
           const defaultMetrics = await register.metrics();
-          const other = await KYVE.metricClient.register.metrics();
+          const other = await KYVE.metrics.register.metrics();
           res.end(defaultMetrics + "\n" + other);
         }
       })

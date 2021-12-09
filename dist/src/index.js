@@ -45,9 +45,6 @@ __exportStar(require("./utils"), exports);
 prom_client_1.default.collectDefaultMetrics({
     labels: { app: "kyve-core" },
 });
-prom_client_1.default.register.setDefaultLabels({
-    app: process.env.KYVE_RUNTIME,
-});
 class KYVE {
     constructor(cli) {
         this.arweave = new arweave_1.default({
@@ -317,7 +314,7 @@ class KYVE {
                 // Return all metrics the Prometheus exposition format
                 res.setHeader("Content-Type", prom_client_1.register.contentType);
                 const defaultMetrics = await prom_client_1.register.metrics();
-                const other = await KYVE.metricClient.register.metrics();
+                const other = await KYVE.metrics.register.metrics();
                 res.end(defaultMetrics + "\n" + other);
             }
         })
@@ -506,5 +503,5 @@ class KYVE {
         return 30 * 1000;
     }
 }
-KYVE.metricClient = prom_client_1.default;
+KYVE.metrics = prom_client_1.default;
 exports.default = KYVE;
