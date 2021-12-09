@@ -160,6 +160,8 @@ class KYVE {
   ) {
     // start metric server
     server.listen(8080);
+    logger.info("Starting metric server on port: 8080");
+
     this.logNodeInfo();
 
     await this.fetchPoolState();

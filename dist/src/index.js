@@ -95,6 +95,7 @@ class KYVE {
     async start(bundle, validate) {
         // start metric server
         metrics_1.server.listen(8080);
+        logger_1.default.info("Starting metric server on port: 8080");
         this.logNodeInfo();
         await this.fetchPoolState();
         await this.setupNodeStake();

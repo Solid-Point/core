@@ -11,6 +11,9 @@ client.register.setDefaultLabels({
 // Enable the collection of default metrics
 client.collectDefaultMetrics();
 
+export { client };
+
+// HTTP server which exposes the metrics on http://localhost:8080/metrics
 export const server = http.createServer(async (req: any, res: any) => {
   // Retrieve route from request object
   const route = url.parse(req.url).pathname;
@@ -23,6 +26,3 @@ export const server = http.createServer(async (req: any, res: any) => {
     res.end(defaultMetrics + "\n" + other);
   }
 });
-
-// Start the HTTP server which exposes the metrics on http://localhost:8080/metrics
-//server.listen(8080);

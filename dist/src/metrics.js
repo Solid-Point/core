@@ -22,17 +22,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.server = void 0;
+exports.server = exports.client = void 0;
 // Define the HTTP server
 const http_1 = __importDefault(require("http"));
 const url_1 = __importDefault(require("url"));
 const prom_client_1 = __importStar(require("prom-client"));
+exports.client = prom_client_1.default;
 // Add a default label which is added to all metrics
 prom_client_1.default.register.setDefaultLabels({
     app: "kyve-core",
 });
 // Enable the collection of default metrics
 prom_client_1.default.collectDefaultMetrics();
+// HTTP server which exposes the metrics on http://localhost:8080/metrics
 exports.server = http_1.default.createServer(async (req, res) => {
     // Retrieve route from request object
     const route = url_1.default.parse(req.url).pathname;
@@ -44,5 +46,3 @@ exports.server = http_1.default.createServer(async (req, res) => {
         res.end(defaultMetrics + "\n" + other);
     }
 });
-// Start the HTTP server which exposes the metrics on http://localhost:8080/metrics
-//server.listen(8080);
