@@ -1,5 +1,6 @@
 import { BlockInstructions } from "./faces";
 import { CLI } from "./utils";
+import client from "prom-client";
 export * from "./utils";
 declare class KYVE {
     private pool;
@@ -12,7 +13,8 @@ declare class KYVE {
     private name;
     private gasMultiplier;
     private poolState;
-    private client;
+    static metricClient: typeof client;
+    private arweave;
     constructor(cli?: CLI);
     start(): Promise<void>;
     private run;
@@ -25,6 +27,7 @@ declare class KYVE {
     private waitForNextBlockInstructions;
     private vote;
     private logNodeInfo;
+    private setupMetrics;
     private fetchPoolState;
     private checkIfNodeIsValidator;
     private setupNodeStake;

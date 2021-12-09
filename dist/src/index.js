@@ -6,6 +6,18 @@ var __createBinding = (this && this.__createBinding) || (Object.create ? (functi
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
 }));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
@@ -26,11 +38,19 @@ const logger_1 = __importDefault(require("./utils/logger"));
 const helpers_1 = require("./utils/helpers");
 const package_json_1 = require("../package.json");
 const object_hash_1 = __importDefault(require("object-hash"));
-const metrics_1 = require("./metrics");
+const http_1 = __importDefault(require("http"));
+const url_1 = __importDefault(require("url"));
+const prom_client_1 = __importStar(require("prom-client"));
 __exportStar(require("./utils"), exports);
+prom_client_1.default.collectDefaultMetrics({
+    labels: { app: "kyve-core" },
+});
+prom_client_1.default.register.setDefaultLabels({
+    app: process.env.KYVE_RUNTIME,
+});
 class KYVE {
     constructor(cli) {
-        this.client = new arweave_1.default({
+        this.arweave = new arweave_1.default({
             host: "arweave.net",
             protocol: "https",
         });
@@ -86,9 +106,7 @@ class KYVE {
     }
     async start() {
         this.logNodeInfo();
-        // start metric server
-        metrics_1.server.listen(8080);
-        logger_1.default.info("🔬 Starting metric server on port: 8080");
+        this.setupMetrics();
         await this.fetchPoolState();
         await this.setupNodeStake();
         await this.setupNodeCommission();
@@ -130,9 +148,9 @@ class KYVE {
                     blockProposal.uploader !== this.wallet.address) {
                     logger_1.default.debug(`Validating bundle ${blockProposal.txId} ...`);
                     try {
-                        const { status } = await this.client.transactions.getStatus(blockProposal.txId);
+                        const { status } = await this.arweave.transactions.getStatus(blockProposal.txId);
                         if (status === 200 || status === 202) {
-                            const _data = (await this.client.transactions.getData(blockProposal.txId, {
+                            const _data = (await this.arweave.transactions.getData(blockProposal.txId, {
                                 decode: true,
                             }));
                             const downloadBytes = _data.byteLength;
@@ -196,7 +214,7 @@ class KYVE {
     async uploadBundleToArweave(bundle, instructions) {
         try {
             logger_1.default.info("💾 Uploading bundle to Arweave.  ...");
-            const transaction = await this.client.createTransaction({
+            const transaction = await this.arweave.createTransaction({
                 data: JSON.stringify(bundle),
             });
             logger_1.default.debug(`Bundle data size = ${transaction.data_size} Bytes`);
@@ -208,13 +226,13 @@ class KYVE {
             transaction.addTag("FromHeight", instructions.fromHeight.toString());
             transaction.addTag("ToHeight", instructions.toHeight.toString());
             transaction.addTag("Content-Type", "application/json");
-            await this.client.transactions.sign(transaction, this.keyfile);
-            const balance = await this.client.wallets.getBalance(await this.client.wallets.getAddress(this.keyfile));
+            await this.arweave.transactions.sign(transaction, this.keyfile);
+            const balance = await this.arweave.wallets.getBalance(await this.arweave.wallets.getAddress(this.keyfile));
             if (+transaction.reward > +balance) {
                 logger_1.default.error("❌ You do not have enough funds in your Arweave wallet.");
                 process.exit(1);
             }
-            await this.client.transactions.post(transaction);
+            await this.arweave.transactions.post(transaction);
             return transaction;
         }
         catch (error) {
@@ -287,6 +305,23 @@ class KYVE {
             return input.padEnd(length, " ");
         };
         logger_1.default.info(`🚀 Starting node ...\n\t${formatInfoLogs("Name")} = ${this.name}\n\t${formatInfoLogs("Address")} = ${this.wallet.address}\n\t${formatInfoLogs("Pool")} = ${this.pool.address}\n\t${formatInfoLogs("Desired Stake")} = ${this.stake} $KYVE\n\n\t${formatInfoLogs("@kyve/core")} = v${package_json_1.version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}`);
+    }
+    setupMetrics() {
+        logger_1.default.info("🔬 Starting metric server on: http://localhost:8080/metrics");
+        // HTTP server which exposes the metrics on http://localhost:8080/metrics
+        http_1.default
+            .createServer(async (req, res) => {
+            // Retrieve route from request object
+            const route = url_1.default.parse(req.url).pathname;
+            if (route === "/metrics") {
+                // Return all metrics the Prometheus exposition format
+                res.setHeader("Content-Type", prom_client_1.register.contentType);
+                const defaultMetrics = await prom_client_1.register.metrics();
+                const other = await KYVE.metricClient.register.metrics();
+                res.end(defaultMetrics + "\n" + other);
+            }
+        })
+            .listen(8080);
     }
     async fetchPoolState() {
         var _a, _b;
@@ -471,4 +506,5 @@ class KYVE {
         return 30 * 1000;
     }
 }
+KYVE.metricClient = prom_client_1.default;
 exports.default = KYVE;

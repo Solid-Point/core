@@ -27,9 +27,19 @@ import {
 import { version } from "../package.json";
 import Transaction from "arweave/node/lib/transaction";
 import hash from "object-hash";
-import { server } from "./metrics";
+import http from "http";
+import url from "url";
+import client, { register } from "prom-client";
 
 export * from "./utils";
+
+client.collectDefaultMetrics({
+  labels: { app: "kyve-core" },
+});
+
+client.register.setDefaultLabels({
+  app: process.env.KYVE_RUNTIME,
+});
 
 class KYVE {
   private pool: Contract;
@@ -41,10 +51,11 @@ class KYVE {
   private keyfile?: JWKInterface;
   private name: string;
   private gasMultiplier: string;
-
   private poolState: any;
 
-  private client = new Arweave({
+  public static metricClient = client;
+
+  private arweave = new Arweave({
     host: "arweave.net",
     protocol: "https",
   });
@@ -115,10 +126,7 @@ class KYVE {
 
   async start() {
     this.logNodeInfo();
-
-    // start metric server
-    server.listen(8080);
-    logger.info("🔬 Starting metric server on port: 8080");
+    this.setupMetrics();
 
     await this.fetchPoolState();
 
@@ -198,12 +206,12 @@ class KYVE {
           logger.debug(`Validating bundle ${blockProposal.txId} ...`);
 
           try {
-            const { status } = await this.client.transactions.getStatus(
+            const { status } = await this.arweave.transactions.getStatus(
               blockProposal.txId
             );
 
             if (status === 200 || status === 202) {
-              const _data = (await this.client.transactions.getData(
+              const _data = (await this.arweave.transactions.getData(
                 blockProposal.txId,
                 {
                   decode: true,
@@ -299,7 +307,7 @@ class KYVE {
     try {
       logger.info("💾 Uploading bundle to Arweave.  ...");
 
-      const transaction = await this.client.createTransaction({
+      const transaction = await this.arweave.createTransaction({
         data: JSON.stringify(bundle),
       });
 
@@ -314,10 +322,10 @@ class KYVE {
       transaction.addTag("ToHeight", instructions.toHeight.toString());
       transaction.addTag("Content-Type", "application/json");
 
-      await this.client.transactions.sign(transaction, this.keyfile);
+      await this.arweave.transactions.sign(transaction, this.keyfile);
 
-      const balance = await this.client.wallets.getBalance(
-        await this.client.wallets.getAddress(this.keyfile)
+      const balance = await this.arweave.wallets.getBalance(
+        await this.arweave.wallets.getAddress(this.keyfile)
       );
 
       if (+transaction.reward > +balance) {
@@ -325,7 +333,7 @@ class KYVE {
         process.exit(1);
       }
 
-      await this.client.transactions.post(transaction);
+      await this.arweave.transactions.post(transaction);
 
       return transaction;
     } catch (error) {
@@ -438,6 +446,26 @@ class KYVE {
         "@kyve/core"
       )} = v${version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}`
     );
+  }
+
+  private setupMetrics() {
+    logger.info("🔬 Starting metric server on: http://localhost:8080/metrics");
+
+    // HTTP server which exposes the metrics on http://localhost:8080/metrics
+    http
+      .createServer(async (req: any, res: any) => {
+        // Retrieve route from request object
+        const route = url.parse(req.url).pathname;
+
+        if (route === "/metrics") {
+          // Return all metrics the Prometheus exposition format
+          res.setHeader("Content-Type", register.contentType);
+          const defaultMetrics = await register.metrics();
+          const other = await KYVE.metricClient.register.metrics();
+          res.end(defaultMetrics + "\n" + other);
+        }
+      })
+      .listen(8080);
   }
 
   private async fetchPoolState() {
