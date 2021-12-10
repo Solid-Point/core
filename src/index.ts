@@ -561,7 +561,10 @@ class KYVE {
   }
 
   private async setupDB() {
-    this.db = level(`./${this.name}-db`);
+    // TODO: change to binary when using protobuff
+    this.db = level(`./${this.name}-db`, {
+      valueEncoding: "json",
+    });
   }
 
   private async checkIfNodeIsValidator() {

@@ -382,7 +382,10 @@ class KYVE {
         KYVE.logger.info("ℹ Fetched pool state.");
     }
     async setupDB() {
-        this.db = (0, level_1.default)(`./${this.name}-db`);
+        // TODO: change to binary when using protobuff
+        this.db = (0, level_1.default)(`./${this.name}-db`, {
+            valueEncoding: "json",
+        });
     }
     async checkIfNodeIsValidator() {
         try {
