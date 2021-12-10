@@ -1,5 +1,6 @@
 import { Command } from "commander";
-export { fetchLatestArweaveTransaction } from "./arweave";
+import { Logger } from "tslog";
+export declare const logger: Logger;
 export declare class CLI extends Command {
     runtime: string;
     packageVersion: string;

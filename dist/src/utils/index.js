@@ -1,9 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CLI = exports.fetchLatestArweaveTransaction = void 0;
+exports.CLI = exports.logger = void 0;
 const commander_1 = require("commander");
-var arweave_1 = require("./arweave");
-Object.defineProperty(exports, "fetchLatestArweaveTransaction", { enumerable: true, get: function () { return arweave_1.fetchLatestArweaveTransaction; } });
+const tslog_1 = require("tslog");
+exports.logger = new tslog_1.Logger({
+    displayFilePath: "hidden",
+    displayFunctionName: false,
+});
 class CLI extends commander_1.Command {
     constructor(runtime = process.env.KYVE_RUNTIME, packageVersion = process.env.KYVE_VERSION) {
         super(runtime);

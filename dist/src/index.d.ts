@@ -20,7 +20,6 @@ declare class KYVE {
     protected db: any;
     protected arweave: Arweave;
     static metrics: typeof client;
-    static logger: import("tslog").Logger;
     static dataSizeOfString: (string: string) => number;
     constructor(cli?: CLI);
     start(): Promise<void>;

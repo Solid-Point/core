@@ -15,7 +15,6 @@ import {
 import { BlockInstructions, BlockProposal, Vote } from "./faces";
 import { CLI } from "./utils";
 import { fromBytes, toBytes } from "./utils/arweave";
-import logger from "./utils/logger";
 import {
   getGasPrice,
   toBN,
@@ -25,6 +24,7 @@ import {
   Token,
   sleep,
 } from "./utils/helpers";
+import { logger } from "./utils";
 import { version } from "../package.json";
 import Transaction from "arweave/node/lib/transaction";
 import hash from "object-hash";
@@ -58,7 +58,6 @@ class KYVE {
   });
 
   public static metrics = client;
-  public static logger = logger;
 
   public static dataSizeOfString = (string: string): number => {
     return new Uint8Array(new TextEncoder().encode(string)).byteLength || 0;
@@ -148,13 +147,13 @@ class KYVE {
 
   private async run() {
     try {
-      KYVE.logger.debug("Started runner ...");
+      logger.debug("Started runner ...");
 
       while (true) {
         await this.fetchPoolState();
 
         if (this.poolState.paused) {
-          KYVE.logger.info("💤  Pool is paused. Waiting ...");
+          logger.info("💤  Pool is paused. Waiting ...");
           await sleep(60 * 1000);
           continue;
         }
@@ -171,7 +170,7 @@ class KYVE {
           blockInstructions.uploader === this.wallet.address
         ) {
           const waitingTime = this.calculateUploaderWaitingTime();
-          KYVE.logger.debug(
+          logger.debug(
             `Selected as uploader, waiting ${Math.ceil(
               waitingTime / 1000
             )}s for nodes to vote ...`
@@ -179,7 +178,7 @@ class KYVE {
           await sleep(waitingTime);
         }
 
-        KYVE.logger.debug(
+        logger.debug(
           `Creating bundle from height = ${blockInstructions.fromHeight} ...`
         );
 
@@ -211,7 +210,7 @@ class KYVE {
           blockProposal.uploader !== ethers.constants.AddressZero &&
           blockProposal.uploader !== this.wallet.address
         ) {
-          KYVE.logger.debug(`Validating bundle ${blockProposal.txId} ...`);
+          logger.debug(`Validating bundle ${blockProposal.txId} ...`);
 
           try {
             const { status } = await this.arweave.transactions.getStatus(
@@ -243,28 +242,28 @@ class KYVE {
               });
             }
           } catch (error) {
-            KYVE.logger.error(
+            logger.error(
               `❌ Error fetching bundle from Arweave. Skipping vote ...`
             );
-            KYVE.logger.debug(error);
+            logger.debug(error);
           }
         }
       }
     } catch (error) {
-      KYVE.logger.error(`❌ Runtime error. Exiting ...`);
-      KYVE.logger.debug(error);
+      logger.error(`❌ Runtime error. Exiting ...`);
+      logger.debug(error);
     }
   }
 
   public async worker() {
-    KYVE.logger.error(`❌ "worker" not implemented. Exiting ...`);
+    logger.error(`❌ "worker" not implemented. Exiting ...`);
     process.exit(1);
   }
 
   public async createBundle(
     blockInstructions: BlockInstructions
   ): Promise<any[]> {
-    KYVE.logger.error(`❌ "createBundle" not implemented. Exiting ...`);
+    logger.error(`❌ "createBundle" not implemented. Exiting ...`);
     process.exit(1);
   }
 
@@ -316,14 +315,14 @@ class KYVE {
     instructions: BlockInstructions
   ): Promise<Transaction | null> {
     try {
-      KYVE.logger.info("💾 Uploading bundle to Arweave.  ...");
+      logger.info("💾 Uploading bundle to Arweave.  ...");
 
       const transaction = await this.arweave.createTransaction({
         data: JSON.stringify(bundle),
       });
 
-      KYVE.logger.debug(`Bundle data size = ${transaction.data_size} Bytes`);
-      KYVE.logger.debug(`Bundle size = ${bundle.length} Bytes`);
+      logger.debug(`Bundle data size = ${transaction.data_size} Bytes`);
+      logger.debug(`Bundle size = ${bundle.length} Bytes`);
 
       transaction.addTag("Application", "KYVE - Testnet");
       transaction.addTag("Pool", this.pool.address);
@@ -344,9 +343,7 @@ class KYVE {
       );
 
       if (+transaction.reward > +balance) {
-        KYVE.logger.error(
-          "❌ You do not have enough funds in your Arweave wallet."
-        );
+        logger.error("❌ You do not have enough funds in your Arweave wallet.");
         process.exit(1);
       }
 
@@ -354,10 +351,10 @@ class KYVE {
 
       return transaction;
     } catch (error) {
-      KYVE.logger.error(
+      logger.error(
         "❌ Received an error while trying to upload bundle to Arweave. Skipping upload ..."
       );
-      KYVE.logger.debug(error);
+      logger.debug(error);
       return null;
     }
   }
@@ -377,13 +374,13 @@ class KYVE {
         }
       );
 
-      KYVE.logger.debug(`Submitting block proposal ${transaction.id} ...`);
-      KYVE.logger.debug(`Transaction = ${tx.hash}`);
+      logger.debug(`Submitting block proposal ${transaction.id} ...`);
+      logger.debug(`Transaction = ${tx.hash}`);
     } catch (error) {
-      KYVE.logger.error(
+      logger.error(
         "❌ Received an error while submitting block proposal. Skipping submit ..."
       );
-      KYVE.logger.debug(error);
+      logger.debug(error);
     }
   }
 
@@ -391,25 +388,23 @@ class KYVE {
     blockInstructions: BlockInstructions
   ): Promise<void> {
     return new Promise((resolve) => {
-      KYVE.logger.debug("Waiting for next block instructions ...");
+      logger.debug("Waiting for next block instructions ...");
 
       const uploadTimeout = setTimeout(async () => {
         try {
           if (blockInstructions?.uploader !== this.wallet.address) {
-            KYVE.logger.debug(
-              "Reached upload timeout. Claiming uploader role ..."
-            );
+            logger.debug("Reached upload timeout. Claiming uploader role ...");
             const tx = await this.pool.claimUploaderRole({
               gasLimit: await this.pool.estimateGas.claimUploaderRole(),
               gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
             });
-            KYVE.logger.debug(`Transaction = ${tx.hash}`);
+            logger.debug(`Transaction = ${tx.hash}`);
           }
         } catch (error) {
-          KYVE.logger.error(
+          logger.error(
             "❌ Received an error while claiming uploader slot. Skipping claim ..."
           );
-          KYVE.logger.debug(error);
+          logger.debug(error);
         }
       }, this.poolState.uploadTimeout.toNumber() * 1000);
 
@@ -421,7 +416,7 @@ class KYVE {
   }
 
   private async vote(vote: Vote) {
-    KYVE.logger.info(
+    logger.info(
       `🖋  Voting ${vote.valid ? "valid" : "invalid"} on bundle ${
         vote.transaction
       } ...`
@@ -429,7 +424,7 @@ class KYVE {
 
     const canVote: boolean = await this.pool.canVote(this.wallet.address);
     if (!canVote) {
-      KYVE.logger.info(
+      logger.info(
         "⚠️  Node has no voting power because it has no delegators. Skipping vote ..."
       );
       return;
@@ -443,12 +438,12 @@ class KYVE {
         ),
         gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
       });
-      KYVE.logger.debug(`Transaction = ${tx.hash}`);
+      logger.debug(`Transaction = ${tx.hash}`);
     } catch (error) {
-      KYVE.logger.error(
+      logger.error(
         "❌ Received an error while trying to vote. Skipping vote ..."
       );
-      KYVE.logger.debug(error);
+      logger.debug(error);
     }
   }
 
@@ -458,7 +453,7 @@ class KYVE {
       return input.padEnd(length, " ");
     };
 
-    KYVE.logger.info(
+    logger.info(
       `🚀 Starting node ...\n\t${formatInfoLogs("Name")} = ${
         this.name
       }\n\t${formatInfoLogs("Address")} = ${
@@ -473,7 +468,7 @@ class KYVE {
 
   private setupMetrics() {
     if (this.runMetrics) {
-      KYVE.logger.info(
+      logger.info(
         "🔬 Starting metric server on: http://localhost:8080/metrics"
       );
 
@@ -496,12 +491,12 @@ class KYVE {
   }
 
   private async fetchPoolState() {
-    KYVE.logger.debug("Attempting to fetch pool state.");
+    logger.debug("Attempting to fetch pool state.");
 
     try {
       this.poolState = { ...(await this.pool.pool()) };
     } catch (error) {
-      KYVE.logger.error(
+      logger.error(
         "❌ Received an error while trying to fetch the pool state:",
         error
       );
@@ -511,7 +506,7 @@ class KYVE {
     try {
       this.poolState.config = JSON.parse(this.poolState.config);
     } catch (error) {
-      KYVE.logger.error(
+      logger.error(
         "❌ Received an error while trying to parse the config:",
         error
       );
@@ -521,7 +516,7 @@ class KYVE {
     try {
       this.poolState.metadata = JSON.parse(this.poolState.metadata);
     } catch (error) {
-      KYVE.logger.error(
+      logger.error(
         "❌ Received an error while trying to parse the metadata:",
         error
       );
@@ -535,29 +530,27 @@ class KYVE {
           this.poolState.metadata?.versions || this.version
         )
       ) {
-        KYVE.logger.info("⏱  Pool version requirements met.");
+        logger.info("⏱  Pool version requirements met.");
       } else {
-        KYVE.logger.error(
+        logger.error(
           `❌ Running an invalid version for the specified pool. Version requirements are ${this.poolState.metadata.versions}.`
         );
         process.exit(1);
       }
     } catch (error) {
-      KYVE.logger.error("❌ Received an error while trying parse versions");
-      KYVE.logger.debug(error);
+      logger.error("❌ Received an error while trying parse versions");
+      logger.debug(error);
       process.exit(1);
     }
 
     if (this.poolState.metadata?.runtime === this.runtime) {
-      KYVE.logger.info(`💻 Running node on runtime ${this.runtime}.`);
+      logger.info(`💻 Running node on runtime ${this.runtime}.`);
     } else {
-      KYVE.logger.error(
-        "❌ Specified pool does not match the integration runtime."
-      );
+      logger.error("❌ Specified pool does not match the integration runtime.");
       process.exit(1);
     }
 
-    KYVE.logger.info("ℹ Fetched pool state.");
+    logger.info("ℹ Fetched pool state.");
   }
 
   private async setupDB() {
@@ -572,16 +565,14 @@ class KYVE {
       const isValidator = await this.pool.isValidator(this.wallet.address);
 
       if (isValidator) {
-        KYVE.logger.info("🔍  Node is running as a validator.");
+        logger.info("🔍  Node is running as a validator.");
       } else {
-        KYVE.logger.error("❌ Node is no active validator. Exiting ...");
+        logger.error("❌ Node is no active validator. Exiting ...");
         process.exit(1);
       }
     } catch (error) {
-      KYVE.logger.error(
-        "❌ Received an error while trying to fetch validator info"
-      );
-      KYVE.logger.debug(error);
+      logger.error("❌ Received an error while trying to fetch validator info");
+      logger.debug(error);
       process.exit(1);
     }
   }
@@ -589,7 +580,7 @@ class KYVE {
   private async setupNodeStake() {
     let parsedStake;
 
-    KYVE.logger.info("🌐 Joining KYVE Network ...");
+    logger.info("🌐 Joining KYVE Network ...");
 
     let nodeStake = toBN(
       (await this.pool.nodeState(this.wallet.address)).personalStake
@@ -601,16 +592,16 @@ class KYVE {
       );
 
       if (parsedStake.isZero()) {
-        KYVE.logger.error("❌ Desired stake can't be zero.");
+        logger.error("❌ Desired stake can't be zero.");
         process.exit(1);
       }
     } catch (error) {
-      KYVE.logger.error("❌ Provided invalid staking amount:", error);
+      logger.error("❌ Provided invalid staking amount:", error);
       process.exit(1);
     }
 
     if (parsedStake.lt(toBN(this.poolState.minStake))) {
-      KYVE.logger.error(
+      logger.error(
         `❌ Desired stake is lower than the minimum stake. Desired Stake = ${toHumanReadable(
           parsedStake
         )}, Minimum Stake = ${toHumanReadable(toBN(this.poolState.minStake))}`
@@ -627,7 +618,7 @@ class KYVE {
       const diff = nodeStake.minus(parsedStake);
       await this.selfUnstake(diff);
     } else {
-      KYVE.logger.info("👌 Already staked with the correct amount.");
+      logger.info("👌 Already staked with the correct amount.");
     }
   }
 
@@ -640,9 +631,7 @@ class KYVE {
     );
 
     if (balance.lt(amount)) {
-      KYVE.logger.error(
-        "❌ Supplied wallet does not have enough $KYVE to stake."
-      );
+      logger.error("❌ Supplied wallet does not have enough $KYVE to stake.");
       process.exit(1);
     }
 
@@ -654,27 +643,27 @@ class KYVE {
         ),
         gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
       });
-      KYVE.logger.debug(
+      logger.debug(
         `Approving ${toHumanReadable(
           amount
         )} $KYVE to be spent. Transaction = ${tx.hash}`
       );
 
       await tx.wait();
-      KYVE.logger.info("👍 Successfully approved.");
+      logger.info("👍 Successfully approved.");
 
       tx = await this.pool.stake(toEthersBN(amount), {
         gasLimit: await this.pool.estimateGas.stake(toEthersBN(amount)),
         gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
       });
-      KYVE.logger.debug(
+      logger.debug(
         `Staking ${toHumanReadable(amount)} $KYVE. Transaction = ${tx.hash}`
       );
 
       await tx.wait();
-      KYVE.logger.info("📈 Successfully staked.");
+      logger.info("📈 Successfully staked.");
     } catch (error) {
-      KYVE.logger.error("❌ Received an error while trying to stake:", error);
+      logger.error("❌ Received an error while trying to stake:", error);
       process.exit(1);
     }
   }
@@ -687,12 +676,12 @@ class KYVE {
         gasLimit: await this.pool.estimateGas.unstake(toEthersBN(amount)),
         gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
       });
-      KYVE.logger.debug(`Unstaking. Transaction = ${tx.hash}`);
+      logger.debug(`Unstaking. Transaction = ${tx.hash}`);
 
       await tx.wait();
-      KYVE.logger.info("📉 Successfully unstaked.");
+      logger.info("📉 Successfully unstaked.");
     } catch (error) {
-      KYVE.logger.error("❌ Received an error while trying to unstake:", error);
+      logger.error("❌ Received an error while trying to unstake:", error);
       process.exit(1);
     }
   }
@@ -700,7 +689,7 @@ class KYVE {
   private async setupNodeCommission() {
     let parsedCommission;
 
-    KYVE.logger.info("👥 Setting node commission ...");
+    logger.info("👥 Setting node commission ...");
 
     let nodeCommission = toBN(
       (await this.pool.nodeState(this.wallet.address)).commission
@@ -712,11 +701,11 @@ class KYVE {
       );
 
       if (parsedCommission.lt(0) && parsedCommission.gt(100)) {
-        KYVE.logger.error("❌ Desired commission must be between 0 and 100.");
+        logger.error("❌ Desired commission must be between 0 and 100.");
         process.exit(1);
       }
     } catch (error) {
-      KYVE.logger.error("❌ Provided invalid commission amount:", error);
+      logger.error("❌ Provided invalid commission amount:", error);
       process.exit(1);
     }
 
@@ -731,19 +720,19 @@ class KYVE {
             gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
           }
         );
-        KYVE.logger.debug(`Updating commission. Transaction = ${tx.hash}`);
+        logger.debug(`Updating commission. Transaction = ${tx.hash}`);
 
         await tx.wait();
-        KYVE.logger.info("💼 Successfully updated commission.");
+        logger.info("💼 Successfully updated commission.");
       } catch (error) {
-        KYVE.logger.error(
+        logger.error(
           "❌ Received an error while trying to update commission:",
           error
         );
         process.exit(1);
       }
     } else {
-      KYVE.logger.info("👌 Already set correct commission.");
+      logger.info("👌 Already set correct commission.");
     }
   }
 
