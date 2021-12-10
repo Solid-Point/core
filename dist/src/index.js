@@ -187,37 +187,6 @@ class KYVE {
     async createBundle(blockInstructions) {
         logger_1.default.error(`❌ "createBundle" not implemented. Exiting ...`);
         process.exit(1);
-        // const bundle: any[] = [];
-        // const progress = new cliProgress.SingleBar({
-        //   format: `${chalk.gray(
-        //     new Date().toISOString().replace("T", " ").replace("Z", " ")
-        //   )} ${chalk.bold.blueBright(
-        //     "INFO"
-        //   )} [{bar}] {percentage}% | ETA: {eta}s | {value}/{total} blocks`,
-        // });
-        // progress.start(
-        //   blockInstructions.toHeight - blockInstructions.fromHeight,
-        //   0
-        // );
-        // KYVE.db
-        //   .createReadStream({
-        //     gte: blockInstructions.fromHeight,
-        //     lt: blockInstructions.toHeight,
-        //   })
-        //   .on("data", (data) => {
-        //     console.log(data.key);
-        //     bundle.push(data.value);
-        //     progress.increment();
-        //   })
-        //   .on("error", (error) => {
-        //     progress.stop();
-        //     console.log("Oh my!", error);
-        //   })
-        //   .on("end", function () {
-        //     progress.stop();
-        //     console.log("Stream ended");
-        //     return bundle;
-        //   });
     }
     async validate(uploadBundle, uploadBytes, downloadBundle, downloadBytes) {
         if (uploadBytes !== downloadBytes) {
@@ -296,24 +265,24 @@ class KYVE {
         }
     }
     async waitForNextBlockInstructions(blockInstructions) {
-        logger_1.default.debug("Waiting for next block instructions ...");
-        const uploadTimeout = setTimeout(async () => {
-            try {
-                if ((blockInstructions === null || blockInstructions === void 0 ? void 0 : blockInstructions.uploader) !== this.wallet.address) {
-                    logger_1.default.debug("Reached upload timeout. Claiming uploader role ...");
-                    const tx = await this.pool.claimUploaderRole({
-                        gasLimit: await this.pool.estimateGas.claimUploaderRole(),
-                        gasPrice: await (0, helpers_1.getGasPrice)(this.pool, this.gasMultiplier),
-                    });
-                    logger_1.default.debug(`Transaction = ${tx.hash}`);
-                }
-            }
-            catch (error) {
-                logger_1.default.error("❌ Received an error while claiming uploader slot. Skipping claim ...");
-                logger_1.default.debug(error);
-            }
-        }, this.poolState.uploadTimeout.toNumber() * 1000);
         return new Promise((resolve) => {
+            logger_1.default.debug("Waiting for next block instructions ...");
+            const uploadTimeout = setTimeout(async () => {
+                try {
+                    if ((blockInstructions === null || blockInstructions === void 0 ? void 0 : blockInstructions.uploader) !== this.wallet.address) {
+                        logger_1.default.debug("Reached upload timeout. Claiming uploader role ...");
+                        const tx = await this.pool.claimUploaderRole({
+                            gasLimit: await this.pool.estimateGas.claimUploaderRole(),
+                            gasPrice: await (0, helpers_1.getGasPrice)(this.pool, this.gasMultiplier),
+                        });
+                        logger_1.default.debug(`Transaction = ${tx.hash}`);
+                    }
+                }
+                catch (error) {
+                    logger_1.default.error("❌ Received an error while claiming uploader slot. Skipping claim ...");
+                    logger_1.default.debug(error);
+                }
+            }, this.poolState.uploadTimeout.toNumber() * 1000);
             this.pool.on("NextBlockInstructions", () => {
                 clearTimeout(uploadTimeout);
                 resolve();
@@ -549,4 +518,7 @@ class KYVE {
     }
 }
 KYVE.metrics = prom_client_1.default;
+KYVE.dataSizeOfString = (string) => {
+    return new Uint8Array(new TextEncoder().encode(string)).byteLength || 0;
+};
 exports.default = KYVE;

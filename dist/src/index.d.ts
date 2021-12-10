@@ -21,6 +21,7 @@ declare class KYVE {
     protected db: level.LevelDB<any, any>;
     protected arweave: Arweave;
     static metrics: typeof client;
+    static dataSizeOfString: (string: string) => number;
     constructor(cli?: CLI);
     start(): Promise<void>;
     private run;
