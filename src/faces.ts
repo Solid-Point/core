@@ -9,7 +9,6 @@ export type Vote = {
 export type BlockInstructions = {
   uploader: string;
   fromHeight: number;
-  toHeight: number;
 };
 
 export type BlockProposal = {

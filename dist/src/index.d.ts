@@ -4,7 +4,7 @@ import { Contract, Wallet } from "ethers";
 import { BlockInstructions } from "./faces";
 import { CLI } from "./utils";
 import client from "prom-client";
-import level from "level";
+import { LevelDB } from "level";
 export * from "./utils";
 declare class KYVE {
     protected pool: Contract;
@@ -18,15 +18,16 @@ declare class KYVE {
     protected gasMultiplier: string;
     protected poolState: any;
     protected runMetrics: boolean;
-    protected db: level.LevelDB<any, any>;
+    protected db: LevelDB | null;
     protected arweave: Arweave;
     static metrics: typeof client;
+    static logger: import("tslog").Logger;
     static dataSizeOfString: (string: string) => number;
     constructor(cli?: CLI);
     start(): Promise<void>;
     private run;
     worker(): Promise<void>;
-    createBundle(blockInstructions: BlockInstructions): Promise<any>;
+    createBundle(blockInstructions: BlockInstructions): Promise<any[]>;
     validate(uploadBundle: any[], uploadBytes: number, downloadBundle: any[], downloadBytes: number): Promise<boolean>;
     private getBlockProposal;
     private getBlockInstructions;
@@ -37,6 +38,7 @@ declare class KYVE {
     private logNodeInfo;
     private setupMetrics;
     private fetchPoolState;
+    private setupDB;
     private checkIfNodeIsValidator;
     private setupNodeStake;
     private selfStake;

@@ -10,7 +10,6 @@ export declare type Vote = {
 export declare type BlockInstructions = {
     uploader: string;
     fromHeight: number;
-    toHeight: number;
 };
 export declare type BlockProposal = {
     uploader: string;
