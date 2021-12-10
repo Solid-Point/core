@@ -29,8 +29,6 @@
     "arweave": "^1.10.17",
     "base64url": "^3.0.1",
     "bignumber.js": "^9.0.1",
-    "chalk": "^5.0.0",
-    "cli-progress": "^3.9.1",
     "commander": "^8.3.0",
     "ethers": "^5.5.1",
     "graphql": "^16.0.1",
@@ -44,7 +42,6 @@
     "unique-names-generator": "^4.6.0"
   },
   "devDependencies": {
-    "@types/cli-progress": "^3.9.2",
     "@types/level": "^6.0.0",
     "@types/node": "^16.10.3",
     "@types/object-hash": "^2.2.1",

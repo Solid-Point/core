@@ -31,8 +31,6 @@ import http from "http";
 import url from "url";
 import client, { register } from "prom-client";
 import level from "level";
-import cliProgress from "cli-progress";
-import chalk from "chalk";
 
 export * from "./utils";
 
@@ -59,6 +57,10 @@ class KYVE {
   });
 
   public static metrics = client;
+
+  public static dataSizeOfString = (string: string): number => {
+    return new Uint8Array(new TextEncoder().encode(string)).byteLength || 0;
+  };
 
   constructor(cli?: CLI) {
     if (!cli) {
@@ -262,41 +264,6 @@ class KYVE {
   ): Promise<any> {
     logger.error(`❌ "createBundle" not implemented. Exiting ...`);
     process.exit(1);
-
-    // const bundle: any[] = [];
-
-    // const progress = new cliProgress.SingleBar({
-    //   format: `${chalk.gray(
-    //     new Date().toISOString().replace("T", " ").replace("Z", " ")
-    //   )} ${chalk.bold.blueBright(
-    //     "INFO"
-    //   )} [{bar}] {percentage}% | ETA: {eta}s | {value}/{total} blocks`,
-    // });
-
-    // progress.start(
-    //   blockInstructions.toHeight - blockInstructions.fromHeight,
-    //   0
-    // );
-
-    // KYVE.db
-    //   .createReadStream({
-    //     gte: blockInstructions.fromHeight,
-    //     lt: blockInstructions.toHeight,
-    //   })
-    //   .on("data", (data) => {
-    //     console.log(data.key);
-    //     bundle.push(data.value);
-    //     progress.increment();
-    //   })
-    //   .on("error", (error) => {
-    //     progress.stop();
-    //     console.log("Oh my!", error);
-    //   })
-    //   .on("end", function () {
-    //     progress.stop();
-    //     console.log("Stream ended");
-    //     return bundle;
-    //   });
   }
 
   public async validate(
@@ -412,27 +379,27 @@ class KYVE {
   private async waitForNextBlockInstructions(
     blockInstructions: BlockInstructions
   ): Promise<void> {
-    logger.debug("Waiting for next block instructions ...");
-
-    const uploadTimeout = setTimeout(async () => {
-      try {
-        if (blockInstructions?.uploader !== this.wallet.address) {
-          logger.debug("Reached upload timeout. Claiming uploader role ...");
-          const tx = await this.pool.claimUploaderRole({
-            gasLimit: await this.pool.estimateGas.claimUploaderRole(),
-            gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
-          });
-          logger.debug(`Transaction = ${tx.hash}`);
-        }
-      } catch (error) {
-        logger.error(
-          "❌ Received an error while claiming uploader slot. Skipping claim ..."
-        );
-        logger.debug(error);
-      }
-    }, this.poolState.uploadTimeout.toNumber() * 1000);
-
     return new Promise((resolve) => {
+      logger.debug("Waiting for next block instructions ...");
+
+      const uploadTimeout = setTimeout(async () => {
+        try {
+          if (blockInstructions?.uploader !== this.wallet.address) {
+            logger.debug("Reached upload timeout. Claiming uploader role ...");
+            const tx = await this.pool.claimUploaderRole({
+              gasLimit: await this.pool.estimateGas.claimUploaderRole(),
+              gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
+            });
+            logger.debug(`Transaction = ${tx.hash}`);
+          }
+        } catch (error) {
+          logger.error(
+            "❌ Received an error while claiming uploader slot. Skipping claim ..."
+          );
+          logger.debug(error);
+        }
+      }, this.poolState.uploadTimeout.toNumber() * 1000);
+
       this.pool.on("NextBlockInstructions", () => {
         clearTimeout(uploadTimeout);
         resolve();
