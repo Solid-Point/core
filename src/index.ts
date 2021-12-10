@@ -31,7 +31,7 @@ import hash from "object-hash";
 import http from "http";
 import url from "url";
 import client, { register } from "prom-client";
-import level, { LevelDB } from "level";
+import level from "level";
 
 export * from "./utils";
 
@@ -51,7 +51,7 @@ class KYVE {
   protected gasMultiplier: string;
   protected poolState: any;
   protected runMetrics: boolean;
-  protected db: LevelDB | null;
+  protected db: any;
   protected arweave = new Arweave({
     host: "arweave.net",
     protocol: "https",

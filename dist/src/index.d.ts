@@ -4,7 +4,6 @@ import { Contract, Wallet } from "ethers";
 import { BlockInstructions } from "./faces";
 import { CLI } from "./utils";
 import client from "prom-client";
-import { LevelDB } from "level";
 export * from "./utils";
 declare class KYVE {
     protected pool: Contract;
@@ -18,7 +17,7 @@ declare class KYVE {
     protected gasMultiplier: string;
     protected poolState: any;
     protected runMetrics: boolean;
-    protected db: LevelDB | null;
+    protected db: any;
     protected arweave: Arweave;
     static metrics: typeof client;
     static logger: import("tslog").Logger;
