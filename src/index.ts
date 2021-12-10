@@ -19,8 +19,8 @@ import {
   toBN,
   toEthersBN,
   toHumanReadable,
-  Pool,
-  Token,
+  getPoolContract,
+  getTokenContract,
   sleep,
   fromBytes,
   toBytes,
@@ -80,30 +80,16 @@ class KYVE {
 
     this.wallet = new Wallet(options.privateKey, provider);
 
-    this.pool = Pool(options.pool, this.wallet);
+    this.pool = getPoolContract(options.pool, this.wallet);
     this.runtime = cli.runtime;
     this.version = cli.packageVersion;
     this.stake = options.stake;
     this.commission = options.commission;
     this.keyfile =
       options.keyfile && JSON.parse(readFileSync(options.keyfile, "utf-8"));
-    this.gasMultiplier = options.gasMultiplier || "1";
+    this.gasMultiplier = options.gasMultiplier;
     this.runMetrics = options.metrics;
-    this.db = null;
-
-    if (options.name) {
-      this.name = options.name;
-    } else {
-      const r = new Prando(this.wallet.address + this.pool.address);
-
-      this.name = uniqueNamesGenerator({
-        dictionaries: [adjectives, colors, animals],
-        separator: "-",
-        length: 3,
-        style: "lowerCase",
-        seed: r.nextInt(0, adjectives.length * colors.length * animals.length),
-      }).replace(" ", "-");
-    }
+    this.name = options?.name ?? this.generateRandomName();
 
     if (!existsSync("./logs")) {
       mkdirSync("./logs");
@@ -622,7 +608,7 @@ class KYVE {
   }
 
   private async selfStake(amount: BigNumber) {
-    const token = await Token(this.pool);
+    const token = await getTokenContract(this.pool);
     let tx: ContractTransaction;
 
     const balance = toBN(
@@ -735,10 +721,24 @@ class KYVE {
     }
   }
 
+  // TODO: move to separate file
   private calculateUploaderWaitingTime() {
     const waitingTime = Math.log2(this.poolState.bundleSize) * 5;
     if (waitingTime > 30) return waitingTime * 1000;
     return 30 * 1000;
+  }
+
+  // TODO: move to separate file
+  private generateRandomName() {
+    const r = new Prando(this.wallet.address + this.pool.address);
+
+    return uniqueNamesGenerator({
+      dictionaries: [adjectives, colors, animals],
+      separator: "-",
+      length: 3,
+      style: "lowerCase",
+      seed: r.nextInt(0, adjectives.length * colors.length * animals.length),
+    }).replace(" ", "-");
   }
 }
 

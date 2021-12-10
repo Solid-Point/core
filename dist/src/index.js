@@ -49,6 +49,7 @@ prom_client_1.default.collectDefaultMetrics({
 });
 class KYVE {
     constructor(cli) {
+        var _a;
         this.arweave = new arweave_1.default({
             host: "arweave.net",
             protocol: "https",
@@ -63,29 +64,16 @@ class KYVE {
             name: "moonbase-alphanet",
         });
         this.wallet = new ethers_1.Wallet(options.privateKey, provider);
-        this.pool = (0, helpers_1.Pool)(options.pool, this.wallet);
+        this.pool = (0, helpers_1.getPoolContract)(options.pool, this.wallet);
         this.runtime = cli.runtime;
         this.version = cli.packageVersion;
         this.stake = options.stake;
         this.commission = options.commission;
         this.keyfile =
             options.keyfile && JSON.parse((0, fs_1.readFileSync)(options.keyfile, "utf-8"));
-        this.gasMultiplier = options.gasMultiplier || "1";
+        this.gasMultiplier = options.gasMultiplier;
         this.runMetrics = options.metrics;
-        this.db = null;
-        if (options.name) {
-            this.name = options.name;
-        }
-        else {
-            const r = new prando_1.default(this.wallet.address + this.pool.address);
-            this.name = (0, unique_names_generator_1.uniqueNamesGenerator)({
-                dictionaries: [unique_names_generator_1.adjectives, unique_names_generator_1.colors, unique_names_generator_1.animals],
-                separator: "-",
-                length: 3,
-                style: "lowerCase",
-                seed: r.nextInt(0, unique_names_generator_1.adjectives.length * unique_names_generator_1.colors.length * unique_names_generator_1.animals.length),
-            }).replace(" ", "-");
-        }
+        this.name = (_a = options === null || options === void 0 ? void 0 : options.name) !== null && _a !== void 0 ? _a : this.generateRandomName();
         if (!(0, fs_1.existsSync)("./logs")) {
             (0, fs_1.mkdirSync)("./logs");
         }
@@ -439,7 +427,7 @@ class KYVE {
         }
     }
     async selfStake(amount) {
-        const token = await (0, helpers_1.Token)(this.pool);
+        const token = await (0, helpers_1.getTokenContract)(this.pool);
         let tx;
         const balance = (0, helpers_1.toBN)((await token.balanceOf(this.wallet.address)));
         if (balance.lt(amount)) {
@@ -517,11 +505,23 @@ class KYVE {
             utils_2.logger.info("👌 Already set correct commission.");
         }
     }
+    // TODO: move to separate file
     calculateUploaderWaitingTime() {
         const waitingTime = Math.log2(this.poolState.bundleSize) * 5;
         if (waitingTime > 30)
             return waitingTime * 1000;
         return 30 * 1000;
+    }
+    // TODO: move to separate file
+    generateRandomName() {
+        const r = new prando_1.default(this.wallet.address + this.pool.address);
+        return (0, unique_names_generator_1.uniqueNamesGenerator)({
+            dictionaries: [unique_names_generator_1.adjectives, unique_names_generator_1.colors, unique_names_generator_1.animals],
+            separator: "-",
+            length: 3,
+            style: "lowerCase",
+            seed: r.nextInt(0, unique_names_generator_1.adjectives.length * unique_names_generator_1.colors.length * unique_names_generator_1.animals.length),
+        }).replace(" ", "-");
     }
 }
 KYVE.metrics = prom_client_1.default;

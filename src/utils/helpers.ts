@@ -4,11 +4,11 @@ import { Contract, ethers, Wallet } from "ethers";
 import PoolABI from "../abi/pool.json";
 import TokenABI from "../abi/token.json";
 
-export const Token = async (pool: Contract): Promise<Contract> => {
+export const getTokenContract = async (pool: Contract): Promise<Contract> => {
   return new Contract((await pool.token()) as string, TokenABI, pool.signer);
 };
 
-export const Pool = (address: string, wallet: Wallet): Contract => {
+export const getPoolContract = (address: string, wallet: Wallet): Contract => {
   return new Contract(address, PoolABI, wallet);
 };
 
