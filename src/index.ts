@@ -101,7 +101,7 @@ class KYVE {
       this.name = uniqueNamesGenerator({
         dictionaries: [adjectives, colors, animals],
         separator: "-",
-        length: 2,
+        length: 3,
         style: "lowerCase",
         seed: r.nextInt(0, adjectives.length * colors.length * animals.length),
       }).replace(" ", "-");
@@ -142,12 +142,14 @@ class KYVE {
 
     await this.checkIfNodeIsValidator();
 
-    await this.worker();
-    await this.run();
+    this.worker();
+    this.run();
   }
 
   private async run() {
     try {
+      KYVE.logger.debug("Started runner ...");
+
       while (true) {
         await this.fetchPoolState();
 
@@ -559,7 +561,7 @@ class KYVE {
   }
 
   private async setupDB() {
-    this.db = level(`./../db/${this.name}-db`);
+    this.db = level(`./${this.name}-db`);
   }
 
   private async checkIfNodeIsValidator() {

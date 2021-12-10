@@ -80,7 +80,7 @@ class KYVE {
             this.name = (0, unique_names_generator_1.uniqueNamesGenerator)({
                 dictionaries: [unique_names_generator_1.adjectives, unique_names_generator_1.colors, unique_names_generator_1.animals],
                 separator: "-",
-                length: 2,
+                length: 3,
                 style: "lowerCase",
                 seed: r.nextInt(0, unique_names_generator_1.adjectives.length * unique_names_generator_1.colors.length * unique_names_generator_1.animals.length),
             }).replace(" ", "-");
@@ -112,12 +112,13 @@ class KYVE {
         await this.setupNodeStake();
         await this.setupNodeCommission();
         await this.checkIfNodeIsValidator();
-        await this.worker();
-        await this.run();
+        this.worker();
+        this.run();
     }
     async run() {
         var _a;
         try {
+            KYVE.logger.debug("Started runner ...");
             while (true) {
                 await this.fetchPoolState();
                 if (this.poolState.paused) {
@@ -381,7 +382,7 @@ class KYVE {
         KYVE.logger.info("ℹ Fetched pool state.");
     }
     async setupDB() {
-        this.db = (0, level_1.default)(`./../db/${this.name}-db`);
+        this.db = (0, level_1.default)(`./${this.name}-db`);
     }
     async checkIfNodeIsValidator() {
         try {
