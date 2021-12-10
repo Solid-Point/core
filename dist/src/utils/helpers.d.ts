@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import { BigNumber } from "bignumber.js";
 import { Contract, ethers, Wallet } from "ethers";
 export declare const Token: (pool: Contract) => Promise<Contract>;
@@ -7,3 +8,7 @@ export declare const toEthersBN: (amount: BigNumber) => ethers.BigNumber;
 export declare const toBN: (amount: ethers.BigNumber) => BigNumber;
 export declare const getGasPrice: (pool: Contract, gasMultiplier: string) => Promise<ethers.BigNumber>;
 export declare const sleep: (ms: number) => Promise<unknown>;
+export declare const toBytes: (input: string) => Buffer;
+export declare const fromBytes: (input: string) => string;
+export declare const dataSizeOfString: (string: string) => number;
+export declare const dataSizeOfBinary: (binary: ArrayBuffer) => number;

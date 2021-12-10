@@ -33,7 +33,6 @@ const prando_1 = __importDefault(require("prando"));
 const semver_1 = require("semver");
 const unique_names_generator_1 = require("unique-names-generator");
 const utils_1 = require("./utils");
-const arweave_2 = require("./utils/arweave");
 const helpers_1 = require("./utils/helpers");
 const utils_2 = require("./utils");
 const package_json_1 = require("../package.json");
@@ -43,6 +42,8 @@ const url_1 = __importDefault(require("url"));
 const prom_client_1 = __importStar(require("prom-client"));
 const level_1 = __importDefault(require("level"));
 __exportStar(require("./utils"), exports);
+__exportStar(require("./faces"), exports);
+__exportStar(require("./utils/helpers"), exports);
 prom_client_1.default.collectDefaultMetrics({
     labels: { app: "kyve-core" },
 });
@@ -203,7 +204,7 @@ class KYVE {
         };
         return {
             uploader: proposal.uploader,
-            txId: (0, arweave_2.fromBytes)(proposal.txId),
+            txId: (0, helpers_1.fromBytes)(proposal.txId),
             byteSize: proposal.byteSize.toNumber(),
             fromHeight: proposal.fromHeight.toNumber(),
             toHeight: proposal.toHeight.toNumber(),
@@ -252,7 +253,7 @@ class KYVE {
     }
     async submitBlockProposal(transaction, bundleSize) {
         try {
-            const tx = await this.pool.submitBlockProposal((0, arweave_2.toBytes)(transaction.id), +transaction.data_size, bundleSize, {
+            const tx = await this.pool.submitBlockProposal((0, helpers_1.toBytes)(transaction.id), +transaction.data_size, bundleSize, {
                 gasLimit: ethers_1.ethers.BigNumber.from(1000000),
                 gasPrice: await (0, helpers_1.getGasPrice)(this.pool, this.gasMultiplier),
             });
@@ -297,8 +298,8 @@ class KYVE {
             return;
         }
         try {
-            const tx = await this.pool.vote((0, arweave_2.toBytes)(vote.transaction), vote.valid, {
-                gasLimit: await this.pool.estimateGas.vote((0, arweave_2.toBytes)(vote.transaction), vote.valid),
+            const tx = await this.pool.vote((0, helpers_1.toBytes)(vote.transaction), vote.valid, {
+                gasLimit: await this.pool.estimateGas.vote((0, helpers_1.toBytes)(vote.transaction), vote.valid),
                 gasPrice: await (0, helpers_1.getGasPrice)(this.pool, this.gasMultiplier),
             });
             utils_2.logger.debug(`Transaction = ${tx.hash}`);
@@ -524,7 +525,4 @@ class KYVE {
     }
 }
 KYVE.metrics = prom_client_1.default;
-KYVE.dataSizeOfString = (string) => {
-    return new Uint8Array(new TextEncoder().encode(string)).byteLength || 0;
-};
 exports.default = KYVE;

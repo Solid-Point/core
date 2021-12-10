@@ -5,6 +5,8 @@ import { BlockInstructions } from "./faces";
 import { CLI } from "./utils";
 import client from "prom-client";
 export * from "./utils";
+export * from "./faces";
+export * from "./utils/helpers";
 declare class KYVE {
     protected pool: Contract;
     protected runtime: string;
@@ -20,7 +22,6 @@ declare class KYVE {
     protected db: any;
     protected arweave: Arweave;
     static metrics: typeof client;
-    static dataSizeOfString: (string: string) => number;
     constructor(cli?: CLI);
     start(): Promise<void>;
     private run;

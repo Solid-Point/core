@@ -12,9 +12,8 @@ import {
   animals,
   uniqueNamesGenerator,
 } from "unique-names-generator";
-import { BlockInstructions, BlockProposal, Vote } from "./faces";
+import { BlockInstructions, BlockProposal } from "./faces";
 import { CLI } from "./utils";
-import { fromBytes, toBytes } from "./utils/arweave";
 import {
   getGasPrice,
   toBN,
@@ -23,6 +22,8 @@ import {
   Pool,
   Token,
   sleep,
+  fromBytes,
+  toBytes,
 } from "./utils/helpers";
 import { logger } from "./utils";
 import { version } from "../package.json";
@@ -34,6 +35,8 @@ import client, { register } from "prom-client";
 import level from "level";
 
 export * from "./utils";
+export * from "./faces";
+export * from "./utils/helpers";
 
 client.collectDefaultMetrics({
   labels: { app: "kyve-core" },
@@ -58,10 +61,6 @@ class KYVE {
   });
 
   public static metrics = client;
-
-  public static dataSizeOfString = (string: string): number => {
-    return new Uint8Array(new TextEncoder().encode(string)).byteLength || 0;
-  };
 
   constructor(cli?: CLI) {
     if (!cli) {
@@ -415,7 +414,7 @@ class KYVE {
     });
   }
 
-  private async vote(vote: Vote) {
+  private async vote(vote: { transaction: string; valid: boolean }) {
     logger.info(
       `🖋  Voting ${vote.valid ? "valid" : "invalid"} on bundle ${
         vote.transaction

@@ -3,7 +3,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sleep = exports.getGasPrice = exports.toBN = exports.toEthersBN = exports.toHumanReadable = exports.Pool = exports.Token = void 0;
+exports.dataSizeOfBinary = exports.dataSizeOfString = exports.fromBytes = exports.toBytes = exports.sleep = exports.getGasPrice = exports.toBN = exports.toEthersBN = exports.toHumanReadable = exports.Pool = exports.Token = void 0;
+const base64url_1 = __importDefault(require("base64url"));
 const bignumber_js_1 = require("bignumber.js");
 const ethers_1 = require("ethers");
 const pool_json_1 = __importDefault(require("../abi/pool.json"));
@@ -36,3 +37,19 @@ const sleep = (ms) => {
     return new Promise((resolve) => setTimeout(resolve, ms));
 };
 exports.sleep = sleep;
+const toBytes = (input) => {
+    return Buffer.from(base64url_1.default.decode(input, "hex"), "hex");
+};
+exports.toBytes = toBytes;
+const fromBytes = (input) => {
+    return base64url_1.default.encode(input.slice(2), "hex");
+};
+exports.fromBytes = fromBytes;
+const dataSizeOfString = (string) => {
+    return new Uint8Array(new TextEncoder().encode(string)).byteLength || 0;
+};
+exports.dataSizeOfString = dataSizeOfString;
+const dataSizeOfBinary = (binary) => {
+    return new Uint8Array(binary).byteLength || 0;
+};
+exports.dataSizeOfBinary = dataSizeOfBinary;

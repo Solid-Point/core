@@ -1,3 +1,4 @@
+import base64url from "base64url";
 import { BigNumber } from "bignumber.js";
 import { Contract, ethers, Wallet } from "ethers";
 import PoolABI from "../abi/pool.json";
@@ -33,4 +34,20 @@ export const getGasPrice = async (pool: Contract, gasMultiplier: string) => {
 
 export const sleep = (ms: number) => {
   return new Promise((resolve) => setTimeout(resolve, ms));
+};
+
+export const toBytes = (input: string): Buffer => {
+  return Buffer.from(base64url.decode(input, "hex"), "hex");
+};
+
+export const fromBytes = (input: string): string => {
+  return base64url.encode(input.slice(2), "hex");
+};
+
+export const dataSizeOfString = (string: string): number => {
+  return new Uint8Array(new TextEncoder().encode(string)).byteLength || 0;
+};
+
+export const dataSizeOfBinary = (binary: ArrayBuffer): number => {
+  return new Uint8Array(binary).byteLength || 0;
 };
