@@ -41,12 +41,14 @@ const object_hash_1 = __importDefault(require("object-hash"));
 const http_1 = __importDefault(require("http"));
 const url_1 = __importDefault(require("url"));
 const prom_client_1 = __importStar(require("prom-client"));
+const level_1 = __importDefault(require("level"));
 __exportStar(require("./utils"), exports);
 prom_client_1.default.collectDefaultMetrics({
     labels: { app: "kyve-core" },
 });
 class KYVE {
     constructor(cli) {
+        this.db = (0, level_1.default)("node-db");
         this.arweave = new arweave_1.default({
             host: "arweave.net",
             protocol: "https",
@@ -70,7 +72,6 @@ class KYVE {
             options.keyfile && JSON.parse((0, fs_1.readFileSync)(options.keyfile, "utf-8"));
         this.gasMultiplier = options.gasMultiplier || "1";
         this.runMetrics = options.metrics;
-        console.log(options);
         if (options.name) {
             this.name = options.name;
         }
@@ -107,6 +108,11 @@ class KYVE {
         this.logNodeInfo();
         this.setupMetrics();
         await this.fetchPoolState();
+        this.db.get(-1, (error) => {
+            if (error) {
+                this.db.put(-1, this.poolState.height);
+            }
+        });
         await this.setupNodeStake();
         await this.setupNodeCommission();
         await this.checkIfNodeIsValidator();
@@ -132,7 +138,7 @@ class KYVE {
                 }
                 logger_1.default.debug(`Creating bundle (${blockInstructions.fromHeight} - ${blockInstructions.toHeight}) ...`);
                 // TODO: save last instructions and bundle
-                const uploadBundle = await this.createBundle(this.poolState.config, blockInstructions);
+                const uploadBundle = await this.createBundle(blockInstructions);
                 if (blockInstructions.uploader === ethers_1.ethers.constants.AddressZero ||
                     blockInstructions.uploader === this.wallet.address) {
                     const transaction = await this.uploadBundleToArweave(uploadBundle, blockInstructions);
@@ -174,9 +180,44 @@ class KYVE {
             logger_1.default.debug(error);
         }
     }
-    async createBundle(config, blockInstructions) {
-        logger_1.default.error(`❌ CreateBundle not implemented. Exiting ...`);
+    async worker() {
+        logger_1.default.error(`❌ "worker" not implemented. Exiting ...`);
         process.exit(1);
+    }
+    async createBundle(blockInstructions) {
+        logger_1.default.error(`❌ "createBundle" not implemented. Exiting ...`);
+        process.exit(1);
+        // const bundle: any[] = [];
+        // const progress = new cliProgress.SingleBar({
+        //   format: `${chalk.gray(
+        //     new Date().toISOString().replace("T", " ").replace("Z", " ")
+        //   )} ${chalk.bold.blueBright(
+        //     "INFO"
+        //   )} [{bar}] {percentage}% | ETA: {eta}s | {value}/{total} blocks`,
+        // });
+        // progress.start(
+        //   blockInstructions.toHeight - blockInstructions.fromHeight,
+        //   0
+        // );
+        // KYVE.db
+        //   .createReadStream({
+        //     gte: blockInstructions.fromHeight,
+        //     lt: blockInstructions.toHeight,
+        //   })
+        //   .on("data", (data) => {
+        //     console.log(data.key);
+        //     bundle.push(data.value);
+        //     progress.increment();
+        //   })
+        //   .on("error", (error) => {
+        //     progress.stop();
+        //     console.log("Oh my!", error);
+        //   })
+        //   .on("end", function () {
+        //     progress.stop();
+        //     console.log("Stream ended");
+        //     return bundle;
+        //   });
     }
     async validate(uploadBundle, uploadBytes, downloadBundle, downloadBytes) {
         if (uploadBytes !== downloadBytes) {

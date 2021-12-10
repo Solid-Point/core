@@ -1,19 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CLI = exports.getTagByName = exports.fetchLatestArweaveTransaction = void 0;
+exports.CLI = exports.fetchLatestArweaveTransaction = void 0;
 const commander_1 = require("commander");
 var arweave_1 = require("./arweave");
 Object.defineProperty(exports, "fetchLatestArweaveTransaction", { enumerable: true, get: function () { return arweave_1.fetchLatestArweaveTransaction; } });
-const getTagByName = (name, tags) => {
-    if (tags) {
-        const tag = tags.find((tag) => tag.name === name);
-        if (tag) {
-            return tag.value;
-        }
-    }
-    return undefined;
-};
-exports.getTagByName = getTagByName;
 class CLI extends commander_1.Command {
     constructor(runtime = process.env.KYVE_RUNTIME, packageVersion = process.env.KYVE_VERSION) {
         super(runtime);

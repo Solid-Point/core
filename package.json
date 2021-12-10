@@ -29,10 +29,13 @@
     "arweave": "^1.10.17",
     "base64url": "^3.0.1",
     "bignumber.js": "^9.0.1",
+    "chalk": "^5.0.0",
+    "cli-progress": "^3.9.1",
     "commander": "^8.3.0",
     "ethers": "^5.5.1",
     "graphql": "^16.0.1",
     "graphql-request": "^3.6.1",
+    "level": "^7.0.1",
     "object-hash": "^2.2.0",
     "prando": "^6.0.1",
     "prom-client": "^14.0.1",
@@ -41,6 +44,8 @@
     "unique-names-generator": "^4.6.0"
   },
   "devDependencies": {
+    "@types/cli-progress": "^3.9.2",
+    "@types/level": "^6.0.0",
     "@types/node": "^16.10.3",
     "@types/object-hash": "^2.2.1",
     "@types/semver": "^7.3.9",
