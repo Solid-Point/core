@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.formatBundle = exports.dataSizeOfBinary = exports.dataSizeOfString = exports.fromBytes = exports.toBytes = exports.sleep = exports.getGasPrice = exports.toBN = exports.toEthersBN = exports.toHumanReadable = exports.getPoolContract = exports.getTokenContract = void 0;
+exports.parseBundle = exports.formatBundle = exports.dataSizeOfBinary = exports.dataSizeOfString = exports.fromBytes = exports.toBytes = exports.sleep = exports.getGasPrice = exports.toBN = exports.toEthersBN = exports.toHumanReadable = exports.getPoolContract = exports.getTokenContract = void 0;
 const base64url_1 = __importDefault(require("base64url"));
 const bignumber_js_1 = require("bignumber.js");
 const ethers_1 = require("ethers");
@@ -63,6 +63,14 @@ const longTo32ByteArray = (long) => {
     }
     return Uint8Array.from(byteArray);
 };
+// Inspired by https://github.com/Bundlr-Network/arbundles/blob/f3e8e1df09e68e33f3a51af33127999566ab3e37/src/utils.ts#L87-L93.
+const byteArrayToLong = (byteArray) => {
+    let value = 0;
+    for (let i = byteArray.length - 1; i >= 0; i--) {
+        value = value * 256 + byteArray[i];
+    }
+    return value;
+};
 // Inspired by https://github.com/Bundlr-Network/arbundles/blob/1976030eba3953dcd7582e65b50217f893f6248d/src/ar-data-bundle.ts#L25-L64.
 const formatBundle = (input) => {
     const offsets = new Uint8Array(32 * input.length);
@@ -76,3 +84,17 @@ const formatBundle = (input) => {
     ]);
 };
 exports.formatBundle = formatBundle;
+// Inspired by https://github.com/Bundlr-Network/arbundles/blob/8a1509bc9596467d2f05003039da7e4de4d02ce3/src/Bundle.ts#L174-L199.
+const parseBundle = (input) => {
+    const count = byteArrayToLong(input.slice(0, 32));
+    const itemStart = 32 + 32 * count;
+    let offset = 0;
+    const result = [];
+    for (let i = 32; i < itemStart; i += 32) {
+        const _offset = byteArrayToLong(input.slice(i, i + 32));
+        result.push(input.slice(itemStart + offset, itemStart + offset + _offset));
+        offset += _offset;
+    }
+    return result;
+};
+exports.parseBundle = parseBundle;

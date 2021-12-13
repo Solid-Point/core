@@ -65,6 +65,15 @@ const longTo32ByteArray = (long: number): Uint8Array => {
   return Uint8Array.from(byteArray);
 };
 
+// Inspired by https://github.com/Bundlr-Network/arbundles/blob/f3e8e1df09e68e33f3a51af33127999566ab3e37/src/utils.ts#L87-L93.
+const byteArrayToLong = (byteArray: Uint8Array): number => {
+  let value = 0;
+  for (let i = byteArray.length - 1; i >= 0; i--) {
+    value = value * 256 + byteArray[i];
+  }
+  return value;
+};
+
 // Inspired by https://github.com/Bundlr-Network/arbundles/blob/1976030eba3953dcd7582e65b50217f893f6248d/src/ar-data-bundle.ts#L25-L64.
 export const formatBundle = (input: Buffer[]): Buffer => {
   const offsets = new Uint8Array(32 * input.length);
@@ -77,4 +86,21 @@ export const formatBundle = (input: Buffer[]): Buffer => {
     offsets,
     Buffer.concat(input),
   ]);
+};
+
+// Inspired by https://github.com/Bundlr-Network/arbundles/blob/8a1509bc9596467d2f05003039da7e4de4d02ce3/src/Bundle.ts#L174-L199.
+export const parseBundle = (input: Buffer): Buffer[] => {
+  const count = byteArrayToLong(input.slice(0, 32));
+  const itemStart = 32 + 32 * count;
+  let offset = 0;
+
+  const result: Buffer[] = [];
+  for (let i = 32; i < itemStart; i += 32) {
+    const _offset = byteArrayToLong(input.slice(i, i + 32));
+    result.push(input.slice(itemStart + offset, itemStart + offset + _offset));
+
+    offset += _offset;
+  }
+
+  return result;
 };
