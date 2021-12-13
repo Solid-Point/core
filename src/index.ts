@@ -267,7 +267,9 @@ class KYVE {
           workerHeight = this.poolState.height.toNumber();
         }
 
+        console.log(workerHeight);
         const ops = await this.requestWorkerBatch(workerHeight);
+        console.log(ops);
 
         await this.db.batch([
           ...ops,
