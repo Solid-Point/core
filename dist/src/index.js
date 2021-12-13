@@ -176,8 +176,9 @@ class KYVE {
             try {
                 const usedDiskSpace = await (0, du_1.default)(`./db/${this.name}/`);
                 console.log(`Used disk space ${usedDiskSpace} - ${((usedDiskSpace * 100) /
-                    this.diskSpace).toFixed(2)}`);
+                    this.diskSpace).toFixed(2)}%`);
                 if (usedDiskSpace > this.diskSpace) {
+                    utils_2.logger.debug(`Reached disk space limit of ${this.diskSpace}. Waiting ...`);
                     await (0, helpers_1.sleep)(10 * 1000);
                     continue;
                 }
