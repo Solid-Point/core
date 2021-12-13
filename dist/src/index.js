@@ -407,7 +407,7 @@ class KYVE {
             (0, fs_1.mkdirSync)("./db");
         }
         this.db = (0, level_1.default)(`./db/${this.name}`, {
-            valueEncoding: "json",
+            valueEncoding: "binary",
         });
     }
     async checkIfNodeIsValidator() {

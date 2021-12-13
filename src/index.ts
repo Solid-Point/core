@@ -585,7 +585,7 @@ class KYVE {
     }
 
     this.db = level(`./db/${this.name}`, {
-      valueEncoding: "json",
+      valueEncoding: "binary",
     });
   }
 
