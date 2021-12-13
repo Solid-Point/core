@@ -91,7 +91,7 @@ class KYVE {
       options.keyfile && JSON.parse(readFileSync(options.keyfile, "utf-8"));
     this.gasMultiplier = options.gasMultiplier;
     this.runMetrics = options.metrics;
-    this.diskSpace = +options.diskSpace;
+    this.diskSpace = +options.space;
     this.name = options?.name ?? this.generateRandomName();
 
     if (!existsSync("./logs")) {
