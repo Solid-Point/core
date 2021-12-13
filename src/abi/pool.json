@@ -138,25 +138,6 @@
     "inputs": [
       {
         "indexed": false,
-        "internalType": "uint256",
-        "name": "previous",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "current",
-        "type": "uint256"
-      }
-    ],
-    "name": "BundleSizeChanged",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
         "internalType": "string",
         "name": "previous",
         "type": "string"
@@ -1147,6 +1128,11 @@
           },
           {
             "internalType": "uint256",
+            "name": "totalRewards",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
             "name": "uploadTimeout",
             "type": "uint256"
           },
@@ -1356,6 +1342,19 @@
   {
     "inputs": [],
     "name": "totalFunds",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "totalRewards",
     "outputs": [
       {
         "internalType": "uint256",
