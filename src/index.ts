@@ -24,6 +24,7 @@ import {
   sleep,
   fromBytes,
   toBytes,
+  formatBundle,
 } from "./utils/helpers";
 import { logger } from "./utils";
 import { version } from "../package.json";
@@ -262,7 +263,7 @@ class KYVE {
         let workerHeight;
 
         try {
-          workerHeight = await this.db.get(-1);
+          workerHeight = parseInt((await this.db.get(-1)).toString());
         } catch {
           workerHeight = this.poolState.height.toNumber();
         }
@@ -271,7 +272,11 @@ class KYVE {
 
         await this.db.batch([
           ...ops,
-          { type: "put", key: -1, value: workerHeight + ops.length },
+          {
+            type: "put",
+            key: -1,
+            value: Buffer.from((workerHeight + ops.length).toString()),
+          },
         ]);
       } catch (error) {
         logger.error("Error fetching data batch", error);
@@ -336,14 +341,14 @@ class KYVE {
   }
 
   private async uploadBundleToArweave(
-    bundle: any[],
+    bundle: Buffer[],
     instructions: BlockInstructions
   ): Promise<Transaction | null> {
     try {
       logger.info("💾 Uploading bundle to Arweave.  ...");
 
       const transaction = await this.arweave.createTransaction({
-        data: JSON.stringify(bundle),
+        data: formatBundle(bundle),
       });
 
       logger.debug(`Bundle data size = ${transaction.data_size} Bytes`);
@@ -359,7 +364,6 @@ class KYVE {
         "ToHeight",
         (instructions.fromHeight + bundle.length).toString()
       );
-      transaction.addTag("Content-Type", "application/json");
 
       await this.arweave.transactions.sign(transaction, this.keyfile);
 
@@ -579,13 +583,12 @@ class KYVE {
   }
 
   private async setupDB() {
-    // TODO: change to binary when using protobuff
     if (!existsSync("./db")) {
       mkdirSync("./db");
     }
 
     this.db = level(`./db/${this.name}`, {
-      valueEncoding: "json",
+      valueEncoding: "binary",
     });
   }
 

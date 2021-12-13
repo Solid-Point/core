@@ -183,7 +183,7 @@ class KYVE {
                 }
                 let workerHeight;
                 try {
-                    workerHeight = await this.db.get(-1);
+                    workerHeight = parseInt((await this.db.get(-1)).toString());
                 }
                 catch {
                     workerHeight = this.poolState.height.toNumber();
@@ -191,7 +191,11 @@ class KYVE {
                 const ops = await this.requestWorkerBatch(workerHeight);
                 await this.db.batch([
                     ...ops,
-                    { type: "put", key: -1, value: workerHeight + ops.length },
+                    {
+                        type: "put",
+                        key: -1,
+                        value: Buffer.from((workerHeight + ops.length).toString()),
+                    },
                 ]);
             }
             catch (error) {
@@ -243,7 +247,7 @@ class KYVE {
         try {
             utils_2.logger.info("💾 Uploading bundle to Arweave.  ...");
             const transaction = await this.arweave.createTransaction({
-                data: JSON.stringify(bundle),
+                data: (0, helpers_1.formatBundle)(bundle),
             });
             utils_2.logger.debug(`Bundle data size = ${transaction.data_size} Bytes`);
             utils_2.logger.debug(`Bundle size = ${bundle.length}`);
@@ -254,7 +258,6 @@ class KYVE {
             transaction.addTag("Uploader", instructions.uploader);
             transaction.addTag("FromHeight", instructions.fromHeight.toString());
             transaction.addTag("ToHeight", (instructions.fromHeight + bundle.length).toString());
-            transaction.addTag("Content-Type", "application/json");
             await this.arweave.transactions.sign(transaction, this.keyfile);
             const balance = await this.arweave.wallets.getBalance(await this.arweave.wallets.getAddress(this.keyfile));
             if (+transaction.reward > +balance) {
@@ -402,12 +405,11 @@ class KYVE {
         utils_2.logger.info("ℹ Fetched pool state.");
     }
     async setupDB() {
-        // TODO: change to binary when using protobuff
         if (!(0, fs_1.existsSync)("./db")) {
             (0, fs_1.mkdirSync)("./db");
         }
         this.db = (0, level_1.default)(`./db/${this.name}`, {
-            valueEncoding: "json",
+            valueEncoding: "binary",
         });
     }
     async checkIfNodeIsValidator() {
