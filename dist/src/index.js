@@ -247,7 +247,7 @@ class KYVE {
         try {
             utils_2.logger.info("💾 Uploading bundle to Arweave.  ...");
             const transaction = await this.arweave.createTransaction({
-                data: JSON.stringify(bundle),
+                data: (0, helpers_1.formatBundle)(bundle),
             });
             utils_2.logger.debug(`Bundle data size = ${transaction.data_size} Bytes`);
             utils_2.logger.debug(`Bundle size = ${bundle.length}`);

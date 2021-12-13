@@ -1,7 +1,6 @@
 import base64url from "base64url";
 import { BigNumber } from "bignumber.js";
 import { Contract, ethers, Wallet } from "ethers";
-import { Type } from "protobufjs";
 import PoolABI from "../abi/pool.json";
 import TokenABI from "../abi/token.json";
 
@@ -53,7 +52,29 @@ export const dataSizeOfBinary = (binary: ArrayBuffer): number => {
   return new Uint8Array(binary).byteLength || 0;
 };
 
-export const encodeData = (type: Type, data: Object): Uint8Array => {
-  const message = type.fromObject(data);
-  return type.encode(message).finish();
+// Inspired by https://github.com/Bundlr-Network/arbundles/blob/f3e8e1df09e68e33f3a51af33127999566ab3e37/src/utils.ts#L41-L85.
+const longTo32ByteArray = (long: number): Uint8Array => {
+  const byteArray = Buffer.alloc(32, 0);
+
+  for (let index = 0; index < byteArray.length; index++) {
+    const byte = long & 0xff;
+    byteArray[index] = byte;
+    long = (long - byte) / 256;
+  }
+
+  return Uint8Array.from(byteArray);
+};
+
+// Inspired by https://github.com/Bundlr-Network/arbundles/blob/1976030eba3953dcd7582e65b50217f893f6248d/src/ar-data-bundle.ts#L25-L64.
+export const formatBundle = (input: Buffer[]): Buffer => {
+  const offsets = new Uint8Array(32 * input.length);
+  input.forEach((item, index) => {
+    offsets.set(longTo32ByteArray(item.byteLength), 32 * index);
+  });
+
+  return Buffer.concat([
+    longTo32ByteArray(input.length),
+    offsets,
+    Buffer.concat(input),
+  ]);
 };

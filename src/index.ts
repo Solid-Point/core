@@ -24,6 +24,7 @@ import {
   sleep,
   fromBytes,
   toBytes,
+  formatBundle,
 } from "./utils/helpers";
 import { logger } from "./utils";
 import { version } from "../package.json";
@@ -340,14 +341,14 @@ class KYVE {
   }
 
   private async uploadBundleToArweave(
-    bundle: any[],
+    bundle: Buffer[],
     instructions: BlockInstructions
   ): Promise<Transaction | null> {
     try {
       logger.info("💾 Uploading bundle to Arweave.  ...");
 
       const transaction = await this.arweave.createTransaction({
-        data: JSON.stringify(bundle),
+        data: formatBundle(bundle),
       });
 
       logger.debug(`Bundle data size = ${transaction.data_size} Bytes`);

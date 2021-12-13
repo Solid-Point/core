@@ -1,7 +1,6 @@
 /// <reference types="node" />
 import { BigNumber } from "bignumber.js";
 import { Contract, ethers, Wallet } from "ethers";
-import { Type } from "protobufjs";
 export declare const getTokenContract: (pool: Contract) => Promise<Contract>;
 export declare const getPoolContract: (address: string, wallet: Wallet) => Contract;
 export declare const toHumanReadable: (amount: BigNumber) => string;
@@ -13,4 +12,4 @@ export declare const toBytes: (input: string) => Buffer;
 export declare const fromBytes: (input: string) => string;
 export declare const dataSizeOfString: (string: string) => number;
 export declare const dataSizeOfBinary: (binary: ArrayBuffer) => number;
-export declare const encodeData: (type: Type, data: Object) => Uint8Array;
+export declare const formatBundle: (input: Buffer[]) => Buffer;
