@@ -364,7 +364,6 @@ class KYVE {
         "ToHeight",
         (instructions.fromHeight + bundle.length).toString()
       );
-      transaction.addTag("Content-Type", "application/json");
 
       await this.arweave.transactions.sign(transaction, this.keyfile);
 

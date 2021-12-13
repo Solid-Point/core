@@ -258,7 +258,6 @@ class KYVE {
             transaction.addTag("Uploader", instructions.uploader);
             transaction.addTag("FromHeight", instructions.fromHeight.toString());
             transaction.addTag("ToHeight", (instructions.fromHeight + bundle.length).toString());
-            transaction.addTag("Content-Type", "application/json");
             await this.arweave.transactions.sign(transaction, this.keyfile);
             const balance = await this.arweave.wallets.getBalance(await this.arweave.wallets.getAddress(this.keyfile));
             if (+transaction.reward > +balance) {
