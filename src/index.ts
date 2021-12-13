@@ -540,7 +540,11 @@ class KYVE {
 
   private async setupDB() {
     // TODO: change to binary when using protobuff
-    this.db = level(`./${this.name}-db`, {
+    if (!existsSync("./db")) {
+      mkdirSync("./db");
+    }
+
+    this.db = level(`./db/${this.name}`, {
       valueEncoding: "json",
     });
   }

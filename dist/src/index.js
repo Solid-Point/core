@@ -372,6 +372,7 @@ class KYVE {
     }
     async setupDB() {
         // TODO: change to binary when using protobuff
+        console.log(__dirname);
         this.db = (0, level_1.default)(`./${this.name}-db`, {
             valueEncoding: "json",
         });
