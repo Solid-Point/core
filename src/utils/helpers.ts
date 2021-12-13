@@ -1,6 +1,7 @@
 import base64url from "base64url";
 import { BigNumber } from "bignumber.js";
 import { Contract, ethers, Wallet } from "ethers";
+import { Type } from "protobufjs";
 import PoolABI from "../abi/pool.json";
 import TokenABI from "../abi/token.json";
 
@@ -50,4 +51,9 @@ export const dataSizeOfString = (string: string): number => {
 
 export const dataSizeOfBinary = (binary: ArrayBuffer): number => {
   return new Uint8Array(binary).byteLength || 0;
+};
+
+export const encodeData = (type: Type, data: Object): Uint8Array => {
+  const message = type.fromObject(data);
+  return type.encode(message).finish();
 };

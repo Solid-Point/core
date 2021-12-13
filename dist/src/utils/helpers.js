@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.dataSizeOfBinary = exports.dataSizeOfString = exports.fromBytes = exports.toBytes = exports.sleep = exports.getGasPrice = exports.toBN = exports.toEthersBN = exports.toHumanReadable = exports.getPoolContract = exports.getTokenContract = void 0;
+exports.encodeData = exports.dataSizeOfBinary = exports.dataSizeOfString = exports.fromBytes = exports.toBytes = exports.sleep = exports.getGasPrice = exports.toBN = exports.toEthersBN = exports.toHumanReadable = exports.getPoolContract = exports.getTokenContract = void 0;
 const base64url_1 = __importDefault(require("base64url"));
 const bignumber_js_1 = require("bignumber.js");
 const ethers_1 = require("ethers");
@@ -53,3 +53,8 @@ const dataSizeOfBinary = (binary) => {
     return new Uint8Array(binary).byteLength || 0;
 };
 exports.dataSizeOfBinary = dataSizeOfBinary;
+const encodeData = (type, data) => {
+    const message = type.fromObject(data);
+    return type.encode(message).finish();
+};
+exports.encodeData = encodeData;
