@@ -248,16 +248,12 @@ class KYVE {
       try {
         const usedDiskSpace = await du(`./db/${this.name}/`);
 
-        console.log(
-          `Used disk space ${usedDiskSpace} - ${(
-            (usedDiskSpace * 100) /
-            this.diskSpace
-          ).toFixed(2)}%`
-        );
-
         if (usedDiskSpace > this.diskSpace) {
           logger.debug(
-            `Reached disk space limit of ${this.diskSpace}. Waiting ...`
+            `Reached disk space limit of ${this.diskSpace} - ${(
+              (usedDiskSpace * 100) /
+              this.diskSpace
+            ).toFixed(2)}. Waiting ...`
           );
           await sleep(10 * 1000);
           continue;
