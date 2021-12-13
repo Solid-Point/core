@@ -579,7 +579,6 @@ class KYVE {
   }
 
   private async setupDB() {
-    // TODO: change to binary when using protobuff
     if (!existsSync("./db")) {
       mkdirSync("./db");
     }

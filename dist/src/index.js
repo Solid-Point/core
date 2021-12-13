@@ -402,7 +402,6 @@ class KYVE {
         utils_2.logger.info("ℹ Fetched pool state.");
     }
     async setupDB() {
-        // TODO: change to binary when using protobuff
         if (!(0, fs_1.existsSync)("./db")) {
             (0, fs_1.mkdirSync)("./db");
         }
