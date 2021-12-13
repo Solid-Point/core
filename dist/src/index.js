@@ -245,7 +245,7 @@ class KYVE {
     }
     async uploadBundleToArweave(bundle, instructions) {
         console.log((0, object_hash_1.default)(bundle));
-        console.log((0, helpers_1.parseBundle)((0, helpers_1.formatBundle)(bundle)));
+        console.log((0, object_hash_1.default)((0, helpers_1.parseBundle)((0, helpers_1.formatBundle)(bundle))));
         try {
             utils_2.logger.info("💾 Uploading bundle to Arweave.  ...");
             const transaction = await this.arweave.createTransaction({

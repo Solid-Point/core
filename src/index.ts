@@ -346,7 +346,7 @@ class KYVE {
     instructions: BlockInstructions
   ): Promise<Transaction | null> {
     console.log(hash(bundle));
-    console.log(parseBundle(formatBundle(bundle)));
+    console.log(hash(parseBundle(formatBundle(bundle))));
 
     try {
       logger.info("💾 Uploading bundle to Arweave.  ...");
