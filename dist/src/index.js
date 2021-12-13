@@ -41,6 +41,7 @@ const http_1 = __importDefault(require("http"));
 const url_1 = __importDefault(require("url"));
 const prom_client_1 = __importStar(require("prom-client"));
 const level_1 = __importDefault(require("level"));
+const du_1 = __importDefault(require("du"));
 __exportStar(require("./utils"), exports);
 __exportStar(require("./faces"), exports);
 __exportStar(require("./utils/helpers"), exports);
@@ -73,6 +74,7 @@ class KYVE {
             options.keyfile && JSON.parse((0, fs_1.readFileSync)(options.keyfile, "utf-8"));
         this.gasMultiplier = options.gasMultiplier;
         this.runMetrics = options.metrics;
+        this.diskSpace = +options.diskSpace;
         this.name = (_a = options === null || options === void 0 ? void 0 : options.name) !== null && _a !== void 0 ? _a : this.generateRandomName();
         if (!(0, fs_1.existsSync)("./logs")) {
             (0, fs_1.mkdirSync)("./logs");
@@ -170,7 +172,36 @@ class KYVE {
         }
     }
     async worker() {
-        utils_2.logger.error(`❌ "worker" not implemented. Exiting ...`);
+        while (true) {
+            try {
+                const usedDiskSpace = await (0, du_1.default)(`./db/${this.name}/`);
+                console.log(`Used disk space ${usedDiskSpace} - ${((usedDiskSpace * 100) /
+                    this.diskSpace).toFixed(2)}`);
+                if (usedDiskSpace > this.diskSpace) {
+                    await (0, helpers_1.sleep)(10 * 1000);
+                    continue;
+                }
+                let workerHeight;
+                try {
+                    workerHeight = await this.db.get(-1);
+                }
+                catch {
+                    workerHeight = this.poolState.height.toNumber();
+                }
+                const ops = await this.requestWorkerBatch(workerHeight);
+                await this.db.batch([
+                    ...ops,
+                    { type: "put", key: -1, value: workerHeight + ops.length },
+                ]);
+            }
+            catch (error) {
+                utils_2.logger.error("Error fetching data batch", error);
+                await (0, helpers_1.sleep)(10 * 1000);
+            }
+        }
+    }
+    async requestWorkerBatch(workerHeight) {
+        utils_2.logger.error(`❌ "requestWorkerBatch" not implemented. Exiting ...`);
         process.exit(1);
     }
     async createBundle(blockInstructions) {

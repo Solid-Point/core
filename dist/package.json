@@ -26,10 +26,12 @@
         "deploy": "yarn build && yarn npm publish"
     },
     "dependencies": {
+        "@types/du": "^1.0.1",
         "arweave": "^1.10.17",
         "base64url": "^3.0.1",
         "bignumber.js": "^9.0.1",
         "commander": "^8.3.0",
+        "du": "^1.0.0",
         "ethers": "^5.5.1",
         "level": "^7.0.1",
         "object-hash": "^2.2.0",

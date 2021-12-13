@@ -33,6 +33,7 @@ import http from "http";
 import url from "url";
 import client, { register } from "prom-client";
 import level from "level";
+import du from "du";
 
 export * from "./utils";
 export * from "./faces";
@@ -54,6 +55,7 @@ class KYVE {
   protected gasMultiplier: string;
   protected poolState: any;
   protected runMetrics: boolean;
+  protected diskSpace: number;
   protected db: any;
   protected arweave = new Arweave({
     host: "arweave.net",
@@ -89,6 +91,7 @@ class KYVE {
       options.keyfile && JSON.parse(readFileSync(options.keyfile, "utf-8"));
     this.gasMultiplier = options.gasMultiplier;
     this.runMetrics = options.metrics;
+    this.diskSpace = +options.diskSpace;
     this.name = options?.name ?? this.generateRandomName();
 
     if (!existsSync("./logs")) {
@@ -241,7 +244,45 @@ class KYVE {
   }
 
   public async worker() {
-    logger.error(`❌ "worker" not implemented. Exiting ...`);
+    while (true) {
+      try {
+        const usedDiskSpace = await du(`./db/${this.name}/`);
+
+        console.log(
+          `Used disk space ${usedDiskSpace} - ${(
+            (usedDiskSpace * 100) /
+            this.diskSpace
+          ).toFixed(2)}`
+        );
+
+        if (usedDiskSpace > this.diskSpace) {
+          await sleep(10 * 1000);
+          continue;
+        }
+
+        let workerHeight;
+
+        try {
+          workerHeight = await this.db.get(-1);
+        } catch {
+          workerHeight = this.poolState.height.toNumber();
+        }
+
+        const ops = await this.requestWorkerBatch(workerHeight);
+
+        await this.db.batch([
+          ...ops,
+          { type: "put", key: -1, value: workerHeight + ops.length },
+        ]);
+      } catch (error) {
+        logger.error("Error fetching data batch", error);
+        await sleep(10 * 1000);
+      }
+    }
+  }
+
+  public async requestWorkerBatch(workerHeight: number): Promise<any[]> {
+    logger.error(`❌ "requestWorkerBatch" not implemented. Exiting ...`);
     process.exit(1);
   }
 

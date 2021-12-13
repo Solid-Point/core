@@ -19,6 +19,7 @@ declare class KYVE {
     protected gasMultiplier: string;
     protected poolState: any;
     protected runMetrics: boolean;
+    protected diskSpace: number;
     protected db: any;
     protected arweave: Arweave;
     static metrics: typeof client;
@@ -26,6 +27,7 @@ declare class KYVE {
     start(): Promise<void>;
     private run;
     worker(): Promise<void>;
+    requestWorkerBatch(workerHeight: number): Promise<any[]>;
     createBundle(blockInstructions: BlockInstructions): Promise<any[]>;
     validate(uploadBundle: any[], uploadBytes: number, downloadBundle: any[], downloadBytes: number): Promise<boolean>;
     private getBlockProposal;
