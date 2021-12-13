@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import Arweave from "arweave";
 import { JWKInterface } from "arweave/node/lib/wallet";
 import { Contract, Wallet } from "ethers";
@@ -29,7 +30,7 @@ declare class KYVE {
     worker(): Promise<void>;
     requestWorkerBatch(workerHeight: number): Promise<any[]>;
     createBundle(blockInstructions: BlockInstructions): Promise<any[]>;
-    validate(uploadBundle: any[], uploadBytes: number, downloadBundle: any[], downloadBytes: number): Promise<boolean>;
+    validate(uploadBundle: Buffer[], uploadBytes: number, downloadBundle: Buffer[], downloadBytes: number): Promise<boolean>;
     private getBlockProposal;
     private getBlockInstructions;
     private uploadBundleToArweave;

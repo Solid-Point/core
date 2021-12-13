@@ -150,12 +150,10 @@ class KYVE {
                                 decode: true,
                             }));
                             const downloadBytes = _data.byteLength;
-                            const downloadBundle = JSON.parse(new TextDecoder("utf-8", {
-                                fatal: true,
-                            }).decode(_data));
+                            const downloadBundle = (0, helpers_1.parseBundle)(Buffer.from(_data));
                             await this.vote({
                                 transaction: blockProposal.txId,
-                                valid: await this.validate(JSON.parse(JSON.stringify(uploadBundle)), +blockProposal.byteSize, JSON.parse(JSON.stringify(downloadBundle)), +downloadBytes),
+                                valid: await this.validate(uploadBundle, +blockProposal.byteSize, downloadBundle, +downloadBytes),
                             });
                         }
                     }

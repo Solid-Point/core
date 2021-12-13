@@ -25,6 +25,7 @@ import {
   fromBytes,
   toBytes,
   formatBundle,
+  parseBundle,
 } from "./utils/helpers";
 import { logger } from "./utils";
 import { version } from "../package.json";
@@ -214,18 +215,14 @@ class KYVE {
                 }
               )) as Uint8Array;
               const downloadBytes = _data.byteLength;
-              const downloadBundle = JSON.parse(
-                new TextDecoder("utf-8", {
-                  fatal: true,
-                }).decode(_data)
-              );
+              const downloadBundle = parseBundle(Buffer.from(_data));
 
               await this.vote({
                 transaction: blockProposal.txId,
                 valid: await this.validate(
-                  JSON.parse(JSON.stringify(uploadBundle)),
+                  uploadBundle,
                   +blockProposal.byteSize,
-                  JSON.parse(JSON.stringify(downloadBundle)),
+                  downloadBundle,
                   +downloadBytes
                 ),
               });
@@ -298,9 +295,9 @@ class KYVE {
   }
 
   public async validate(
-    uploadBundle: any[],
+    uploadBundle: Buffer[],
     uploadBytes: number,
-    downloadBundle: any[],
+    downloadBundle: Buffer[],
     downloadBytes: number
   ): Promise<boolean> {
     if (uploadBytes !== downloadBytes) {
