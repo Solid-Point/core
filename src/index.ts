@@ -262,18 +262,20 @@ class KYVE {
         let workerHeight;
 
         try {
-          workerHeight = await this.db.get(-1);
+          workerHeight = parseInt((await this.db.get(-1)).toString());
         } catch {
           workerHeight = this.poolState.height.toNumber();
         }
 
-        console.log(workerHeight);
         const ops = await this.requestWorkerBatch(workerHeight);
-        console.log(ops);
 
         await this.db.batch([
           ...ops,
-          { type: "put", key: -1, value: workerHeight + ops.length },
+          {
+            type: "put",
+            key: -1,
+            value: Buffer.from((workerHeight + ops.length).toString()),
+          },
         ]);
       } catch (error) {
         logger.error("Error fetching data batch", error);
