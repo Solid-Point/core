@@ -25,7 +25,6 @@ import {
   fromBytes,
   toBytes,
   formatBundle,
-  parseBundle,
 } from "./utils/helpers";
 import { logger } from "./utils";
 import { version } from "../package.json";
@@ -345,9 +344,6 @@ class KYVE {
     bundle: Buffer[],
     instructions: BlockInstructions
   ): Promise<Transaction | null> {
-    console.log(hash(bundle));
-    console.log(hash(parseBundle(formatBundle(bundle))));
-
     try {
       logger.info("💾 Uploading bundle to Arweave.  ...");
 
