@@ -252,10 +252,13 @@ class KYVE {
           `Used disk space ${usedDiskSpace} - ${(
             (usedDiskSpace * 100) /
             this.diskSpace
-          ).toFixed(2)}`
+          ).toFixed(2)}%`
         );
 
         if (usedDiskSpace > this.diskSpace) {
+          logger.debug(
+            `Reached disk space limit of ${this.diskSpace}. Waiting ...`
+          );
           await sleep(10 * 1000);
           continue;
         }
