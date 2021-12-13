@@ -347,7 +347,7 @@ class KYVE {
       });
 
       logger.debug(`Bundle data size = ${transaction.data_size} Bytes`);
-      logger.debug(`Bundle size = ${bundle.length} Bytes`);
+      logger.debug(`Bundle size = ${bundle.length}`);
 
       transaction.addTag("Application", "KYVE - Testnet");
       transaction.addTag("Pool", this.pool.address);

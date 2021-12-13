@@ -246,7 +246,7 @@ class KYVE {
                 data: JSON.stringify(bundle),
             });
             utils_2.logger.debug(`Bundle data size = ${transaction.data_size} Bytes`);
-            utils_2.logger.debug(`Bundle size = ${bundle.length} Bytes`);
+            utils_2.logger.debug(`Bundle size = ${bundle.length}`);
             transaction.addTag("Application", "KYVE - Testnet");
             transaction.addTag("Pool", this.pool.address);
             transaction.addTag("@kyve/core", package_json_1.version);

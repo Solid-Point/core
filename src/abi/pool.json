@@ -23,11 +23,6 @@
       },
       {
         "internalType": "uint256",
-        "name": "_bundleSize",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
         "name": "_uploadTimeout",
         "type": "uint256"
       },
@@ -83,6 +78,18 @@
         "internalType": "uint256",
         "name": "invalid",
         "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "fromHeight",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "toHeight",
+        "type": "uint256"
       }
     ],
     "name": "Activity",
@@ -124,43 +131,6 @@
       }
     ],
     "name": "AdminRemoved",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "uploader",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "bytes32",
-        "name": "txId",
-        "type": "bytes32"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "byteSize",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "fromHeight",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "toHeight",
-        "type": "uint256"
-      }
-    ],
-    "name": "BlockProposed",
     "type": "event"
   },
   {
@@ -296,12 +266,6 @@
         "indexed": false,
         "internalType": "uint256",
         "name": "fromHeight",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "toHeight",
         "type": "uint256"
       }
     ],
@@ -642,11 +606,6 @@
       },
       {
         "internalType": "uint256",
-        "name": "toHeight",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
         "name": "updatedAt",
         "type": "uint256"
       }
@@ -706,19 +665,6 @@
       {
         "internalType": "uint256",
         "name": "invalidVotes",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "bundleSize",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
         "type": "uint256"
       }
     ],
@@ -816,6 +762,54 @@
         "internalType": "address[]",
         "name": "",
         "type": "address[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_node",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_delegator",
+        "type": "address"
+      }
+    ],
+    "name": "delegationAmount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_node",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_delegator",
+        "type": "address"
+      }
+    ],
+    "name": "delegationRewards",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -1008,6 +1002,11 @@
             "internalType": "uint256",
             "name": "votingPowerPercentage",
             "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "apyPercentage",
+            "type": "uint256"
           }
         ],
         "internalType": "struct Pool.NodeState",
@@ -1075,6 +1074,11 @@
       },
       {
         "internalType": "uint256",
+        "name": "totalDelegationTime",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
         "name": "totalDelegation",
         "type": "uint256"
       },
@@ -1138,7 +1142,7 @@
           },
           {
             "internalType": "uint256",
-            "name": "bundleSize",
+            "name": "size",
             "type": "uint256"
           },
           {
@@ -1262,6 +1266,19 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "size",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "uint256",
@@ -1297,6 +1314,11 @@
       {
         "internalType": "uint256",
         "name": "_byteSize",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_bundleSize",
         "type": "uint256"
       }
     ],
@@ -1412,19 +1434,6 @@
       }
     ],
     "name": "unstake",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_bundleSize",
-        "type": "uint256"
-      }
-    ],
-    "name": "updateBundleSize",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
