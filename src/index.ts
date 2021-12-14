@@ -36,6 +36,7 @@ import url from "url";
 import client, { register } from "prom-client";
 import level from "level";
 import du from "du";
+import { gunzipSync, gzipSync } from "zlib";
 
 export * from "./utils";
 export * from "./faces";
@@ -247,7 +248,9 @@ class KYVE {
                 }
               )) as Uint8Array;
               const downloadBytes = _data.byteLength;
-              const downloadBundle = parseBundle(Buffer.from(_data));
+              const downloadBundle = parseBundle(
+                Buffer.from(gunzipSync(_data))
+              );
 
               await this.vote({
                 transaction: blockProposal.txId,
@@ -381,7 +384,7 @@ class KYVE {
       logger.info("💾 Uploading bundle to Arweave.  ...");
 
       const transaction = await this.arweave.createTransaction({
-        data: formatBundle(bundle),
+        data: gzipSync(formatBundle(bundle)),
       });
 
       logger.debug(`Bundle data size = ${transaction.data_size} Bytes`);
@@ -397,6 +400,7 @@ class KYVE {
         "ToHeight",
         (instructions.fromHeight + bundle.length).toString()
       );
+      transaction.addTag("Content-Type", "application/gzip");
 
       await this.arweave.transactions.sign(transaction, this.keyfile);
 

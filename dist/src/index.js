@@ -42,6 +42,7 @@ const url_1 = __importDefault(require("url"));
 const prom_client_1 = __importStar(require("prom-client"));
 const level_1 = __importDefault(require("level"));
 const du_1 = __importDefault(require("du"));
+const zlib_1 = require("zlib");
 __exportStar(require("./utils"), exports);
 __exportStar(require("./faces"), exports);
 __exportStar(require("./utils/helpers"), exports);
@@ -173,7 +174,7 @@ class KYVE {
                                 decode: true,
                             }));
                             const downloadBytes = _data.byteLength;
-                            const downloadBundle = (0, helpers_1.parseBundle)(Buffer.from(_data));
+                            const downloadBundle = (0, helpers_1.parseBundle)(Buffer.from((0, zlib_1.gunzipSync)(_data)));
                             await this.vote({
                                 transaction: blockProposal.txId,
                                 valid: await this.validate(uploadBundle, +blockProposal.byteSize, downloadBundle, +downloadBytes),
@@ -271,7 +272,7 @@ class KYVE {
         try {
             utils_2.logger.info("💾 Uploading bundle to Arweave.  ...");
             const transaction = await this.arweave.createTransaction({
-                data: (0, helpers_1.formatBundle)(bundle),
+                data: (0, zlib_1.gzipSync)((0, helpers_1.formatBundle)(bundle)),
             });
             utils_2.logger.debug(`Bundle data size = ${transaction.data_size} Bytes`);
             utils_2.logger.debug(`Bundle size = ${bundle.length}`);
@@ -282,6 +283,7 @@ class KYVE {
             transaction.addTag("Uploader", instructions.uploader);
             transaction.addTag("FromHeight", instructions.fromHeight.toString());
             transaction.addTag("ToHeight", (instructions.fromHeight + bundle.length).toString());
+            transaction.addTag("Content-Type", "application/gzip");
             await this.arweave.transactions.sign(transaction, this.keyfile);
             const balance = await this.arweave.wallets.getBalance(await this.arweave.wallets.getAddress(this.keyfile));
             if (+transaction.reward > +balance) {
