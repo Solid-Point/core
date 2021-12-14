@@ -129,7 +129,6 @@ class KYVE {
                 }
                 const usedDiskSpace = await (0, du_1.default)(`./db/${this.name}/`);
                 utils_2.logger.debug(`Creating bundle from height = ${blockInstructions.fromHeight} ...`);
-                utils_2.logger.debug(`Worker height = ${(await this.db.get(-1)).toString()} ...`);
                 utils_2.logger.debug(`Memory alloc of ${usedDiskSpace} - ${((usedDiskSpace * 100) /
                     this.diskSpace).toFixed(2)}%`);
                 // TODO: save last instructions and bundle

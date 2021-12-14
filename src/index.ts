@@ -174,9 +174,6 @@ class KYVE {
           `Creating bundle from height = ${blockInstructions.fromHeight} ...`
         );
         logger.debug(
-          `Worker height = ${(await this.db.get(-1)).toString()} ...`
-        );
-        logger.debug(
           `Memory alloc of ${usedDiskSpace} - ${(
             (usedDiskSpace * 100) /
             this.diskSpace
