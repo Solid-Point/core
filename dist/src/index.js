@@ -107,7 +107,6 @@ class KYVE {
         this.run();
     }
     async run() {
-        var _a;
         try {
             utils_2.logger.debug("Started runner ...");
             while (true) {
@@ -120,8 +119,18 @@ class KYVE {
                 await this.checkIfNodeIsValidator();
                 const blockInstructions = await this.getBlockInstructions();
                 console.log(blockInstructions);
-                console.log(this.poolState.height.toNumber());
-                await ((_a = this.db) === null || _a === void 0 ? void 0 : _a.clear({ gt: 0, lt: this.poolState.height }));
+                let tail;
+                try {
+                    tail = parseInt((await this.db.get(-2)).toString());
+                }
+                catch {
+                    tail = this.poolState.height.toNumber();
+                }
+                console.log(tail, this.poolState.height.toNumber());
+                for (let key = tail; key < this.poolState.height.toNumber(); key++) {
+                    await this.db.del(key);
+                }
+                await this.db.put(-2, Buffer.from(this.poolState.height.toString()));
                 if (blockInstructions.uploader === ethers_1.ethers.constants.AddressZero ||
                     blockInstructions.uploader === this.wallet.address) {
                     const waitingTime = this.calculateUploaderWaitingTime();

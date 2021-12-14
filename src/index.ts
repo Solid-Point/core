@@ -153,7 +153,21 @@ class KYVE {
         const blockInstructions = await this.getBlockInstructions();
         console.log(blockInstructions);
 
-        await this.db?.clear({ gt: 0, lt: this.poolState.height.toNumber() });
+        let tail;
+
+        try {
+          tail = parseInt((await this.db.get(-2)).toString());
+        } catch {
+          tail = this.poolState.height.toNumber();
+        }
+
+        console.log(tail, this.poolState.height.toNumber());
+
+        for (let key = tail; key < this.poolState.height.toNumber(); key++) {
+          await this.db.del(key);
+        }
+
+        await this.db.put(-2, Buffer.from(this.poolState.height.toString()));
 
         if (
           blockInstructions.uploader === ethers.constants.AddressZero ||
