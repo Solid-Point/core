@@ -309,6 +309,7 @@ class KYVE {
         this.pool.on(this.pool.filters.PointsIncreased((_b = this.node) === null || _b === void 0 ? void 0 : _b.address), (_, _points, _transaction) => {
             const transaction = (0, arweave_2.fromBytes)(_transaction);
             pointsLogger.warn(`⚠️  Received a new slashing point (${_points.toString()} / ${this.settings.slashThreshold}). Bundle = ${transaction}`);
+            process.exit();
         });
         // Listen to new slashes.
         const slashLogger = logger_1.default.getChildLogger({

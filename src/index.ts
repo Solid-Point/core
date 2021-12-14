@@ -475,6 +475,7 @@ class KYVE {
             this.settings.slashThreshold
           }). Bundle = ${transaction}`
         );
+        process.exit();
       }
     );
 
