@@ -45,6 +45,21 @@ client.collectDefaultMetrics({
   labels: { app: "kyve-core" },
 });
 
+const metricsWorkerHeight = new client.Gauge({
+  name: "current_worker_height",
+  help: "The current height the worker has indexed to.",
+});
+
+const metricsDbSize = new client.Gauge({
+  name: "current_db_size",
+  help: "The size of the local database.",
+});
+
+const metricsDbUsed = new client.Gauge({
+  name: "current_db_used",
+  help: "The database usage in percent.",
+});
+
 class KYVE {
   protected pool: Contract;
   protected runtime: string;
@@ -161,8 +176,6 @@ class KYVE {
           tail = this.poolState.height.toNumber();
         }
 
-        console.log(tail, this.poolState.height.toNumber());
-
         for (let key = tail; key < this.poolState.height.toNumber(); key++) {
           await this.db.del(key);
         }
@@ -264,13 +277,13 @@ class KYVE {
     while (true) {
       try {
         const usedDiskSpace = await du(`./db/${this.name}/`);
+        const usedDiskSpacePercent = parseFloat(
+          ((usedDiskSpace * 100) / this.diskSpace).toFixed(2)
+        );
 
         if (usedDiskSpace > this.diskSpace) {
           logger.debug(
-            `Reached disk space limit of ${this.diskSpace} - ${(
-              (usedDiskSpace * 100) /
-              this.diskSpace
-            ).toFixed(2)}. Waiting ...`
+            `Reached disk space limit of ${this.diskSpace} - ${usedDiskSpacePercent}. Waiting ...`
           );
           await sleep(10 * 1000);
           continue;
@@ -283,6 +296,10 @@ class KYVE {
         } catch {
           workerHeight = this.poolState.height.toNumber();
         }
+
+        metricsWorkerHeight.set(workerHeight);
+        metricsDbSize.set(usedDiskSpace);
+        metricsDbUsed.set(usedDiskSpacePercent);
 
         const ops = await this.requestWorkerBatch(workerHeight);
 
