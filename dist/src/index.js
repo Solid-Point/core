@@ -133,9 +133,8 @@ class KYVE {
                 await this.db.put(-2, Buffer.from(this.poolState.height.toString()));
                 if (blockInstructions.uploader === ethers_1.ethers.constants.AddressZero ||
                     blockInstructions.uploader === this.wallet.address) {
-                    const waitingTime = this.calculateUploaderWaitingTime();
-                    utils_2.logger.debug(`Selected as uploader, waiting ${Math.ceil(waitingTime / 1000)}s for nodes to vote ...`);
-                    await (0, helpers_1.sleep)(waitingTime);
+                    utils_2.logger.debug(`Selected as uploader, waiting ${30}s for nodes to vote ...`);
+                    await (0, helpers_1.sleep)(30 * 1000);
                 }
                 const usedDiskSpace = await (0, du_1.default)(`./db/${this.name}/`);
                 utils_2.logger.debug(`Creating bundle from height = ${blockInstructions.fromHeight} ...`);
@@ -208,7 +207,6 @@ class KYVE {
                         value: Buffer.from((workerHeight + ops.length).toString()),
                     },
                 ]);
-                console.log("Saved worker height", (await this.db.get(-1)).toString());
             }
             catch (error) {
                 utils_2.logger.error("Error fetching data batch", error);
@@ -553,13 +551,6 @@ class KYVE {
         else {
             utils_2.logger.info("👌 Already set correct commission.");
         }
-    }
-    // TODO: move to separate file
-    calculateUploaderWaitingTime() {
-        const waitingTime = Math.log2(this.poolState.bundleSize) * 5;
-        if (waitingTime > 30)
-            return waitingTime * 1000;
-        return 30 * 1000;
     }
     // TODO: move to separate file
     generateRandomName() {

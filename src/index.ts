@@ -173,13 +173,10 @@ class KYVE {
           blockInstructions.uploader === ethers.constants.AddressZero ||
           blockInstructions.uploader === this.wallet.address
         ) {
-          const waitingTime = this.calculateUploaderWaitingTime();
           logger.debug(
-            `Selected as uploader, waiting ${Math.ceil(
-              waitingTime / 1000
-            )}s for nodes to vote ...`
+            `Selected as uploader, waiting ${30}s for nodes to vote ...`
           );
-          await sleep(waitingTime);
+          await sleep(30 * 1000);
         }
 
         const usedDiskSpace = await du(`./db/${this.name}/`);
@@ -786,13 +783,6 @@ class KYVE {
     } else {
       logger.info("👌 Already set correct commission.");
     }
-  }
-
-  // TODO: move to separate file
-  private calculateUploaderWaitingTime() {
-    const waitingTime = Math.log2(this.poolState.bundleSize) * 5;
-    if (waitingTime > 30) return waitingTime * 1000;
-    return 30 * 1000;
   }
 
   // TODO: move to separate file
