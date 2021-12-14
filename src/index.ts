@@ -153,7 +153,7 @@ class KYVE {
         const blockInstructions = await this.getBlockInstructions();
         console.log(blockInstructions);
 
-        this.db?.clear({ lt: this.poolState.height });
+        await this.db?.clear({ gt: 0, lt: this.poolState.height.toNumber() });
 
         if (
           blockInstructions.uploader === ethers.constants.AddressZero ||

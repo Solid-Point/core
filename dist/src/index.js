@@ -120,7 +120,8 @@ class KYVE {
                 await this.checkIfNodeIsValidator();
                 const blockInstructions = await this.getBlockInstructions();
                 console.log(blockInstructions);
-                (_a = this.db) === null || _a === void 0 ? void 0 : _a.clear({ lt: this.poolState.height });
+                console.log(this.poolState.height.toNumber());
+                await ((_a = this.db) === null || _a === void 0 ? void 0 : _a.clear({ gt: 0, lt: this.poolState.height }));
                 if (blockInstructions.uploader === ethers_1.ethers.constants.AddressZero ||
                     blockInstructions.uploader === this.wallet.address) {
                     const waitingTime = this.calculateUploaderWaitingTime();
