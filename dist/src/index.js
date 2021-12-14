@@ -127,7 +127,11 @@ class KYVE {
                     utils_2.logger.debug(`Selected as uploader, waiting ${Math.ceil(waitingTime / 1000)}s for nodes to vote ...`);
                     await (0, helpers_1.sleep)(waitingTime);
                 }
+                const usedDiskSpace = await (0, du_1.default)(`./db/${this.name}/`);
                 utils_2.logger.debug(`Creating bundle from height = ${blockInstructions.fromHeight} ...`);
+                utils_2.logger.debug(`Worker height = ${await this.db.get(-1).toString()} ...`);
+                utils_2.logger.debug(`Memory alloc of ${this.diskSpace} - ${((usedDiskSpace * 100) /
+                    this.diskSpace).toFixed(2)}`);
                 // TODO: save last instructions and bundle
                 const uploadBundle = await this.createBundle(blockInstructions);
                 if (blockInstructions.uploader === ethers_1.ethers.constants.AddressZero ||
