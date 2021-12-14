@@ -411,6 +411,7 @@ class KYVE {
             (0, fs_1.mkdirSync)("./db");
         }
         this.db = (0, level_1.default)(`./db/${this.name}`, {
+            keyEncoding: "json",
             valueEncoding: "binary",
         });
     }
