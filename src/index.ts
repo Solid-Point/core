@@ -283,6 +283,8 @@ class KYVE {
             value: Buffer.from((workerHeight + ops.length).toString()),
           },
         ]);
+
+        console.log("Saved worker height", (await this.db.get(-1)).toString());
       } catch (error) {
         logger.error("Error fetching data batch", error);
         await sleep(10 * 1000);
@@ -593,6 +595,7 @@ class KYVE {
     }
 
     this.db = level(`./db/${this.name}`, {
+      keyEncoding: "json",
       valueEncoding: "binary",
     });
   }
