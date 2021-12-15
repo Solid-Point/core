@@ -157,7 +157,9 @@ class KYVE {
       let blockProposal: BlockProposal | null = null;
 
       while (true) {
-        await this.fetchPoolState();
+        console.log("Starting new round");
+
+        await this.fetchPoolState(false);
 
         if (this.poolState.paused) {
           logger.info("💤  Pool is paused. Waiting ...");
@@ -165,7 +167,7 @@ class KYVE {
           continue;
         }
 
-        await this.checkIfNodeIsValidator();
+        await this.checkIfNodeIsValidator(false);
 
         let tail;
 
@@ -555,7 +557,7 @@ class KYVE {
     }
   }
 
-  private async fetchPoolState() {
+  private async fetchPoolState(logs: boolean = true) {
     logger.debug("Attempting to fetch pool state.");
 
     try {
@@ -589,7 +591,9 @@ class KYVE {
     }
 
     if (this.poolState.metadata?.runtime === this.runtime) {
-      logger.info(`💻 Running node on runtime ${this.runtime}.`);
+      if (logs) {
+        logger.info(`💻 Running node on runtime ${this.runtime}.`);
+      }
     } else {
       logger.error("❌ Specified pool does not match the integration runtime.");
       process.exit(1);
@@ -602,7 +606,9 @@ class KYVE {
           this.poolState.metadata?.versions || this.version
         )
       ) {
-        logger.info("⏱  Pool version requirements met.");
+        if (logs) {
+          logger.info("⏱  Pool version requirements met.");
+        }
       } else {
         logger.error(
           `❌ Running an invalid version for the specified pool. Version requirements are ${this.poolState.metadata.versions}.`
@@ -615,7 +621,7 @@ class KYVE {
       process.exit(1);
     }
 
-    logger.info("ℹ Fetched pool state.");
+    logger.info("✅ Fetched pool state.");
   }
 
   private async setupDB() {
@@ -629,12 +635,14 @@ class KYVE {
     });
   }
 
-  private async checkIfNodeIsValidator() {
+  private async checkIfNodeIsValidator(logs: boolean = true) {
     try {
       const isValidator = await this.pool.isValidator(this.wallet.address);
 
       if (isValidator) {
-        logger.info("🔍  Node is running as a validator.");
+        if (logs) {
+          logger.info("🔍  Node is running as a validator.");
+        }
       } else {
         logger.error("❌ Node is no active validator. Exiting ...");
         process.exit(1);

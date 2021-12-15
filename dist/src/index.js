@@ -124,13 +124,14 @@ class KYVE {
             let blockInstructions = null;
             let blockProposal = null;
             while (true) {
-                await this.fetchPoolState();
+                console.log("Starting new round");
+                await this.fetchPoolState(false);
                 if (this.poolState.paused) {
                     utils_2.logger.info("💤  Pool is paused. Waiting ...");
                     await (0, helpers_1.sleep)(60 * 1000);
                     continue;
                 }
-                await this.checkIfNodeIsValidator();
+                await this.checkIfNodeIsValidator(false);
                 let tail;
                 try {
                     tail = parseInt((await this.db.get(-2)).toString());
@@ -390,7 +391,7 @@ class KYVE {
                 .listen(8080);
         }
     }
-    async fetchPoolState() {
+    async fetchPoolState(logs = true) {
         var _a, _b;
         utils_2.logger.debug("Attempting to fetch pool state.");
         try {
@@ -415,7 +416,9 @@ class KYVE {
             process.exit(1);
         }
         if (((_a = this.poolState.metadata) === null || _a === void 0 ? void 0 : _a.runtime) === this.runtime) {
-            utils_2.logger.info(`💻 Running node on runtime ${this.runtime}.`);
+            if (logs) {
+                utils_2.logger.info(`💻 Running node on runtime ${this.runtime}.`);
+            }
         }
         else {
             utils_2.logger.error("❌ Specified pool does not match the integration runtime.");
@@ -423,7 +426,9 @@ class KYVE {
         }
         try {
             if ((0, semver_1.satisfies)(this.version, ((_b = this.poolState.metadata) === null || _b === void 0 ? void 0 : _b.versions) || this.version)) {
-                utils_2.logger.info("⏱  Pool version requirements met.");
+                if (logs) {
+                    utils_2.logger.info("⏱  Pool version requirements met.");
+                }
             }
             else {
                 utils_2.logger.error(`❌ Running an invalid version for the specified pool. Version requirements are ${this.poolState.metadata.versions}.`);
@@ -435,7 +440,7 @@ class KYVE {
             utils_2.logger.debug(error);
             process.exit(1);
         }
-        utils_2.logger.info("ℹ Fetched pool state.");
+        utils_2.logger.info("✅ Fetched pool state.");
     }
     async setupDB() {
         if (!(0, fs_1.existsSync)("./db")) {
@@ -446,11 +451,13 @@ class KYVE {
             valueEncoding: "binary",
         });
     }
-    async checkIfNodeIsValidator() {
+    async checkIfNodeIsValidator(logs = true) {
         try {
             const isValidator = await this.pool.isValidator(this.wallet.address);
             if (isValidator) {
-                utils_2.logger.info("🔍  Node is running as a validator.");
+                if (logs) {
+                    utils_2.logger.info("🔍  Node is running as a validator.");
+                }
             }
             else {
                 utils_2.logger.error("❌ Node is no active validator. Exiting ...");
