@@ -2,7 +2,7 @@
 import Arweave from "arweave";
 import { JWKInterface } from "arweave/node/lib/wallet";
 import { Contract, Wallet } from "ethers";
-import { BlockInstructions } from "./faces";
+import { BlockInstructions, BlockProposal } from "./faces";
 import { CLI } from "./utils";
 import client from "prom-client";
 export * from "./utils";
@@ -30,6 +30,7 @@ declare class KYVE {
     worker(): Promise<void>;
     requestWorkerBatch(workerHeight: number): Promise<any[]>;
     createBundle(blockInstructions: BlockInstructions): Promise<any[]>;
+    validateProposal(blockProposal: BlockProposal, uploadBundle: Buffer[]): Promise<void>;
     validate(uploadBundle: Buffer[], uploadBytes: number, downloadBundle: Buffer[], downloadBytes: number): Promise<boolean>;
     private getBlockProposal;
     private getBlockInstructions;
