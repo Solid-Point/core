@@ -173,6 +173,7 @@ class KYVE {
                 console.log(blockProposal);
                 if (blockProposal.uploader !== ethers_1.ethers.constants.AddressZero &&
                     blockProposal.uploader !== this.wallet.address) {
+                    await this.validateProposal(blockProposal, uploadBundle);
                 }
             }
         }
