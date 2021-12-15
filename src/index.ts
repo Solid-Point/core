@@ -206,6 +206,10 @@ class KYVE {
           blockInstructions.uploader === ethers.constants.AddressZero ||
           blockInstructions.uploader === this.wallet.address
         ) {
+          logger.debug("Selected as uploader. Waiting 60s ...");
+
+          await sleep(60 * 1000);
+
           const transaction = await this.uploadBundleToArweave(
             uploadBundle,
             blockInstructions
