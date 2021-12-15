@@ -163,9 +163,9 @@ class KYVE {
                 }
                 else {
                     const blockProposal = await this.getBlockProposal();
-                    console.log(blockProposal);
                     if (blockInstructions.fromHeight === blockProposal.fromHeight) {
                         await this.validateProposal(blockProposal, uploadBundle);
+                        continue;
                     }
                 }
                 await this.waitForNextBlockInstructions(blockInstructions);
