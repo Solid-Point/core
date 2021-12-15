@@ -220,51 +220,25 @@ class KYVE {
           if (transaction) {
             await this.submitBlockProposal(transaction, uploadBundle.length);
           }
+        } else {
+          const blockProposal = await this.getBlockProposal();
+          console.log(blockProposal);
+
+          if (blockInstructions.fromHeight === blockProposal.fromHeight) {
+            await this.validateProposal(blockProposal, uploadBundle);
+          }
         }
 
         await this.waitForNextBlockInstructions(blockInstructions);
 
         const blockProposal = await this.getBlockProposal();
-
         console.log(blockProposal);
 
         if (
           blockProposal.uploader !== ethers.constants.AddressZero &&
           blockProposal.uploader !== this.wallet.address
         ) {
-          logger.debug(`Validating bundle ${blockProposal.txId} ...`);
-
-          try {
-            const { status } = await this.arweave.transactions.getStatus(
-              blockProposal.txId
-            );
-
-            if (status === 200 || status === 202) {
-              const _data = (await this.arweave.transactions.getData(
-                blockProposal.txId,
-                {
-                  decode: true,
-                }
-              )) as Uint8Array;
-              const downloadBytes = _data.byteLength;
-              const downloadBundle = parseBundle(Buffer.from(_data));
-
-              await this.vote({
-                transaction: blockProposal.txId,
-                valid: await this.validate(
-                  uploadBundle,
-                  +blockProposal.byteSize,
-                  downloadBundle,
-                  +downloadBytes
-                ),
-              });
-            }
-          } catch (error) {
-            logger.error(
-              `❌ Error fetching bundle from Arweave. Skipping vote ...`
-            );
-            logger.debug(error);
-          }
+          await this.validateProposal(blockProposal, uploadBundle);
         }
       }
     } catch (error) {
@@ -328,6 +302,43 @@ class KYVE {
   ): Promise<any[]> {
     logger.error(`❌ "createBundle" not implemented. Exiting ...`);
     process.exit(1);
+  }
+
+  public async validateProposal(
+    blockProposal: BlockProposal,
+    uploadBundle: Buffer[]
+  ) {
+    logger.debug(`Validating bundle ${blockProposal.txId} ...`);
+
+    try {
+      const { status } = await this.arweave.transactions.getStatus(
+        blockProposal.txId
+      );
+
+      if (status === 200 || status === 202) {
+        const _data = (await this.arweave.transactions.getData(
+          blockProposal.txId,
+          {
+            decode: true,
+          }
+        )) as Uint8Array;
+        const downloadBytes = _data.byteLength;
+        const downloadBundle = parseBundle(Buffer.from(_data));
+
+        await this.vote({
+          transaction: blockProposal.txId,
+          valid: await this.validate(
+            uploadBundle,
+            +blockProposal.byteSize,
+            downloadBundle,
+            +downloadBytes
+          ),
+        });
+      }
+    } catch (error) {
+      logger.error(`❌ Error fetching bundle from Arweave. Skipping vote ...`);
+      logger.debug(error);
+    }
   }
 
   public async validate(
