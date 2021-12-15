@@ -153,7 +153,8 @@ class KYVE {
 
   private async run() {
     try {
-      logger.debug("Started runner ...");
+      let blockInstructions: BlockInstructions | null = null;
+      let blockProposal: BlockProposal | null = null;
 
       while (true) {
         await this.fetchPoolState();
@@ -165,9 +166,6 @@ class KYVE {
         }
 
         await this.checkIfNodeIsValidator();
-
-        const blockInstructions = await this.getBlockInstructions();
-        console.log(blockInstructions);
 
         let tail;
 
@@ -183,31 +181,26 @@ class KYVE {
 
         await this.db.put(-2, Buffer.from(this.poolState.height.toString()));
 
-        if (
-          blockInstructions.uploader === ethers.constants.AddressZero ||
-          blockInstructions.uploader === this.wallet.address
-        ) {
-          logger.debug(
-            `Selected as uploader, waiting ${30}s for nodes to vote ...`
-          );
-          await sleep(30 * 1000);
-        }
-
-        const usedDiskSpace = await du(`./db/${this.name}/`);
-
-        logger.debug(
-          `Creating bundle from height = ${blockInstructions.fromHeight} ...`
-        );
-        logger.debug(
-          `Memory alloc of ${usedDiskSpace} - ${(
-            (usedDiskSpace * 100) /
-            this.diskSpace
-          ).toFixed(2)}%`
-        );
-
-        // TODO: save last instructions and bundle
+        blockInstructions = await this.getBlockInstructions();
+        console.log(blockInstructions);
 
         const uploadBundle = await this.createBundle(blockInstructions);
+
+        blockProposal = await this.getBlockProposal();
+        console.log(blockProposal);
+
+        if (
+          blockProposal.uploader !== ethers.constants.AddressZero &&
+          blockProposal.uploader !== this.wallet.address
+        ) {
+          if (blockInstructions.fromHeight === blockProposal.fromHeight) {
+            await this.validateProposal(blockProposal, uploadBundle);
+            continue;
+          }
+        }
+
+        blockInstructions = await this.getBlockInstructions();
+        console.log(blockInstructions);
 
         if (
           blockInstructions.uploader === ethers.constants.AddressZero ||
@@ -221,18 +214,11 @@ class KYVE {
           if (transaction) {
             await this.submitBlockProposal(transaction, uploadBundle.length);
           }
-        } else {
-          const blockProposal = await this.getBlockProposal();
-
-          if (blockInstructions.fromHeight === blockProposal.fromHeight) {
-            await this.validateProposal(blockProposal, uploadBundle);
-            continue;
-          }
         }
 
         await this.waitForNextBlockInstructions(blockInstructions);
 
-        const blockProposal = await this.getBlockProposal();
+        blockProposal = await this.getBlockProposal();
         console.log(blockProposal);
 
         if (
@@ -390,7 +376,7 @@ class KYVE {
     instructions: BlockInstructions
   ): Promise<Transaction | null> {
     try {
-      logger.info("💾 Uploading bundle to Arweave.  ...");
+      logger.info("💾 Uploading bundle to Arweave ...");
 
       const transaction = await this.arweave.createTransaction({
         data: gzipSync(formatBundle(bundle)),
@@ -598,6 +584,13 @@ class KYVE {
       process.exit(1);
     }
 
+    if (this.poolState.metadata?.runtime === this.runtime) {
+      logger.info(`💻 Running node on runtime ${this.runtime}.`);
+    } else {
+      logger.error("❌ Specified pool does not match the integration runtime.");
+      process.exit(1);
+    }
+
     try {
       if (
         satisfies(
@@ -615,13 +608,6 @@ class KYVE {
     } catch (error) {
       logger.error("❌ Received an error while trying parse versions");
       logger.debug(error);
-      process.exit(1);
-    }
-
-    if (this.poolState.metadata?.runtime === this.runtime) {
-      logger.info(`💻 Running node on runtime ${this.runtime}.`);
-    } else {
-      logger.error("❌ Specified pool does not match the integration runtime.");
       process.exit(1);
     }
 

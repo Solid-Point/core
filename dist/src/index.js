@@ -121,7 +121,8 @@ class KYVE {
     }
     async run() {
         try {
-            utils_2.logger.debug("Started runner ...");
+            let blockInstructions = null;
+            let blockProposal = null;
             while (true) {
                 await this.fetchPoolState();
                 if (this.poolState.paused) {
@@ -130,8 +131,6 @@ class KYVE {
                     continue;
                 }
                 await this.checkIfNodeIsValidator();
-                const blockInstructions = await this.getBlockInstructions();
-                console.log(blockInstructions);
                 let tail;
                 try {
                     tail = parseInt((await this.db.get(-2)).toString());
@@ -143,17 +142,20 @@ class KYVE {
                     await this.db.del(key);
                 }
                 await this.db.put(-2, Buffer.from(this.poolState.height.toString()));
-                if (blockInstructions.uploader === ethers_1.ethers.constants.AddressZero ||
-                    blockInstructions.uploader === this.wallet.address) {
-                    utils_2.logger.debug(`Selected as uploader, waiting ${30}s for nodes to vote ...`);
-                    await (0, helpers_1.sleep)(30 * 1000);
-                }
-                const usedDiskSpace = await (0, du_1.default)(`./db/${this.name}/`);
-                utils_2.logger.debug(`Creating bundle from height = ${blockInstructions.fromHeight} ...`);
-                utils_2.logger.debug(`Memory alloc of ${usedDiskSpace} - ${((usedDiskSpace * 100) /
-                    this.diskSpace).toFixed(2)}%`);
-                // TODO: save last instructions and bundle
+                blockInstructions = await this.getBlockInstructions();
+                console.log(blockInstructions);
                 const uploadBundle = await this.createBundle(blockInstructions);
+                blockProposal = await this.getBlockProposal();
+                console.log(blockProposal);
+                if (blockProposal.uploader !== ethers_1.ethers.constants.AddressZero &&
+                    blockProposal.uploader !== this.wallet.address) {
+                    if (blockInstructions.fromHeight === blockProposal.fromHeight) {
+                        await this.validateProposal(blockProposal, uploadBundle);
+                        continue;
+                    }
+                }
+                blockInstructions = await this.getBlockInstructions();
+                console.log(blockInstructions);
                 if (blockInstructions.uploader === ethers_1.ethers.constants.AddressZero ||
                     blockInstructions.uploader === this.wallet.address) {
                     const transaction = await this.uploadBundleToArweave(uploadBundle, blockInstructions);
@@ -161,15 +163,8 @@ class KYVE {
                         await this.submitBlockProposal(transaction, uploadBundle.length);
                     }
                 }
-                else {
-                    const blockProposal = await this.getBlockProposal();
-                    if (blockInstructions.fromHeight === blockProposal.fromHeight) {
-                        await this.validateProposal(blockProposal, uploadBundle);
-                        continue;
-                    }
-                }
                 await this.waitForNextBlockInstructions(blockInstructions);
-                const blockProposal = await this.getBlockProposal();
+                blockProposal = await this.getBlockProposal();
                 console.log(blockProposal);
                 if (blockProposal.uploader !== ethers_1.ethers.constants.AddressZero &&
                     blockProposal.uploader !== this.wallet.address) {
@@ -280,7 +275,7 @@ class KYVE {
     }
     async uploadBundleToArweave(bundle, instructions) {
         try {
-            utils_2.logger.info("💾 Uploading bundle to Arweave.  ...");
+            utils_2.logger.info("💾 Uploading bundle to Arweave ...");
             const transaction = await this.arweave.createTransaction({
                 data: (0, zlib_1.gzipSync)((0, helpers_1.formatBundle)(bundle)),
             });
@@ -417,8 +412,15 @@ class KYVE {
             utils_2.logger.error("❌ Received an error while trying to parse the metadata:", error);
             process.exit(1);
         }
+        if (((_a = this.poolState.metadata) === null || _a === void 0 ? void 0 : _a.runtime) === this.runtime) {
+            utils_2.logger.info(`💻 Running node on runtime ${this.runtime}.`);
+        }
+        else {
+            utils_2.logger.error("❌ Specified pool does not match the integration runtime.");
+            process.exit(1);
+        }
         try {
-            if ((0, semver_1.satisfies)(this.version, ((_a = this.poolState.metadata) === null || _a === void 0 ? void 0 : _a.versions) || this.version)) {
+            if ((0, semver_1.satisfies)(this.version, ((_b = this.poolState.metadata) === null || _b === void 0 ? void 0 : _b.versions) || this.version)) {
                 utils_2.logger.info("⏱  Pool version requirements met.");
             }
             else {
@@ -429,13 +431,6 @@ class KYVE {
         catch (error) {
             utils_2.logger.error("❌ Received an error while trying parse versions");
             utils_2.logger.debug(error);
-            process.exit(1);
-        }
-        if (((_b = this.poolState.metadata) === null || _b === void 0 ? void 0 : _b.runtime) === this.runtime) {
-            utils_2.logger.info(`💻 Running node on runtime ${this.runtime}.`);
-        }
-        else {
-            utils_2.logger.error("❌ Specified pool does not match the integration runtime.");
             process.exit(1);
         }
         utils_2.logger.info("ℹ Fetched pool state.");
