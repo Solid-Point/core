@@ -186,8 +186,7 @@ class KYVE {
                 const usedDiskSpace = await (0, du_1.default)(`./db/${this.name}/`);
                 const usedDiskSpacePercent = parseFloat(((usedDiskSpace * 100) / this.diskSpace).toFixed(2));
                 if (usedDiskSpace > this.diskSpace) {
-                    utils_2.logger.debug(`Reached disk space limit of ${this.diskSpace} - ${usedDiskSpacePercent}. Waiting ...`);
-                    await (0, helpers_1.sleep)(10 * 1000);
+                    await (0, helpers_1.sleep)(60 * 1000);
                     continue;
                 }
                 let workerHeight;
@@ -211,7 +210,8 @@ class KYVE {
                 ]);
             }
             catch (error) {
-                utils_2.logger.error("Error fetching data batch", error);
+                utils_2.logger.error("❌ Error requesting data batch.");
+                utils_2.logger.debug(error);
                 await (0, helpers_1.sleep)(10 * 1000);
             }
         }

@@ -249,10 +249,7 @@ class KYVE {
         );
 
         if (usedDiskSpace > this.diskSpace) {
-          logger.debug(
-            `Reached disk space limit of ${this.diskSpace} - ${usedDiskSpacePercent}. Waiting ...`
-          );
-          await sleep(10 * 1000);
+          await sleep(60 * 1000);
           continue;
         }
 
@@ -279,7 +276,8 @@ class KYVE {
           },
         ]);
       } catch (error) {
-        logger.error("Error fetching data batch", error);
+        logger.error("❌ Error requesting data batch.");
+        logger.debug(error);
         await sleep(10 * 1000);
       }
     }
