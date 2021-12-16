@@ -1,8 +1,8 @@
-export declare type BlockInstructions = {
+export declare type BundleInstructions = {
     uploader: string;
     fromHeight: number;
 };
-export declare type BlockProposal = {
+export declare type BundleProposal = {
     uploader: string;
     txId: string;
     byteSize: number;

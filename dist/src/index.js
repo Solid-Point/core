@@ -121,8 +121,8 @@ class KYVE {
     }
     async run() {
         try {
-            let blockInstructions = null;
-            let blockProposal = null;
+            let bundleInstructions = null;
+            let bundleProposal = null;
             while (true) {
                 console.log("Starting new round");
                 await this.fetchPoolState(false);
@@ -143,35 +143,35 @@ class KYVE {
                     await this.db.del(key);
                 }
                 await this.db.put(-2, Buffer.from(this.poolState.height.toString()));
-                blockInstructions = await this.getBlockInstructions();
-                console.log(blockInstructions);
-                const uploadBundle = await this.createBundle(blockInstructions);
-                blockProposal = await this.getBlockProposal();
-                console.log(blockProposal);
-                if (blockProposal.uploader !== ethers_1.ethers.constants.AddressZero &&
-                    blockProposal.uploader !== this.wallet.address) {
-                    if (blockInstructions.fromHeight === blockProposal.fromHeight) {
-                        await this.validateProposal(blockProposal, uploadBundle);
+                bundleInstructions = await this.getBundleInstructions();
+                console.log(bundleInstructions);
+                const uploadBundle = await this.createBundle(bundleInstructions);
+                bundleProposal = await this.getBundleProposal();
+                console.log(bundleProposal);
+                if (bundleProposal.uploader !== ethers_1.ethers.constants.AddressZero &&
+                    bundleProposal.uploader !== this.wallet.address) {
+                    if (bundleInstructions.fromHeight === bundleProposal.fromHeight) {
+                        await this.validateProposal(bundleProposal, uploadBundle);
                         continue;
                     }
                 }
-                blockInstructions = await this.getBlockInstructions();
-                console.log(blockInstructions);
-                if (blockInstructions.uploader === ethers_1.ethers.constants.AddressZero ||
-                    blockInstructions.uploader === this.wallet.address) {
+                bundleInstructions = await this.getBundleInstructions();
+                console.log(bundleInstructions);
+                if (bundleInstructions.uploader === ethers_1.ethers.constants.AddressZero ||
+                    bundleInstructions.uploader === this.wallet.address) {
                     utils_2.logger.debug("Selected as uploader. Waiting 60s ...");
                     await (0, helpers_1.sleep)(60 * 1000);
-                    const transaction = await this.uploadBundleToArweave(uploadBundle, blockInstructions);
+                    const transaction = await this.uploadBundleToArweave(uploadBundle, bundleInstructions);
                     if (transaction) {
-                        await this.submitBlockProposal(transaction, uploadBundle.length);
+                        await this.submitBundleProposal(transaction, uploadBundle.length);
                     }
                 }
-                await this.waitForNextBlockInstructions(blockInstructions);
-                blockProposal = await this.getBlockProposal();
-                console.log(blockProposal);
-                if (blockProposal.uploader !== ethers_1.ethers.constants.AddressZero &&
-                    blockProposal.uploader !== this.wallet.address) {
-                    await this.validateProposal(blockProposal, uploadBundle);
+                await this.waitForNextBundleInstructions(bundleInstructions);
+                bundleProposal = await this.getBundleProposal();
+                console.log(bundleProposal);
+                if (bundleProposal.uploader !== ethers_1.ethers.constants.AddressZero &&
+                    bundleProposal.uploader !== this.wallet.address) {
+                    await this.validateProposal(bundleProposal, uploadBundle);
                 }
             }
         }
@@ -220,23 +220,23 @@ class KYVE {
         utils_2.logger.error(`❌ "requestWorkerBatch" not implemented. Exiting ...`);
         process.exit(1);
     }
-    async createBundle(blockInstructions) {
+    async createBundle(bundleInstructions) {
         utils_2.logger.error(`❌ "createBundle" not implemented. Exiting ...`);
         process.exit(1);
     }
-    async validateProposal(blockProposal, uploadBundle) {
-        utils_2.logger.debug(`Validating bundle ${blockProposal.txId} ...`);
+    async validateProposal(bundleProposal, uploadBundle) {
+        utils_2.logger.debug(`Validating bundle ${bundleProposal.txId} ...`);
         try {
-            const { status } = await this.arweave.transactions.getStatus(blockProposal.txId);
+            const { status } = await this.arweave.transactions.getStatus(bundleProposal.txId);
             if (status === 200 || status === 202) {
-                const _data = (await this.arweave.transactions.getData(blockProposal.txId, {
+                const _data = (await this.arweave.transactions.getData(bundleProposal.txId, {
                     decode: true,
                 }));
                 const downloadBytes = _data.byteLength;
                 const downloadBundle = (0, helpers_1.parseBundle)(Buffer.from((0, zlib_1.gunzipSync)(_data)));
                 await this.vote({
-                    transaction: blockProposal.txId,
-                    valid: await this.validate(uploadBundle, +blockProposal.byteSize, downloadBundle, +downloadBytes),
+                    transaction: bundleProposal.txId,
+                    valid: await this.validate(uploadBundle, +bundleProposal.byteSize, downloadBundle, +downloadBytes),
                 });
             }
         }
@@ -254,9 +254,9 @@ class KYVE {
         }
         return true;
     }
-    async getBlockProposal() {
+    async getBundleProposal() {
         const proposal = {
-            ...(await this.pool.blockProposal()),
+            ...(await this.pool.bundleProposal()),
         };
         return {
             uploader: proposal.uploader,
@@ -267,9 +267,9 @@ class KYVE {
             start: proposal.start.toNumber(),
         };
     }
-    async getBlockInstructions() {
+    async getBundleInstructions() {
         const instructions = {
-            ...(await this.pool.blockInstructions()),
+            ...(await this.pool.bundleInstructions()),
         };
         return {
             uploader: instructions.uploader,
@@ -307,26 +307,26 @@ class KYVE {
             return null;
         }
     }
-    async submitBlockProposal(transaction, bundleSize) {
+    async submitBundleProposal(transaction, bundleSize) {
         try {
-            const tx = await this.pool.submitBlockProposal((0, helpers_1.toBytes)(transaction.id), +transaction.data_size, bundleSize, {
+            const tx = await this.pool.submitBundleProposal((0, helpers_1.toBytes)(transaction.id), +transaction.data_size, bundleSize, {
                 gasLimit: ethers_1.ethers.BigNumber.from(1000000),
                 gasPrice: await (0, helpers_1.getGasPrice)(this.pool, this.gasMultiplier),
             });
-            utils_2.logger.debug(`Submitting block proposal ${transaction.id} ...`);
+            utils_2.logger.debug(`Submitting bundle proposal ${transaction.id} ...`);
             utils_2.logger.debug(`Transaction = ${tx.hash}`);
         }
         catch (error) {
-            utils_2.logger.error("❌ Received an error while submitting block proposal. Skipping submit ...");
+            utils_2.logger.error("❌ Received an error while submitting bundle proposal. Skipping submit ...");
             utils_2.logger.debug(error);
         }
     }
-    async waitForNextBlockInstructions(blockInstructions) {
+    async waitForNextBundleInstructions(bundleInstructions) {
         return new Promise((resolve) => {
-            utils_2.logger.debug("Waiting for next block instructions ...");
+            utils_2.logger.debug("Waiting for next bundle instructions ...");
             const uploadTimeout = setTimeout(async () => {
                 try {
-                    if ((blockInstructions === null || blockInstructions === void 0 ? void 0 : blockInstructions.uploader) !== this.wallet.address) {
+                    if ((bundleInstructions === null || bundleInstructions === void 0 ? void 0 : bundleInstructions.uploader) !== this.wallet.address) {
                         utils_2.logger.debug("Reached upload timeout. Claiming uploader role ...");
                         const tx = await this.pool.claimUploaderRole({
                             gasLimit: await this.pool.estimateGas.claimUploaderRole(),
@@ -340,7 +340,7 @@ class KYVE {
                     utils_2.logger.debug(error);
                 }
             }, this.poolState.uploadTimeout.toNumber() * 1000);
-            this.pool.on("NextBlockInstructions", () => {
+            this.pool.on("NextBundleInstructions", () => {
                 clearTimeout(uploadTimeout);
                 resolve();
             });

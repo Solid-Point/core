@@ -138,6 +138,55 @@
         "inputs": [
             {
                 "indexed": false,
+                "internalType": "bytes32",
+                "name": "txId",
+                "type": "bytes32"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "byteSize",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "uploader",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "bundleReward",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "valid",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "fromHeight",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "toHeight",
+                "type": "uint256"
+            }
+        ],
+        "name": "BundleCreated",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
                 "internalType": "string",
                 "name": "previous",
                 "type": "string"
@@ -250,7 +299,7 @@
                 "type": "uint256"
             }
         ],
-        "name": "NextBlockInstructions",
+        "name": "NextBundleInstructions",
         "type": "event"
     },
     {
@@ -573,7 +622,7 @@
     },
     {
         "inputs": [],
-        "name": "blockInstructions",
+        "name": "bundleInstructions",
         "outputs": [
             {
                 "internalType": "address",
@@ -596,7 +645,7 @@
     },
     {
         "inputs": [],
-        "name": "blockProposal",
+        "name": "bundleProposal",
         "outputs": [
             {
                 "internalType": "address",
@@ -1308,7 +1357,7 @@
                 "type": "uint256"
             }
         ],
-        "name": "submitBlockProposal",
+        "name": "submitBundleProposal",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"

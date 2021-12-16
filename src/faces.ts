@@ -1,9 +1,9 @@
-export type BlockInstructions = {
+export type BundleInstructions = {
   uploader: string;
   fromHeight: number;
 };
 
-export type BlockProposal = {
+export type BundleProposal = {
   uploader: string;
   txId: string;
   byteSize: number;
