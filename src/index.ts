@@ -175,12 +175,18 @@ class KYVE {
 
         try {
           tail = parseInt((await this.db.get("tail")).toString());
+
+          const usedDiskSpace = await du(`./db/${this.name}/`);
+          const usedDiskSpacePercent = parseFloat(
+            ((usedDiskSpace * 100) / this.diskSpace).toFixed(2)
+          );
           console.log(
             `Worker height = ${(await this.db.get("head")).toString()}`
           );
           console.log(
             `Deleting keys from ${tail} to ${this.poolState.height.toNumber()}`
           );
+          console.log(`Used disk space: ${usedDiskSpacePercent}%`);
         } catch {
           tail = this.poolState.height.toNumber();
           console.log(
