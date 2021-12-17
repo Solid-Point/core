@@ -198,7 +198,7 @@ class KYVE {
                 catch {
                     workerHeight = this.poolState.height.toNumber();
                 }
-                this.db.compactRange(0, workerHeight);
+                await this.db.compactRange(0, workerHeight);
                 const usedDiskSpace = await (0, du_1.default)(`./db/${this.name}/`);
                 const usedDiskSpacePercent = parseFloat(((usedDiskSpace * 100) / this.diskSpace).toFixed(2));
                 if (usedDiskSpace > this.diskSpace) {

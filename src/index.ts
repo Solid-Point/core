@@ -264,7 +264,7 @@ class KYVE {
           workerHeight = this.poolState.height.toNumber();
         }
 
-        this.db.compactRange(0, workerHeight);
+        await this.db.compactRange(0, workerHeight);
 
         const usedDiskSpace = await du(`./db/${this.name}/`);
         const usedDiskSpacePercent = parseFloat(
