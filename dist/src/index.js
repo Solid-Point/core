@@ -191,20 +191,20 @@ class KYVE {
     async worker() {
         while (true) {
             try {
-                await this.db.compactRange();
-                const usedDiskSpace = await (0, du_1.default)(`./db/${this.name}/`);
-                const usedDiskSpacePercent = parseFloat(((usedDiskSpace * 100) / this.diskSpace).toFixed(2));
-                if (usedDiskSpace > this.diskSpace) {
-                    utils_2.logger.debug(`Used disk space: ${usedDiskSpacePercent}%`);
-                    await (0, helpers_1.sleep)(60 * 1000);
-                    continue;
-                }
                 let workerHeight;
                 try {
                     workerHeight = parseInt((await this.db.get(-1)).toString());
                 }
                 catch {
                     workerHeight = this.poolState.height.toNumber();
+                }
+                this.db.compactRange(0, workerHeight);
+                const usedDiskSpace = await (0, du_1.default)(`./db/${this.name}/`);
+                const usedDiskSpacePercent = parseFloat(((usedDiskSpace * 100) / this.diskSpace).toFixed(2));
+                if (usedDiskSpace > this.diskSpace) {
+                    utils_2.logger.debug(`Used disk space: ${usedDiskSpacePercent}%`);
+                    await (0, helpers_1.sleep)(60 * 1000);
+                    continue;
                 }
                 metricsWorkerHeight.set(workerHeight);
                 metricsDbSize.set(usedDiskSpace);

@@ -256,7 +256,15 @@ class KYVE {
   public async worker() {
     while (true) {
       try {
-        await this.db.compactRange();
+        let workerHeight;
+
+        try {
+          workerHeight = parseInt((await this.db.get(-1)).toString());
+        } catch {
+          workerHeight = this.poolState.height.toNumber();
+        }
+
+        this.db.compactRange(0, workerHeight);
 
         const usedDiskSpace = await du(`./db/${this.name}/`);
         const usedDiskSpacePercent = parseFloat(
@@ -267,14 +275,6 @@ class KYVE {
           logger.debug(`Used disk space: ${usedDiskSpacePercent}%`);
           await sleep(60 * 1000);
           continue;
-        }
-
-        let workerHeight;
-
-        try {
-          workerHeight = parseInt((await this.db.get(-1)).toString());
-        } catch {
-          workerHeight = this.poolState.height.toNumber();
         }
 
         metricsWorkerHeight.set(workerHeight);
