@@ -33,7 +33,6 @@
     "commander": "^8.3.0",
     "du": "^1.0.0",
     "ethers": "^5.5.1",
-    "level": "^7.0.1",
     "object-hash": "^2.2.0",
     "prando": "^6.0.1",
     "prom-client": "^14.0.1",
@@ -42,7 +41,6 @@
     "unique-names-generator": "^4.6.0"
   },
   "devDependencies": {
-    "@types/level": "^6.0.0",
     "@types/node": "^16.10.3",
     "@types/object-hash": "^2.2.1",
     "@types/semver": "^7.3.9",

@@ -40,12 +40,13 @@ const object_hash_1 = __importDefault(require("object-hash"));
 const http_1 = __importDefault(require("http"));
 const url_1 = __importDefault(require("url"));
 const prom_client_1 = __importStar(require("prom-client"));
-const level_1 = __importDefault(require("level"));
+const database_1 = require("./utils/database");
 const du_1 = __importDefault(require("du"));
 const zlib_1 = require("zlib");
 __exportStar(require("./utils"), exports);
 __exportStar(require("./faces"), exports);
 __exportStar(require("./utils/helpers"), exports);
+__exportStar(require("./utils/database"), exports);
 prom_client_1.default.collectDefaultMetrics({
     labels: { app: "kyve-core" },
 });
@@ -89,6 +90,10 @@ class KYVE {
         this.runMetrics = options.metrics;
         this.diskSpace = +options.space;
         this.name = (_a = options === null || options === void 0 ? void 0 : options.name) !== null && _a !== void 0 ? _a : this.generateRandomName();
+        if (!(0, fs_1.existsSync)("./db")) {
+            (0, fs_1.mkdirSync)("./db");
+        }
+        this.db = new database_1.Database(`./db/${this.name}`);
         if (!(0, fs_1.existsSync)("./logs")) {
             (0, fs_1.mkdirSync)("./logs");
         }
@@ -112,7 +117,6 @@ class KYVE {
         this.logNodeInfo();
         this.setupMetrics();
         await this.fetchPoolState();
-        await this.setupDB();
         await this.setupNodeStake();
         await this.setupNodeCommission();
         await this.checkIfNodeIsValidator();
@@ -134,23 +138,18 @@ class KYVE {
                 await this.checkIfNodeIsValidator(false);
                 let tail;
                 try {
-                    tail = parseInt((await this.db.get(-2)).toString());
-                    console.log(`Worker height = ${(await this.db.get(-1)).toString()}`);
+                    tail = parseInt((await this.db.get("tail")).toString());
+                    console.log(`Worker height = ${(await this.db.get("head")).toString()}`);
                     console.log(`Deleting keys from ${tail} to ${this.poolState.height.toNumber()}`);
                 }
                 catch {
                     tail = this.poolState.height.toNumber();
                     console.log(`Deleting keys from ${tail} to ${this.poolState.height.toNumber()}`);
                 }
-                const ops = [];
                 for (let key = tail; key < this.poolState.height.toNumber(); key++) {
-                    ops.push({
-                        type: "del",
-                        key,
-                    });
+                    await this.db.del(key.toString());
                 }
-                await this.db.batch(ops);
-                await this.db.put(-2, Buffer.from(this.poolState.height.toString()));
+                await this.db.put("tail", Buffer.from(this.poolState.height.toString()));
                 bundleInstructions = await this.getBundleInstructions();
                 console.log(bundleInstructions);
                 const uploadBundle = await this.createBundle(bundleInstructions);
@@ -193,28 +192,27 @@ class KYVE {
             try {
                 let workerHeight;
                 try {
-                    workerHeight = parseInt((await this.db.get(-1)).toString());
+                    workerHeight = parseInt((await this.db.get("head")).toString());
                 }
                 catch {
                     workerHeight = this.poolState.height.toNumber();
                 }
-                await this.db.compactRange(0, workerHeight);
                 const usedDiskSpace = await (0, du_1.default)(`./db/${this.name}/`);
                 const usedDiskSpacePercent = parseFloat(((usedDiskSpace * 100) / this.diskSpace).toFixed(2));
+                metricsWorkerHeight.set(workerHeight);
+                metricsDbSize.set(usedDiskSpace);
+                metricsDbUsed.set(usedDiskSpacePercent);
                 if (usedDiskSpace > this.diskSpace) {
                     utils_2.logger.debug(`Used disk space: ${usedDiskSpacePercent}%`);
                     await (0, helpers_1.sleep)(60 * 1000);
                     continue;
                 }
-                metricsWorkerHeight.set(workerHeight);
-                metricsDbSize.set(usedDiskSpace);
-                metricsDbUsed.set(usedDiskSpacePercent);
                 const ops = await this.requestWorkerBatch(workerHeight);
                 await this.db.batch([
                     ...ops,
                     {
                         type: "put",
-                        key: -1,
+                        key: "head",
                         value: Buffer.from((workerHeight + ops.length).toString()),
                     },
                 ]);
@@ -451,15 +449,6 @@ class KYVE {
             process.exit(1);
         }
         utils_2.logger.info("✅ Fetched pool state.");
-    }
-    async setupDB() {
-        if (!(0, fs_1.existsSync)("./db")) {
-            (0, fs_1.mkdirSync)("./db");
-        }
-        this.db = (0, level_1.default)(`./db/${this.name}`, {
-            keyEncoding: "json",
-            valueEncoding: "binary",
-        });
     }
     async checkIfNodeIsValidator(logs = true) {
         try {

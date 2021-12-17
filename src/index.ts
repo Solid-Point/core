@@ -34,13 +34,14 @@ import hash from "object-hash";
 import http from "http";
 import url from "url";
 import client, { register } from "prom-client";
-import level from "level";
+import { Database, Operation } from "./utils/database";
 import du from "du";
 import { gunzipSync, gzipSync } from "zlib";
 
 export * from "./utils";
 export * from "./faces";
 export * from "./utils/helpers";
+export * from "./utils/database";
 
 client.collectDefaultMetrics({
   labels: { app: "kyve-core" },
@@ -74,7 +75,7 @@ class KYVE {
   protected poolState: any;
   protected runMetrics: boolean;
   protected diskSpace: number;
-  protected db: any;
+  protected db: Database;
   protected arweave = new Arweave({
     host: "arweave.net",
     protocol: "https",
@@ -112,6 +113,12 @@ class KYVE {
     this.diskSpace = +options.space;
     this.name = options?.name ?? this.generateRandomName();
 
+    if (!existsSync("./db")) {
+      mkdirSync("./db");
+    }
+
+    this.db = new Database(`./db/${this.name}`);
+
     if (!existsSync("./logs")) {
       mkdirSync("./logs");
     }
@@ -140,7 +147,6 @@ class KYVE {
     this.setupMetrics();
 
     await this.fetchPoolState();
-    await this.setupDB();
 
     await this.setupNodeStake();
     await this.setupNodeCommission();
@@ -172,8 +178,10 @@ class KYVE {
         let tail: number;
 
         try {
-          tail = parseInt((await this.db.get(-2)).toString());
-          console.log(`Worker height = ${(await this.db.get(-1)).toString()}`);
+          tail = parseInt((await this.db.get("tail")).toString());
+          console.log(
+            `Worker height = ${(await this.db.get("head")).toString()}`
+          );
           console.log(
             `Deleting keys from ${tail} to ${this.poolState.height.toNumber()}`
           );
@@ -184,17 +192,14 @@ class KYVE {
           );
         }
 
-        const ops = [];
-
         for (let key = tail; key < this.poolState.height.toNumber(); key++) {
-          ops.push({
-            type: "del",
-            key,
-          });
+          await this.db.del(key.toString());
         }
 
-        await this.db.batch(ops);
-        await this.db.put(-2, Buffer.from(this.poolState.height.toString()));
+        await this.db.put(
+          "tail",
+          Buffer.from(this.poolState.height.toString())
+        );
 
         bundleInstructions = await this.getBundleInstructions();
         console.log(bundleInstructions);
@@ -259,17 +264,19 @@ class KYVE {
         let workerHeight;
 
         try {
-          workerHeight = parseInt((await this.db.get(-1)).toString());
+          workerHeight = parseInt((await this.db.get("head")).toString());
         } catch {
           workerHeight = this.poolState.height.toNumber();
         }
-
-        await this.db.compactRange(0, workerHeight);
 
         const usedDiskSpace = await du(`./db/${this.name}/`);
         const usedDiskSpacePercent = parseFloat(
           ((usedDiskSpace * 100) / this.diskSpace).toFixed(2)
         );
+
+        metricsWorkerHeight.set(workerHeight);
+        metricsDbSize.set(usedDiskSpace);
+        metricsDbUsed.set(usedDiskSpacePercent);
 
         if (usedDiskSpace > this.diskSpace) {
           logger.debug(`Used disk space: ${usedDiskSpacePercent}%`);
@@ -277,17 +284,13 @@ class KYVE {
           continue;
         }
 
-        metricsWorkerHeight.set(workerHeight);
-        metricsDbSize.set(usedDiskSpace);
-        metricsDbUsed.set(usedDiskSpacePercent);
-
         const ops = await this.requestWorkerBatch(workerHeight);
 
         await this.db.batch([
           ...ops,
           {
             type: "put",
-            key: -1,
+            key: "head",
             value: Buffer.from((workerHeight + ops.length).toString()),
           },
         ]);
@@ -636,17 +639,6 @@ class KYVE {
     }
 
     logger.info("✅ Fetched pool state.");
-  }
-
-  private async setupDB() {
-    if (!existsSync("./db")) {
-      mkdirSync("./db");
-    }
-
-    this.db = level(`./db/${this.name}`, {
-      keyEncoding: "json",
-      valueEncoding: "binary",
-    });
   }
 
   private async checkIfNodeIsValidator(logs: boolean = true) {

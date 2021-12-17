@@ -5,9 +5,11 @@ import { Contract, Wallet } from "ethers";
 import { BundleInstructions, BundleProposal } from "./faces";
 import { CLI } from "./utils";
 import client from "prom-client";
+import { Database } from "./utils/database";
 export * from "./utils";
 export * from "./faces";
 export * from "./utils/helpers";
+export * from "./utils/database";
 declare class KYVE {
     protected pool: Contract;
     protected runtime: string;
@@ -21,7 +23,7 @@ declare class KYVE {
     protected poolState: any;
     protected runMetrics: boolean;
     protected diskSpace: number;
-    protected db: any;
+    protected db: Database;
     protected arweave: Arweave;
     static metrics: typeof client;
     constructor(cli?: CLI);
@@ -41,7 +43,6 @@ declare class KYVE {
     private logNodeInfo;
     private setupMetrics;
     private fetchPoolState;
-    private setupDB;
     private checkIfNodeIsValidator;
     private setupNodeStake;
     private selfStake;
