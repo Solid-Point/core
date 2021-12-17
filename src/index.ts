@@ -173,6 +173,7 @@ class KYVE {
 
         try {
           tail = parseInt((await this.db.get(-2)).toString());
+          console.log(`Worker height = ${(await this.db.get(-1)).toString()}`);
           console.log(
             `Deleting keys from ${tail} to ${this.poolState.height.toNumber()}`
           );
