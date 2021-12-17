@@ -124,7 +124,7 @@ class KYVE {
             let bundleInstructions = null;
             let bundleProposal = null;
             while (true) {
-                console.log("Starting new round");
+                console.log(`Starting new round. worker = ${(await this.db.get(-1)).toString()} tail = ${(await this.db.get(-2)).toString()}`);
                 await this.fetchPoolState(false);
                 if (this.poolState.paused) {
                     utils_2.logger.info("💤  Pool is paused. Waiting ...");
