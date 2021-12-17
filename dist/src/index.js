@@ -142,9 +142,14 @@ class KYVE {
                     tail = this.poolState.height.toNumber();
                     console.log(`Deleting keys from ${tail} to ${this.poolState.height.toNumber()}`);
                 }
+                const ops = [];
                 for (let key = tail; key < this.poolState.height.toNumber(); key++) {
-                    await this.db.del(key);
+                    ops.push({
+                        type: "del",
+                        key,
+                    });
                 }
+                await this.db.batch(ops);
                 await this.db.put(-2, Buffer.from(this.poolState.height.toString()));
                 bundleInstructions = await this.getBundleInstructions();
                 console.log(bundleInstructions);

@@ -169,7 +169,7 @@ class KYVE {
 
         await this.checkIfNodeIsValidator(false);
 
-        let tail;
+        let tail: number;
 
         try {
           tail = parseInt((await this.db.get(-2)).toString());
@@ -184,10 +184,16 @@ class KYVE {
           );
         }
 
+        const ops = [];
+
         for (let key = tail; key < this.poolState.height.toNumber(); key++) {
-          await this.db.del(key);
+          ops.push({
+            type: "del",
+            key,
+          });
         }
 
+        await this.db.batch(ops);
         await this.db.put(-2, Buffer.from(this.poolState.height.toString()));
 
         bundleInstructions = await this.getBundleInstructions();
