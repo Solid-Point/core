@@ -157,11 +157,15 @@ class KYVE {
       let bundleProposal: BundleProposal | null = null;
 
       while (true) {
-        console.log(
-          `Starting new round. worker = ${(
-            await this.db.get(-1)
-          ).toString()} tail = ${(await this.db.get(-2)).toString()}`
-        );
+        try {
+          console.log(
+            `Starting new round. worker = ${(
+              await this.db.get(-1)
+            ).toString()} tail = ${(await this.db.get(-2)).toString()}`
+          );
+        } catch {
+          console.log(`Starting new round`);
+        }
 
         await this.fetchPoolState(false);
 
