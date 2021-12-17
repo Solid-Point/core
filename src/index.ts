@@ -157,15 +157,7 @@ class KYVE {
       let bundleProposal: BundleProposal | null = null;
 
       while (true) {
-        try {
-          console.log(
-            `Starting new round. worker = ${(
-              await this.db.get(-1)
-            ).toString()} tail = ${(await this.db.get(-2)).toString()}`
-          );
-        } catch {
-          console.log(`Starting new round`);
-        }
+        console.log(`Starting new round`);
 
         await this.fetchPoolState(false);
 
@@ -181,8 +173,14 @@ class KYVE {
 
         try {
           tail = parseInt((await this.db.get(-2)).toString());
+          console.log(
+            `Deleting keys from ${tail} to ${this.poolState.height.toNumber()}`
+          );
         } catch {
           tail = this.poolState.height.toNumber();
+          console.log(
+            `Deleting keys from ${tail} to ${this.poolState.height.toNumber()}`
+          );
         }
 
         for (let key = tail; key < this.poolState.height.toNumber(); key++) {
