@@ -191,6 +191,7 @@ class KYVE {
     async worker() {
         while (true) {
             try {
+                await this.db.compactRange();
                 const usedDiskSpace = await (0, du_1.default)(`./db/${this.name}/`);
                 const usedDiskSpacePercent = parseFloat(((usedDiskSpace * 100) / this.diskSpace).toFixed(2));
                 if (usedDiskSpace > this.diskSpace) {
