@@ -1,4 +1,4 @@
-import { promises as fs } from "fs";
+import { existsSync, mkdirSync, promises as fs } from "fs";
 
 export interface Operation {
   type: "put" | "del";
@@ -11,6 +11,14 @@ export class Database {
 
   constructor(path: string) {
     this.path = path;
+
+    if (!existsSync("./db")) {
+      mkdirSync("./db");
+    }
+
+    if (!existsSync(`./db/${this.path}`)) {
+      mkdirSync(`./db/${this.path}`);
+    }
   }
 
   public async put(key: string, value: Buffer): Promise<void> {

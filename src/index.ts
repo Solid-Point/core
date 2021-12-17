@@ -113,10 +113,6 @@ class KYVE {
     this.diskSpace = +options.space;
     this.name = options?.name ?? this.generateRandomName();
 
-    if (!existsSync("./db")) {
-      mkdirSync("./db");
-    }
-
     this.db = new Database(`./db/${this.name}`);
 
     if (!existsSync("./logs")) {

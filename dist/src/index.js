@@ -90,9 +90,6 @@ class KYVE {
         this.runMetrics = options.metrics;
         this.diskSpace = +options.space;
         this.name = (_a = options === null || options === void 0 ? void 0 : options.name) !== null && _a !== void 0 ? _a : this.generateRandomName();
-        if (!(0, fs_1.existsSync)("./db")) {
-            (0, fs_1.mkdirSync)("./db");
-        }
         this.db = new database_1.Database(`./db/${this.name}`);
         if (!(0, fs_1.existsSync)("./logs")) {
             (0, fs_1.mkdirSync)("./logs");

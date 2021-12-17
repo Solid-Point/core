@@ -5,6 +5,12 @@ const fs_1 = require("fs");
 class Database {
     constructor(path) {
         this.path = path;
+        if (!(0, fs_1.existsSync)("./db")) {
+            (0, fs_1.mkdirSync)("./db");
+        }
+        if (!(0, fs_1.existsSync)(`./db/${this.path}`)) {
+            (0, fs_1.mkdirSync)(`./db/${this.path}`);
+        }
     }
     async put(key, value) {
         await fs_1.promises.writeFile(`${this.path}/${key}`, value);
