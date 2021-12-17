@@ -249,6 +249,7 @@ class KYVE {
         );
 
         if (usedDiskSpace > this.diskSpace) {
+          logger.debug(`Used disk space: ${usedDiskSpacePercent}%`);
           await sleep(60 * 1000);
           continue;
         }
