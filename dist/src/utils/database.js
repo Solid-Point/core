@@ -13,13 +13,13 @@ class Database {
         }
     }
     async put(key, value) {
-        await fs_1.promises.writeFile(`${this.path}/${key}`, value);
+        await fs_1.promises.writeFile(`./db/${this.path}/${key}`, value);
     }
     async get(key) {
-        return await fs_1.promises.readFile(`${this.path}/${key}`);
+        return await fs_1.promises.readFile(`./db/${this.path}/${key}`);
     }
     async del(key) {
-        await fs_1.promises.unlink(key);
+        await fs_1.promises.unlink(`./db/${this.path}/${key}`);
     }
     async batch(ops) {
         for (let op of ops) {

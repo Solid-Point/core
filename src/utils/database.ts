@@ -22,15 +22,15 @@ export class Database {
   }
 
   public async put(key: string, value: Buffer): Promise<void> {
-    await fs.writeFile(`${this.path}/${key}`, value);
+    await fs.writeFile(`./db/${this.path}/${key}`, value);
   }
 
   public async get(key: string): Promise<Buffer> {
-    return await fs.readFile(`${this.path}/${key}`);
+    return await fs.readFile(`./db/${this.path}/${key}`);
   }
 
   public async del(key: string): Promise<void> {
-    await fs.unlink(key);
+    await fs.unlink(`./db/${this.path}/${key}`);
   }
 
   public async batch(ops: Operation[]): Promise<void> {
