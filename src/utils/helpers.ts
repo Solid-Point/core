@@ -4,6 +4,8 @@ import { Contract, ethers, Wallet } from "ethers";
 import PoolABI from "../abi/pool.json";
 import TokenABI from "../abi/token.json";
 
+export const ADDRESS_ZERO = ethers.constants.AddressZero;
+
 export const getTokenContract = async (pool: Contract): Promise<Contract> => {
   return new Contract((await pool.token()) as string, TokenABI, pool.signer);
 };

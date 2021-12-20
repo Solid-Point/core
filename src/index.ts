@@ -26,6 +26,7 @@ import {
   toBytes,
   formatBundle,
   parseBundle,
+  ADDRESS_ZERO,
 } from "./utils/helpers";
 import { logger } from "./utils";
 import { version } from "../package.json";
@@ -34,7 +35,7 @@ import hash from "object-hash";
 import http from "http";
 import url from "url";
 import client, { register } from "prom-client";
-import { Database, Operation } from "./utils/database";
+import { Database } from "./utils/database";
 import du from "du";
 import { gunzipSync, gzipSync } from "zlib";
 
@@ -204,34 +205,26 @@ class KYVE {
         );
 
         bundleInstructions = await this.getBundleInstructions();
-        console.log(bundleInstructions);
-
-        const uploadBundle = await this.createBundle(bundleInstructions);
-
         bundleProposal = await this.getBundleProposal();
+
+        console.log(bundleInstructions);
         console.log(bundleProposal);
 
         if (
-          bundleProposal.uploader !== ethers.constants.AddressZero &&
+          bundleProposal.uploader !== ADDRESS_ZERO &&
           bundleProposal.uploader !== this.wallet.address
         ) {
-          if (bundleInstructions.fromHeight === bundleProposal.fromHeight) {
-            await this.validateProposal(bundleProposal, uploadBundle);
-            continue;
-          }
+          await this.validateProposal(bundleProposal);
         }
 
-        bundleInstructions = await this.getBundleInstructions();
-        console.log(bundleInstructions);
-
         if (
-          bundleInstructions.uploader === ethers.constants.AddressZero ||
+          bundleInstructions.uploader === ADDRESS_ZERO ||
           bundleInstructions.uploader === this.wallet.address
         ) {
-          logger.debug("Selected as uploader. Waiting 60s ...");
-
+          logger.debug("Waiting for other nodes to vote. Waiting 60s ...");
           await sleep(60 * 1000);
 
+          const uploadBundle = await this.createBundle(bundleInstructions);
           const transaction = await this.uploadBundleToArweave(
             uploadBundle,
             bundleInstructions
@@ -242,17 +235,7 @@ class KYVE {
           }
         }
 
-        await this.waitForNextBundleInstructions(bundleInstructions);
-
-        bundleProposal = await this.getBundleProposal();
-        console.log(bundleProposal);
-
-        if (
-          bundleProposal.uploader !== ethers.constants.AddressZero &&
-          bundleProposal.uploader !== this.wallet.address
-        ) {
-          await this.validateProposal(bundleProposal, uploadBundle);
-        }
+        await this.waitForNextBundleProposal(bundleInstructions);
       }
     } catch (error) {
       logger.error(`❌ Runtime error. Exiting ...`);
@@ -316,11 +299,22 @@ class KYVE {
     process.exit(1);
   }
 
-  public async validateProposal(
-    bundleProposal: BundleProposal,
-    uploadBundle: Buffer[]
-  ) {
+  public async validateProposal(bundleProposal: BundleProposal) {
     logger.debug(`Validating bundle ${bundleProposal.txId} ...`);
+
+    const uploadBundle: Buffer[] = [];
+    let h: number = bundleProposal.fromHeight;
+
+    while (h < bundleProposal.toHeight) {
+      try {
+        const block = await this.db.get(h);
+
+        uploadBundle.push(block);
+        h += 1;
+      } catch {
+        await sleep(10 * 1000);
+      }
+    }
 
     try {
       const { status } = await this.arweave.transactions.getStatus(
@@ -470,7 +464,7 @@ class KYVE {
     }
   }
 
-  private async waitForNextBundleInstructions(
+  private async waitForNextBundleProposal(
     bundleInstructions: BundleInstructions
   ): Promise<void> {
     return new Promise((resolve) => {
