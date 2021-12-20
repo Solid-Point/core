@@ -156,9 +156,6 @@ class KYVE {
 
   private async run() {
     try {
-      let bundleInstructions: BundleInstructions | null = null;
-      let bundleProposal: BundleProposal | null = null;
-
       while (true) {
         console.log(`Starting new round`);
 
@@ -204,8 +201,8 @@ class KYVE {
           Buffer.from(this.poolState.height.toString())
         );
 
-        bundleInstructions = await this.getBundleInstructions();
-        bundleProposal = await this.getBundleProposal();
+        const bundleInstructions = await this.getBundleInstructions();
+        const bundleProposal = await this.getBundleProposal();
 
         console.log(bundleInstructions);
         console.log(bundleProposal);
@@ -301,6 +298,9 @@ class KYVE {
 
   public async validateProposal(bundleProposal: BundleProposal) {
     logger.debug(`Validating bundle ${bundleProposal.txId} ...`);
+    logger.debug(
+      `From ${bundleProposal.fromHeight} to ${bundleProposal.toHeight} ...`
+    );
 
     const uploadBundle: Buffer[] = [];
     let h: number = bundleProposal.fromHeight;
