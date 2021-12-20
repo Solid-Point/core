@@ -90,7 +90,7 @@ class KYVE {
             options.keyfile && JSON.parse((0, fs_1.readFileSync)(options.keyfile, "utf-8"));
         this.gasMultiplier = options.gasMultiplier;
         this.runMetrics = options.metrics;
-        this.diskSpace = +options.space;
+        this.space = +options.space;
         this.name = (_a = options === null || options === void 0 ? void 0 : options.name) !== null && _a !== void 0 ? _a : this.generateRandomName();
         this.db = new database_1.Database(this.name);
         if (!(0, fs_1.existsSync)("./logs")) {
@@ -133,23 +133,7 @@ class KYVE {
                     continue;
                 }
                 await this.checkIfNodeIsValidator(false);
-                let tail;
-                try {
-                    tail = parseInt((await this.db.get("tail")).toString());
-                    const usedDiskSpace = await (0, du_1.default)(`./db/${this.name}/`);
-                    const usedDiskSpacePercent = parseFloat(((usedDiskSpace * 100) / this.diskSpace).toFixed(2));
-                    console.log(`Worker height = ${(await this.db.get("head")).toString()}`);
-                    console.log(`Deleting keys from ${tail} to ${this.poolState.height.toNumber()}`);
-                    console.log(`Used disk space: ${usedDiskSpacePercent}%`);
-                }
-                catch {
-                    tail = this.poolState.height.toNumber();
-                    console.log(`Deleting keys from ${tail} to ${this.poolState.height.toNumber()}`);
-                }
-                for (let key = tail; key < this.poolState.height.toNumber(); key++) {
-                    await this.db.del(key.toString());
-                }
-                await this.db.put("tail", Buffer.from(this.poolState.height.toString()));
+                await this.clearFinalizedData();
                 const bundleProposal = await this.getBundleProposal();
                 const bundleInstructions = await this.getBundleInstructions();
                 console.log(bundleProposal);
@@ -162,13 +146,9 @@ class KYVE {
                     bundleInstructions.uploader === this.wallet.address) {
                     utils_2.logger.debug("Waiting for other nodes to vote. Waiting 60s ...");
                     await (0, helpers_1.sleep)(60 * 1000);
-                    const uploadBundle = await this.createBundle(bundleInstructions);
-                    const transaction = await this.uploadBundleToArweave(uploadBundle, bundleInstructions);
-                    if (transaction) {
-                        await this.submitBundleProposal(transaction, uploadBundle.length);
-                    }
+                    await this.uploadBundleToArweave(bundleInstructions);
                 }
-                await this.waitForNextBundleProposal(bundleInstructions);
+                await this.nextBundleInstructions(bundleInstructions);
             }
         }
         catch (error) {
@@ -187,11 +167,11 @@ class KYVE {
                     workerHeight = this.poolState.height.toNumber();
                 }
                 const usedDiskSpace = await (0, du_1.default)(`./db/${this.name}/`);
-                const usedDiskSpacePercent = parseFloat(((usedDiskSpace * 100) / this.diskSpace).toFixed(2));
+                const usedDiskSpacePercent = parseFloat(((usedDiskSpace * 100) / this.space).toFixed(2));
                 metricsWorkerHeight.set(workerHeight);
                 metricsDbSize.set(usedDiskSpace);
                 metricsDbUsed.set(usedDiskSpacePercent);
-                if (usedDiskSpace > this.diskSpace) {
+                if (usedDiskSpace > this.space) {
                     utils_2.logger.debug(`Used disk space: ${usedDiskSpacePercent}%`);
                     await (0, helpers_1.sleep)(60 * 1000);
                     continue;
@@ -217,6 +197,19 @@ class KYVE {
         utils_2.logger.error(`❌ "createBundle" not implemented. Exiting ...`);
         process.exit(1);
     }
+    async clearFinalizedData() {
+        let tail;
+        try {
+            tail = parseInt((await this.db.get("tail")).toString());
+        }
+        catch {
+            tail = this.poolState.height.toNumber();
+        }
+        for (let key = tail; key < this.poolState.height.toNumber(); key++) {
+            await this.db.del(key);
+        }
+        await this.db.put("tail", Buffer.from(this.poolState.height.toString()));
+    }
     async validateProposal(bundleProposal) {
         utils_2.logger.debug(`Validating bundle ${bundleProposal.txId} ...`);
         utils_2.logger.debug(`From ${bundleProposal.fromHeight} to ${bundleProposal.toHeight} ...`);
@@ -228,7 +221,7 @@ class KYVE {
             try {
                 const block = await this.db.get(h);
                 uploadBundle.push(block);
-                progress.update(h);
+                progress.update(uploadBundle.length);
                 h += 1;
             }
             catch {
@@ -286,21 +279,22 @@ class KYVE {
             fromHeight: instructions.fromHeight.toNumber(),
         };
     }
-    async uploadBundleToArweave(bundle, instructions) {
+    async uploadBundleToArweave(bundleInstructions) {
         try {
+            const uploadBundle = await this.createBundle(bundleInstructions);
             utils_2.logger.info("💾 Uploading bundle to Arweave ...");
             const transaction = await this.arweave.createTransaction({
-                data: (0, zlib_1.gzipSync)((0, helpers_1.formatBundle)(bundle)),
+                data: (0, zlib_1.gzipSync)((0, helpers_1.formatBundle)(uploadBundle)),
             });
             utils_2.logger.debug(`Bundle data size = ${transaction.data_size} Bytes`);
-            utils_2.logger.debug(`Bundle size = ${bundle.length}`);
+            utils_2.logger.debug(`Bundle size = ${uploadBundle.length}`);
             transaction.addTag("Application", "KYVE - Testnet");
             transaction.addTag("Pool", this.pool.address);
             transaction.addTag("@kyve/core", package_json_1.version);
             transaction.addTag(this.runtime, this.version);
-            transaction.addTag("Uploader", instructions.uploader);
-            transaction.addTag("FromHeight", instructions.fromHeight.toString());
-            transaction.addTag("ToHeight", (instructions.fromHeight + bundle.length).toString());
+            transaction.addTag("Uploader", bundleInstructions.uploader);
+            transaction.addTag("FromHeight", bundleInstructions.fromHeight.toString());
+            transaction.addTag("ToHeight", (bundleInstructions.fromHeight + uploadBundle.length).toString());
             transaction.addTag("Content-Type", "application/gzip");
             await this.arweave.transactions.sign(transaction, this.keyfile);
             const balance = await this.arweave.wallets.getBalance(await this.arweave.wallets.getAddress(this.keyfile));
@@ -309,12 +303,11 @@ class KYVE {
                 process.exit(1);
             }
             await this.arweave.transactions.post(transaction);
-            return transaction;
+            await this.submitBundleProposal(transaction, uploadBundle.length);
         }
         catch (error) {
             utils_2.logger.error("❌ Received an error while trying to upload bundle to Arweave. Skipping upload ...");
             utils_2.logger.debug(error);
-            return null;
         }
     }
     async submitBundleProposal(transaction, bundleSize) {
@@ -331,7 +324,7 @@ class KYVE {
             utils_2.logger.debug(error);
         }
     }
-    async waitForNextBundleProposal(bundleInstructions) {
+    async nextBundleInstructions(bundleInstructions) {
         return new Promise((resolve) => {
             utils_2.logger.debug("Waiting for next bundle instructions ...");
             const uploadTimeout = setTimeout(async () => {

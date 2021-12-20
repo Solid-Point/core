@@ -2,7 +2,7 @@
 import Arweave from "arweave";
 import { JWKInterface } from "arweave/node/lib/wallet";
 import { Contract, Wallet } from "ethers";
-import { BundleInstructions, BundleProposal } from "./faces";
+import { BundleInstructions } from "./faces";
 import { CLI } from "./utils";
 import client from "prom-client";
 import { Database } from "./utils/database";
@@ -23,7 +23,7 @@ declare class KYVE {
     protected gasMultiplier: string;
     protected poolState: any;
     protected runMetrics: boolean;
-    protected diskSpace: number;
+    protected space: number;
     protected db: Database;
     protected arweave: Arweave;
     static metrics: typeof client;
@@ -33,13 +33,14 @@ declare class KYVE {
     worker(): Promise<void>;
     requestWorkerBatch(workerHeight: number): Promise<any[]>;
     createBundle(bundleInstructions: BundleInstructions): Promise<Buffer[]>;
-    validateProposal(bundleProposal: BundleProposal): Promise<void>;
+    private clearFinalizedData;
+    private validateProposal;
     validate(uploadBundle: Buffer[], uploadBytes: number, downloadBundle: Buffer[], downloadBytes: number): Promise<boolean>;
     private getBundleProposal;
     private getBundleInstructions;
     private uploadBundleToArweave;
     private submitBundleProposal;
-    private waitForNextBundleProposal;
+    private nextBundleInstructions;
     private vote;
     private logNodeInfo;
     private setupMetrics;
