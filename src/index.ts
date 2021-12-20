@@ -201,11 +201,11 @@ class KYVE {
           Buffer.from(this.poolState.height.toString())
         );
 
-        const bundleInstructions = await this.getBundleInstructions();
         const bundleProposal = await this.getBundleProposal();
+        const bundleInstructions = await this.getBundleInstructions();
 
-        console.log(bundleInstructions);
         console.log(bundleProposal);
+        console.log(bundleInstructions);
 
         if (
           bundleProposal.uploader !== ADDRESS_ZERO &&

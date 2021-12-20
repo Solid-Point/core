@@ -148,10 +148,10 @@ class KYVE {
                     await this.db.del(key.toString());
                 }
                 await this.db.put("tail", Buffer.from(this.poolState.height.toString()));
-                const bundleInstructions = await this.getBundleInstructions();
                 const bundleProposal = await this.getBundleProposal();
-                console.log(bundleInstructions);
+                const bundleInstructions = await this.getBundleInstructions();
                 console.log(bundleProposal);
+                console.log(bundleInstructions);
                 if (bundleProposal.uploader !== helpers_1.ADDRESS_ZERO &&
                     bundleProposal.uploader !== this.wallet.address) {
                     await this.validateProposal(bundleProposal);
