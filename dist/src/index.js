@@ -151,35 +151,24 @@ class KYVE {
                 }
                 await this.db.put("tail", Buffer.from(this.poolState.height.toString()));
                 bundleInstructions = await this.getBundleInstructions();
-                console.log(bundleInstructions);
-                const uploadBundle = await this.createBundle(bundleInstructions);
                 bundleProposal = await this.getBundleProposal();
-                console.log(bundleProposal);
-                if (bundleProposal.uploader !== ethers_1.ethers.constants.AddressZero &&
-                    bundleProposal.uploader !== this.wallet.address) {
-                    if (bundleInstructions.fromHeight === bundleProposal.fromHeight) {
-                        await this.validateProposal(bundleProposal, uploadBundle);
-                        continue;
-                    }
-                }
-                bundleInstructions = await this.getBundleInstructions();
                 console.log(bundleInstructions);
-                if (bundleInstructions.uploader === ethers_1.ethers.constants.AddressZero ||
+                console.log(bundleProposal);
+                if (bundleProposal.uploader !== helpers_1.ADDRESS_ZERO &&
+                    bundleProposal.uploader !== this.wallet.address) {
+                    await this.validateProposal(bundleProposal);
+                }
+                if (bundleInstructions.uploader === helpers_1.ADDRESS_ZERO ||
                     bundleInstructions.uploader === this.wallet.address) {
-                    utils_2.logger.debug("Selected as uploader. Waiting 60s ...");
+                    utils_2.logger.debug("Waiting for other nodes to vote. Waiting 60s ...");
                     await (0, helpers_1.sleep)(60 * 1000);
+                    const uploadBundle = await this.createBundle(bundleInstructions);
                     const transaction = await this.uploadBundleToArweave(uploadBundle, bundleInstructions);
                     if (transaction) {
                         await this.submitBundleProposal(transaction, uploadBundle.length);
                     }
                 }
-                await this.waitForNextBundleInstructions(bundleInstructions);
-                bundleProposal = await this.getBundleProposal();
-                console.log(bundleProposal);
-                if (bundleProposal.uploader !== ethers_1.ethers.constants.AddressZero &&
-                    bundleProposal.uploader !== this.wallet.address) {
-                    await this.validateProposal(bundleProposal, uploadBundle);
-                }
+                await this.waitForNextBundleProposal(bundleInstructions);
             }
         }
         catch (error) {
@@ -228,8 +217,20 @@ class KYVE {
         utils_2.logger.error(`❌ "createBundle" not implemented. Exiting ...`);
         process.exit(1);
     }
-    async validateProposal(bundleProposal, uploadBundle) {
+    async validateProposal(bundleProposal) {
         utils_2.logger.debug(`Validating bundle ${bundleProposal.txId} ...`);
+        const uploadBundle = [];
+        let h = bundleProposal.fromHeight;
+        while (h < bundleProposal.toHeight) {
+            try {
+                const block = await this.db.get(h);
+                uploadBundle.push(block);
+                h += 1;
+            }
+            catch {
+                await (0, helpers_1.sleep)(10 * 1000);
+            }
+        }
         try {
             const { status } = await this.arweave.transactions.getStatus(bundleProposal.txId);
             if (status === 200 || status === 202) {
@@ -325,7 +326,7 @@ class KYVE {
             utils_2.logger.debug(error);
         }
     }
-    async waitForNextBundleInstructions(bundleInstructions) {
+    async waitForNextBundleProposal(bundleInstructions) {
         return new Promise((resolve) => {
             utils_2.logger.debug("Waiting for next bundle instructions ...");
             const uploadTimeout = setTimeout(async () => {

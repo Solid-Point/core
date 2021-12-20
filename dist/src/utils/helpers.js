@@ -3,12 +3,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseBundle = exports.formatBundle = exports.dataSizeOfBinary = exports.dataSizeOfString = exports.fromBytes = exports.toBytes = exports.sleep = exports.getGasPrice = exports.toBN = exports.toEthersBN = exports.toHumanReadable = exports.getPoolContract = exports.getTokenContract = void 0;
+exports.parseBundle = exports.formatBundle = exports.dataSizeOfBinary = exports.dataSizeOfString = exports.fromBytes = exports.toBytes = exports.sleep = exports.getGasPrice = exports.toBN = exports.toEthersBN = exports.toHumanReadable = exports.getPoolContract = exports.getTokenContract = exports.ADDRESS_ZERO = void 0;
 const base64url_1 = __importDefault(require("base64url"));
 const bignumber_js_1 = require("bignumber.js");
 const ethers_1 = require("ethers");
 const pool_json_1 = __importDefault(require("../abi/pool.json"));
 const token_json_1 = __importDefault(require("../abi/token.json"));
+exports.ADDRESS_ZERO = ethers_1.ethers.constants.AddressZero;
 const getTokenContract = async (pool) => {
     return new ethers_1.Contract((await pool.token()), token_json_1.default, pool.signer);
 };
