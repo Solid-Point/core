@@ -26,6 +26,7 @@
     "deploy": "yarn build && yarn npm publish"
   },
   "dependencies": {
+    "@kyve/core": "KYVENetwork/core#kyve-chain",
     "@types/du": "^1.0.1",
     "arweave": "^1.10.17",
     "base64url": "^3.0.1",

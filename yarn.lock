@@ -342,6 +342,24 @@
     "@ethersproject/properties" "^5.5.0"
     "@ethersproject/strings" "^5.5.0"
 
+"@kyve/core@KYVENetwork/core#kyve-chain":
+  version "0.1.2"
+  resolved "https://codeload.github.com/KYVENetwork/core/tar.gz/642657d30767ac0dda732b2da14033e901389b7a"
+  dependencies:
+    "@types/du" "^1.0.1"
+    arweave "^1.10.17"
+    base64url "^3.0.1"
+    bignumber.js "^9.0.1"
+    commander "^8.3.0"
+    du "^1.0.0"
+    ethers "^5.5.1"
+    object-hash "^2.2.0"
+    prando "^6.0.1"
+    prom-client "^14.0.1"
+    semver "^7.3.5"
+    tslog "^3.2.2"
+    unique-names-generator "^4.6.0"
+
 "@types/du@^1.0.1":
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/@types/du/-/du-1.0.1.tgz#ed8bf4a0dab2ec0354fd4ccdd168b3c7d35cd326"
