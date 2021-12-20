@@ -32,14 +32,4 @@ export class Database {
   public async del(key: string): Promise<void> {
     await fs.unlink(`./db/${this.path}/${key}`);
   }
-
-  public async batch(ops: Operation[]): Promise<void> {
-    for (let op of ops) {
-      if (op.type === "put") {
-        await this.put(op.key, op.value || Buffer.from([]));
-      } else if (op.type === "del") {
-        await this.del(op.key);
-      }
-    }
-  }
 }

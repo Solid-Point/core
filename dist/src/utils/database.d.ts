@@ -10,5 +10,4 @@ export declare class Database {
     put(key: string, value: Buffer): Promise<void>;
     get(key: string): Promise<Buffer>;
     del(key: string): Promise<void>;
-    batch(ops: Operation[]): Promise<void>;
 }

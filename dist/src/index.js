@@ -208,14 +208,10 @@ class KYVE {
                     continue;
                 }
                 const ops = await this.requestWorkerBatch(workerHeight);
-                await this.db.batch([
-                    ...ops,
-                    {
-                        type: "put",
-                        key: "head",
-                        value: Buffer.from((workerHeight + ops.length).toString()),
-                    },
-                ]);
+                for (let op of ops) {
+                    await this.db.put(op.key, op.value);
+                }
+                await this.db.put("head", Buffer.from((workerHeight + ops.length).toString()));
             }
             catch (error) {
                 utils_2.logger.error("❌ Error requesting data batch.");

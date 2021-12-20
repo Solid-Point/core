@@ -21,15 +21,5 @@ class Database {
     async del(key) {
         await fs_1.promises.unlink(`./db/${this.path}/${key}`);
     }
-    async batch(ops) {
-        for (let op of ops) {
-            if (op.type === "put") {
-                await this.put(op.key, op.value || Buffer.from([]));
-            }
-            else if (op.type === "del") {
-                await this.del(op.key);
-            }
-        }
-    }
 }
 exports.Database = Database;
