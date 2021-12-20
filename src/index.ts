@@ -36,6 +36,7 @@ import http from "http";
 import url from "url";
 import client, { register } from "prom-client";
 import { Database } from "./utils/database";
+import { Progress } from "./utils/progress";
 import du from "du";
 import { gunzipSync, gzipSync } from "zlib";
 
@@ -43,6 +44,7 @@ export * from "./utils";
 export * from "./faces";
 export * from "./utils/helpers";
 export * from "./utils/database";
+export * from "./utils/progress";
 
 client.collectDefaultMetrics({
   labels: { app: "kyve-core" },
@@ -303,18 +305,24 @@ class KYVE {
     );
 
     const uploadBundle: Buffer[] = [];
+    const progress = new Progress("blocks");
     let h: number = bundleProposal.fromHeight;
+
+    progress.start(bundleProposal.toHeight - bundleProposal.fromHeight, 0);
 
     while (h < bundleProposal.toHeight) {
       try {
         const block = await this.db.get(h);
 
         uploadBundle.push(block);
+        progress.update(h);
         h += 1;
       } catch {
         await sleep(10 * 1000);
       }
     }
+
+    progress.stop();
 
     try {
       const { status } = await this.arweave.transactions.getStatus(

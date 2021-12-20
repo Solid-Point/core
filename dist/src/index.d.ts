@@ -10,6 +10,7 @@ export * from "./utils";
 export * from "./faces";
 export * from "./utils/helpers";
 export * from "./utils/database";
+export * from "./utils/progress";
 declare class KYVE {
     protected pool: Contract;
     protected runtime: string;

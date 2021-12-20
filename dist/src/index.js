@@ -41,12 +41,14 @@ const http_1 = __importDefault(require("http"));
 const url_1 = __importDefault(require("url"));
 const prom_client_1 = __importStar(require("prom-client"));
 const database_1 = require("./utils/database");
+const progress_1 = require("./utils/progress");
 const du_1 = __importDefault(require("du"));
 const zlib_1 = require("zlib");
 __exportStar(require("./utils"), exports);
 __exportStar(require("./faces"), exports);
 __exportStar(require("./utils/helpers"), exports);
 __exportStar(require("./utils/database"), exports);
+__exportStar(require("./utils/progress"), exports);
 prom_client_1.default.collectDefaultMetrics({
     labels: { app: "kyve-core" },
 });
@@ -219,17 +221,21 @@ class KYVE {
         utils_2.logger.debug(`Validating bundle ${bundleProposal.txId} ...`);
         utils_2.logger.debug(`From ${bundleProposal.fromHeight} to ${bundleProposal.toHeight} ...`);
         const uploadBundle = [];
+        const progress = new progress_1.Progress("blocks");
         let h = bundleProposal.fromHeight;
+        progress.start(bundleProposal.toHeight - bundleProposal.fromHeight, 0);
         while (h < bundleProposal.toHeight) {
             try {
                 const block = await this.db.get(h);
                 uploadBundle.push(block);
+                progress.update(h);
                 h += 1;
             }
             catch {
                 await (0, helpers_1.sleep)(10 * 1000);
             }
         }
+        progress.stop();
         try {
             const { status } = await this.arweave.transactions.getStatus(bundleProposal.txId);
             if (status === 200 || status === 202) {
