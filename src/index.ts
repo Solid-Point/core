@@ -191,7 +191,7 @@ class KYVE {
           bundleInstructions.uploader === this.wallet.address
         ) {
           logger.debug(
-            `Waiting for other nodes to vote. Waiting ${this.poolState.bundleDelay} ...`
+            `Selected as uploader. Waiting ${this.poolState.bundleDelay}s ...`
           );
           await sleep(this.poolState.bundleDelay * 1000);
 
