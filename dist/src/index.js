@@ -146,7 +146,7 @@ class KYVE {
                     bundleInstructions.uploader === this.wallet.address) {
                     utils_2.logger.debug(`Waiting for other nodes to vote. Waiting ${this.poolState.bundleDelay} ...`);
                     await (0, helpers_1.sleep)(this.poolState.bundleDelay * 1000);
-                    await this.uploadBundleToArweave(bundleInstructions);
+                    await this.uploadBundleToArweave(bundleInstructions, bundleProposal.parentTxId);
                 }
                 await this.nextBundleInstructions(bundleInstructions);
             }
@@ -264,6 +264,7 @@ class KYVE {
         return {
             uploader: proposal.uploader,
             txId: (0, helpers_1.fromBytes)(proposal.txId),
+            parentTxId: (0, helpers_1.fromBytes)(proposal.parentTxId),
             byteSize: proposal.byteSize.toNumber(),
             fromHeight: proposal.fromHeight.toNumber(),
             toHeight: proposal.toHeight.toNumber(),
@@ -279,7 +280,7 @@ class KYVE {
             fromHeight: instructions.fromHeight.toNumber(),
         };
     }
-    async uploadBundleToArweave(bundleInstructions) {
+    async uploadBundleToArweave(bundleInstructions, parentTxId) {
         try {
             const uploadBundle = await this.createBundle(bundleInstructions);
             utils_2.logger.info("💾 Uploading bundle to Arweave ...");
@@ -295,6 +296,7 @@ class KYVE {
             transaction.addTag("Uploader", bundleInstructions.uploader);
             transaction.addTag("FromHeight", bundleInstructions.fromHeight.toString());
             transaction.addTag("ToHeight", (bundleInstructions.fromHeight + uploadBundle.length).toString());
+            transaction.addTag("ParentTxId", parentTxId);
             transaction.addTag("Content-Type", "application/gzip");
             await this.arweave.transactions.sign(transaction, this.keyfile);
             const balance = await this.arweave.wallets.getBalance(await this.arweave.wallets.getAddress(this.keyfile));

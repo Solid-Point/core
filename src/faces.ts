@@ -6,6 +6,7 @@ export type BundleInstructions = {
 export type BundleProposal = {
   uploader: string;
   txId: string;
+  parentTxId: string;
   byteSize: number;
   fromHeight: number;
   toHeight: number;
