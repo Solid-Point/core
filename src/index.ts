@@ -191,6 +191,7 @@ class KYVE {
           bundleInstructions.uploader === this.wallet.address
         ) {
           logger.debug("Waiting for other nodes to vote. Waiting 60s ...");
+          // TODO: save timeout on contract as liveDelay
           await sleep(60 * 1000);
 
           await this.uploadBundleToArweave(bundleInstructions);
