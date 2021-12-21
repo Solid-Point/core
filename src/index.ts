@@ -197,7 +197,7 @@ class KYVE {
 
           await this.uploadBundleToArweave(
             bundleInstructions,
-            bundleProposal.parentTxId
+            bundleProposal.txId
           );
         }
 

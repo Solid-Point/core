@@ -146,7 +146,7 @@ class KYVE {
                     bundleInstructions.uploader === this.wallet.address) {
                     utils_2.logger.debug(`Selected as uploader. Waiting ${this.poolState.bundleDelay}s ...`);
                     await (0, helpers_1.sleep)(this.poolState.bundleDelay * 1000);
-                    await this.uploadBundleToArweave(bundleInstructions, bundleProposal.parentTxId);
+                    await this.uploadBundleToArweave(bundleInstructions, bundleProposal.txId);
                 }
                 await this.nextBundleInstructions(bundleInstructions);
             }
