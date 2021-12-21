@@ -28,6 +28,11 @@
             },
             {
                 "internalType": "uint256",
+                "name": "_bundleDelay",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
                 "name": "_operatingCost",
                 "type": "uint256"
             },
@@ -47,6 +52,12 @@
                 "indexed": false,
                 "internalType": "bytes32",
                 "name": "txId",
+                "type": "bytes32"
+            },
+            {
+                "indexed": false,
+                "internalType": "bytes32",
+                "name": "parentTxId",
                 "type": "bytes32"
             },
             {
@@ -144,6 +155,12 @@
             },
             {
                 "indexed": false,
+                "internalType": "bytes32",
+                "name": "parentTxId",
+                "type": "bytes32"
+            },
+            {
+                "indexed": false,
                 "internalType": "uint256",
                 "name": "byteSize",
                 "type": "uint256"
@@ -180,6 +197,25 @@
             }
         ],
         "name": "BundleCreated",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "previous",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "current",
+                "type": "uint256"
+            }
+        ],
+        "name": "BundleDelayChanged",
         "type": "event"
     },
     {
@@ -622,6 +658,19 @@
     },
     {
         "inputs": [],
+        "name": "bundleDelay",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
         "name": "bundleInstructions",
         "outputs": [
             {
@@ -655,6 +704,11 @@
             {
                 "internalType": "bytes32",
                 "name": "txId",
+                "type": "bytes32"
+            },
+            {
+                "internalType": "bytes32",
+                "name": "parentTxId",
                 "type": "bytes32"
             },
             {
@@ -1187,6 +1241,11 @@
                     },
                     {
                         "internalType": "uint256",
+                        "name": "bundleDelay",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
                         "name": "operatingCost",
                         "type": "uint256"
                     },
@@ -1482,6 +1541,19 @@
             }
         ],
         "name": "unstake",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_bundleDelay",
+                "type": "uint256"
+            }
+        ],
+        "name": "updateBundleDelay",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
