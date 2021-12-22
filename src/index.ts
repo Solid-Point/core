@@ -228,6 +228,8 @@ class KYVE {
         metricsDbSize.set(usedDiskSpace);
         metricsDbUsed.set(usedDiskSpacePercent);
 
+        console.log(`Used disk space: ${usedDiskSpacePercent}%`);
+
         if (usedDiskSpace > this.space) {
           logger.debug(`Used disk space: ${usedDiskSpacePercent}%`);
           await sleep(60 * 1000);

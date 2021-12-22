@@ -174,6 +174,7 @@ class KYVE {
                 metricsWorkerHeight.set(workerHeight);
                 metricsDbSize.set(usedDiskSpace);
                 metricsDbUsed.set(usedDiskSpacePercent);
+                console.log(`Used disk space: ${usedDiskSpacePercent}%`);
                 if (usedDiskSpace > this.space) {
                     utils_2.logger.debug(`Used disk space: ${usedDiskSpacePercent}%`);
                     await (0, helpers_1.sleep)(60 * 1000);
