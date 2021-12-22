@@ -144,8 +144,11 @@ class KYVE {
                 }
                 if (bundleInstructions.uploader === helpers_1.ADDRESS_ZERO ||
                     bundleInstructions.uploader === this.wallet.address) {
-                    utils_2.logger.debug(`Selected as uploader. Waiting ${this.poolState.bundleDelay}s ...`);
-                    await (0, helpers_1.sleep)(this.poolState.bundleDelay * 1000);
+                    utils_2.logger.info("Selected as uploader.");
+                    if (bundleProposal.uploader !== helpers_1.ADDRESS_ZERO) {
+                        utils_2.logger.debug(`Waiting ${this.poolState.bundleDelay}s ...`);
+                        await (0, helpers_1.sleep)(this.poolState.bundleDelay * 1000);
+                    }
                     await this.uploadBundleToArweave(bundleProposal, bundleInstructions);
                 }
                 await this.nextBundleInstructions(bundleInstructions);

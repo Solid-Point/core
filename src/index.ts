@@ -190,10 +190,12 @@ class KYVE {
           bundleInstructions.uploader === ADDRESS_ZERO ||
           bundleInstructions.uploader === this.wallet.address
         ) {
-          logger.debug(
-            `Selected as uploader. Waiting ${this.poolState.bundleDelay}s ...`
-          );
-          await sleep(this.poolState.bundleDelay * 1000);
+          logger.info("Selected as uploader.");
+
+          if (bundleProposal.uploader !== ADDRESS_ZERO) {
+            logger.debug(`Waiting ${this.poolState.bundleDelay}s ...`);
+            await sleep(this.poolState.bundleDelay * 1000);
+          }
 
           await this.uploadBundleToArweave(bundleProposal, bundleInstructions);
         }
