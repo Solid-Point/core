@@ -478,7 +478,7 @@ class KYVE {
           if (bundleInstructions?.uploader !== this.wallet.address) {
             logger.debug("Reached upload timeout. Claiming uploader role ...");
             const tx = await this.pool.claimUploaderRole({
-              gasLimit: await this.pool.estimateGas.claimUploaderRole(),
+              gasLimit: 100000,
               gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
             });
             logger.debug(`Transaction = ${tx.hash}`);
