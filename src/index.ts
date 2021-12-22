@@ -195,10 +195,7 @@ class KYVE {
           );
           await sleep(this.poolState.bundleDelay * 1000);
 
-          await this.uploadBundleToArweave(
-            bundleInstructions,
-            bundleProposal.txId
-          );
+          await this.uploadBundleToArweave(bundleProposal, bundleInstructions);
         }
 
         await this.nextBundleInstructions(bundleInstructions);
@@ -383,8 +380,8 @@ class KYVE {
   }
 
   private async uploadBundleToArweave(
-    bundleInstructions: BundleInstructions,
-    parentTxId: string
+    bundleProposal: BundleProposal,
+    bundleInstructions: BundleInstructions
   ): Promise<void> {
     try {
       const uploadBundle = await this.createBundle(bundleInstructions);
@@ -411,8 +408,13 @@ class KYVE {
         "ToHeight",
         (bundleInstructions.fromHeight + uploadBundle.length).toString()
       );
-      transaction.addTag("ParentTxId", parentTxId);
       transaction.addTag("Content-Type", "application/gzip");
+
+      if (bundleProposal.uploader === ADDRESS_ZERO) {
+        transaction.addTag("Parent", bundleProposal.parentTxId);
+      } else {
+        transaction.addTag("Parent", bundleProposal.txId);
+      }
 
       await this.arweave.transactions.sign(transaction, this.keyfile);
 
