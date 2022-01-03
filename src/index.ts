@@ -35,7 +35,7 @@ import url from "url";
 import client, { register } from "prom-client";
 import { Database } from "./utils/database";
 import du from "du";
-import { gzipSync } from "zlib";
+import { gunzipSync, gzipSync } from "zlib";
 
 export * from "./utils";
 export * from "./faces";
@@ -253,12 +253,12 @@ class KYVE {
 
   public async createBundle(
     bundleInstructions: BundleInstructions
-  ): Promise<Buffer> {
+  ): Promise<any[]> {
     logger.error(`❌ "createBundle" not implemented. Exiting ...`);
     process.exit(1);
   }
 
-  public async loadBundle(bundleProposal: BundleProposal): Promise<Buffer> {
+  public async loadBundle(bundleProposal: BundleProposal): Promise<any[]> {
     logger.error(`❌ "loadBundle" not implemented. Exiting ...`);
     process.exit(1);
   }
@@ -285,7 +285,8 @@ class KYVE {
       `From ${bundleProposal.fromHeight} to ${bundleProposal.toHeight} ...`
     );
 
-    const uploadBundle = gzipSync(await this.loadBundle(bundleProposal));
+    const bundle = await this.loadBundle(bundleProposal);
+    const uploadBundle = gzipSync(Buffer.from(JSON.stringify(bundle)));
 
     try {
       const { status } = await this.arweave.transactions.getStatus(
@@ -326,7 +327,11 @@ class KYVE {
       return false;
     }
 
-    console.log(hash(uploadBundle), hash(downloadBundle));
+    console.log(gunzipSync(uploadBundle).byteLength);
+    console.log(gunzipSync(downloadBundle).byteLength);
+    console.log("---");
+    console.log(hash(Buffer.from(gunzipSync(uploadBundle)).buffer));
+    console.log(hash(Buffer.from(gunzipSync(downloadBundle)).buffer));
     if (hash(uploadBundle) !== hash(downloadBundle)) {
       return false;
     }
@@ -371,7 +376,7 @@ class KYVE {
       logger.info("💾 Uploading bundle to Arweave ...");
 
       const transaction = await this.arweave.createTransaction({
-        data: gzipSync(uploadBundle),
+        data: gzipSync(Buffer.from(JSON.stringify(uploadBundle))),
       });
 
       logger.debug(`Bundle data size = ${transaction.data_size} Bytes`);

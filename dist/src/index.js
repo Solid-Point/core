@@ -242,7 +242,11 @@ class KYVE {
         if (uploadBytes !== downloadBytes) {
             return false;
         }
-        console.log((0, object_hash_1.default)(uploadBundle), (0, object_hash_1.default)(downloadBundle));
+        console.log((0, zlib_1.gunzipSync)(uploadBundle).byteLength);
+        console.log((0, zlib_1.gunzipSync)(downloadBundle).byteLength);
+        console.log("---");
+        console.log((0, object_hash_1.default)(Buffer.from((0, zlib_1.gunzipSync)(uploadBundle)).buffer));
+        console.log((0, object_hash_1.default)(Buffer.from((0, zlib_1.gunzipSync)(downloadBundle)).buffer));
         if ((0, object_hash_1.default)(uploadBundle) !== (0, object_hash_1.default)(downloadBundle)) {
             return false;
         }
