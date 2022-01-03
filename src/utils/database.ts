@@ -21,15 +21,15 @@ export class Database {
     }
   }
 
-  public async put(key: string | number, value: Buffer): Promise<void> {
-    await fs.writeFile(`./db/${this.path}/${key}`, value);
+  public async put(key: string | number, value: any): Promise<void> {
+    await fs.writeFile(`./db/${this.path}/${key}.json`, value);
   }
 
-  public async get(key: string | number): Promise<Buffer> {
-    return await fs.readFile(`./db/${this.path}/${key}`);
+  public async get(key: string | number): Promise<any> {
+    return await fs.readFile(`./db/${this.path}/${key}.json`);
   }
 
   public async del(key: string | number): Promise<void> {
-    await fs.unlink(`./db/${this.path}/${key}`);
+    await fs.unlink(`./db/${this.path}/${key}.json`);
   }
 }

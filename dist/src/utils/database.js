@@ -13,13 +13,13 @@ class Database {
         }
     }
     async put(key, value) {
-        await fs_1.promises.writeFile(`./db/${this.path}/${key}`, value);
+        await fs_1.promises.writeFile(`./db/${this.path}/${key}.json`, value);
     }
     async get(key) {
-        return await fs_1.promises.readFile(`./db/${this.path}/${key}`);
+        return await fs_1.promises.readFile(`./db/${this.path}/${key}.json`);
     }
     async del(key) {
-        await fs_1.promises.unlink(`./db/${this.path}/${key}`);
+        await fs_1.promises.unlink(`./db/${this.path}/${key}.json`);
     }
 }
 exports.Database = Database;

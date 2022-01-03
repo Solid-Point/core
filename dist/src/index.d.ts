@@ -32,10 +32,10 @@ declare class KYVE {
     private run;
     worker(): Promise<void>;
     requestWorkerBatch(workerHeight: number): Promise<any[]>;
-    createBundle(bundleInstructions: BundleInstructions): Promise<Buffer[]>;
+    createBundle(bundleInstructions: BundleInstructions): Promise<Buffer>;
     private clearFinalizedData;
     private validateProposal;
-    validate(uploadBundle: Buffer[], uploadBytes: number, downloadBundle: Buffer[], downloadBytes: number): Promise<boolean>;
+    validate(uploadBundle: Buffer, uploadBytes: number, downloadBundle: Buffer, downloadBytes: number): Promise<boolean>;
     private getBundleProposal;
     private getBundleInstructions;
     private uploadBundleToArweave;

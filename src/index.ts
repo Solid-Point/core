@@ -24,8 +24,6 @@ import {
   sleep,
   fromBytes,
   toBytes,
-  formatBundle,
-  parseBundle,
   ADDRESS_ZERO,
 } from "./utils/helpers";
 import { logger } from "./utils";
@@ -261,7 +259,7 @@ class KYVE {
 
   public async createBundle(
     bundleInstructions: BundleInstructions
-  ): Promise<Buffer[]> {
+  ): Promise<Buffer> {
     logger.error(`❌ "createBundle" not implemented. Exiting ...`);
     process.exit(1);
   }
@@ -288,7 +286,8 @@ class KYVE {
       `From ${bundleProposal.fromHeight} to ${bundleProposal.toHeight} ...`
     );
 
-    const uploadBundle: Buffer[] = [];
+    const uploadBundle: any = null; // encode data to upload bundle
+    const data: any[] = [];
     const progress = new Progress("blocks");
     let h: number = bundleProposal.fromHeight;
 
@@ -298,8 +297,8 @@ class KYVE {
       try {
         const block = await this.db.get(h);
 
-        uploadBundle.push(block);
-        progress.update(uploadBundle.length);
+        data.push(block);
+        progress.update(data.length);
         h += 1;
       } catch {
         await sleep(10 * 1000);
@@ -321,7 +320,7 @@ class KYVE {
           }
         )) as Uint8Array;
         const downloadBytes = _data.byteLength;
-        const downloadBundle = parseBundle(Buffer.from(gunzipSync(_data)));
+        const downloadBundle = Buffer.from(gunzipSync(_data));
 
         await this.vote({
           transaction: bundleProposal.txId,
@@ -340,9 +339,9 @@ class KYVE {
   }
 
   public async validate(
-    uploadBundle: Buffer[],
+    uploadBundle: Buffer,
     uploadBytes: number,
-    downloadBundle: Buffer[],
+    downloadBundle: Buffer,
     downloadBytes: number
   ): Promise<boolean> {
     if (uploadBytes !== downloadBytes) {
@@ -393,7 +392,7 @@ class KYVE {
       logger.info("💾 Uploading bundle to Arweave ...");
 
       const transaction = await this.arweave.createTransaction({
-        data: gzipSync(formatBundle(uploadBundle)),
+        data: gzipSync(uploadBundle),
       });
 
       logger.debug(`Bundle data size = ${transaction.data_size} Bytes`);

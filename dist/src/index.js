@@ -217,15 +217,16 @@ class KYVE {
     async validateProposal(bundleProposal) {
         utils_2.logger.debug(`Validating bundle ${bundleProposal.txId} ...`);
         utils_2.logger.debug(`From ${bundleProposal.fromHeight} to ${bundleProposal.toHeight} ...`);
-        const uploadBundle = [];
+        const uploadBundle = null; // encode data to upload bundle
+        const data = [];
         const progress = new progress_1.Progress("blocks");
         let h = bundleProposal.fromHeight;
         progress.start(bundleProposal.toHeight - bundleProposal.fromHeight, 0);
         while (h < bundleProposal.toHeight) {
             try {
                 const block = await this.db.get(h);
-                uploadBundle.push(block);
-                progress.update(uploadBundle.length);
+                data.push(block);
+                progress.update(data.length);
                 h += 1;
             }
             catch {
@@ -240,7 +241,7 @@ class KYVE {
                     decode: true,
                 }));
                 const downloadBytes = _data.byteLength;
-                const downloadBundle = (0, helpers_1.parseBundle)(Buffer.from((0, zlib_1.gunzipSync)(_data)));
+                const downloadBundle = Buffer.from((0, zlib_1.gunzipSync)(_data));
                 await this.vote({
                     transaction: bundleProposal.txId,
                     valid: await this.validate(uploadBundle, +bundleProposal.byteSize, downloadBundle, +downloadBytes),
@@ -289,7 +290,7 @@ class KYVE {
             const uploadBundle = await this.createBundle(bundleInstructions);
             utils_2.logger.info("💾 Uploading bundle to Arweave ...");
             const transaction = await this.arweave.createTransaction({
-                data: (0, zlib_1.gzipSync)((0, helpers_1.formatBundle)(uploadBundle)),
+                data: (0, zlib_1.gzipSync)(uploadBundle),
             });
             utils_2.logger.debug(`Bundle data size = ${transaction.data_size} Bytes`);
             utils_2.logger.debug(`Bundle size = ${uploadBundle.length}`);
