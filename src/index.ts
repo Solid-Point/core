@@ -34,9 +34,8 @@ import http from "http";
 import url from "url";
 import client, { register } from "prom-client";
 import { Database } from "./utils/database";
-import { Progress } from "./utils/progress";
 import du from "du";
-import { gunzipSync, gzipSync } from "zlib";
+import { gzipSync } from "zlib";
 
 export * from "./utils";
 export * from "./faces";
