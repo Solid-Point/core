@@ -284,7 +284,8 @@ class KYVE {
                 data: (0, zlib_1.gzipSync)(Buffer.from(JSON.stringify(uploadBundle.bundle))),
             });
             utils_2.logger.debug(`Bundle data size = ${transaction.data_size} Bytes`);
-            utils_2.logger.debug(`Bundle size = ${uploadBundle.bundle.length}`);
+            utils_2.logger.debug(`Data size = ${uploadBundle.bundle.length}`);
+            utils_2.logger.debug(`Bundle size = ${uploadBundle.toHeight - uploadBundle.fromHeight}`);
             transaction.addTag("Application", "KYVE - Testnet");
             transaction.addTag("Pool", this.pool.address);
             transaction.addTag("@kyve/core", package_json_1.version);
