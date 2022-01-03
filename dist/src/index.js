@@ -41,7 +41,6 @@ const http_1 = __importDefault(require("http"));
 const url_1 = __importDefault(require("url"));
 const prom_client_1 = __importStar(require("prom-client"));
 const database_1 = require("./utils/database");
-const progress_1 = require("./utils/progress");
 const du_1 = __importDefault(require("du"));
 const zlib_1 = require("zlib");
 __exportStar(require("./utils"), exports);
@@ -201,6 +200,10 @@ class KYVE {
         utils_2.logger.error(`❌ "createBundle" not implemented. Exiting ...`);
         process.exit(1);
     }
+    async loadBundle(bundleProposal) {
+        utils_2.logger.error(`❌ "loadBundle" not implemented. Exiting ...`);
+        process.exit(1);
+    }
     async clearFinalizedData() {
         let tail;
         try {
@@ -217,34 +220,16 @@ class KYVE {
     async validateProposal(bundleProposal) {
         utils_2.logger.debug(`Validating bundle ${bundleProposal.txId} ...`);
         utils_2.logger.debug(`From ${bundleProposal.fromHeight} to ${bundleProposal.toHeight} ...`);
-        const uploadBundle = null; // encode data to upload bundle
-        const data = [];
-        const progress = new progress_1.Progress("blocks");
-        let h = bundleProposal.fromHeight;
-        progress.start(bundleProposal.toHeight - bundleProposal.fromHeight, 0);
-        while (h < bundleProposal.toHeight) {
-            try {
-                const block = await this.db.get(h);
-                data.push(block);
-                progress.update(data.length);
-                h += 1;
-            }
-            catch {
-                await (0, helpers_1.sleep)(10 * 1000);
-            }
-        }
-        progress.stop();
+        const uploadBundle = (0, zlib_1.gzipSync)(await this.loadBundle(bundleProposal));
         try {
             const { status } = await this.arweave.transactions.getStatus(bundleProposal.txId);
             if (status === 200 || status === 202) {
-                const _data = (await this.arweave.transactions.getData(bundleProposal.txId, {
+                const downloadBundle = Buffer.from(await this.arweave.transactions.getData(bundleProposal.txId, {
                     decode: true,
                 }));
-                const downloadBytes = _data.byteLength;
-                const downloadBundle = Buffer.from((0, zlib_1.gunzipSync)(_data));
                 await this.vote({
                     transaction: bundleProposal.txId,
-                    valid: await this.validate(uploadBundle, +bundleProposal.byteSize, downloadBundle, +downloadBytes),
+                    valid: await this.validate(uploadBundle, +bundleProposal.byteSize, downloadBundle, +downloadBundle.byteLength),
                 });
             }
         }

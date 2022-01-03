@@ -264,6 +264,11 @@ class KYVE {
     process.exit(1);
   }
 
+  public async loadBundle(bundleProposal: BundleProposal): Promise<Buffer> {
+    logger.error(`❌ "loadBundle" not implemented. Exiting ...`);
+    process.exit(1);
+  }
+
   private async clearFinalizedData() {
     let tail: number;
 
@@ -286,26 +291,7 @@ class KYVE {
       `From ${bundleProposal.fromHeight} to ${bundleProposal.toHeight} ...`
     );
 
-    const uploadBundle: any = null; // encode data to upload bundle
-    const data: any[] = [];
-    const progress = new Progress("blocks");
-    let h: number = bundleProposal.fromHeight;
-
-    progress.start(bundleProposal.toHeight - bundleProposal.fromHeight, 0);
-
-    while (h < bundleProposal.toHeight) {
-      try {
-        const block = await this.db.get(h);
-
-        data.push(block);
-        progress.update(data.length);
-        h += 1;
-      } catch {
-        await sleep(10 * 1000);
-      }
-    }
-
-    progress.stop();
+    const uploadBundle = gzipSync(await this.loadBundle(bundleProposal));
 
     try {
       const { status } = await this.arweave.transactions.getStatus(
@@ -313,14 +299,11 @@ class KYVE {
       );
 
       if (status === 200 || status === 202) {
-        const _data = (await this.arweave.transactions.getData(
-          bundleProposal.txId,
-          {
+        const downloadBundle = Buffer.from(
+          await this.arweave.transactions.getData(bundleProposal.txId, {
             decode: true,
-          }
-        )) as Uint8Array;
-        const downloadBytes = _data.byteLength;
-        const downloadBundle = Buffer.from(gunzipSync(_data));
+          })
+        );
 
         await this.vote({
           transaction: bundleProposal.txId,
@@ -328,7 +311,7 @@ class KYVE {
             uploadBundle,
             +bundleProposal.byteSize,
             downloadBundle,
-            +downloadBytes
+            +downloadBundle.byteLength
           ),
         });
       }
