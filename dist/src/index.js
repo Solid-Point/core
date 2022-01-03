@@ -214,7 +214,7 @@ class KYVE {
         for (let key = tail; key < this.poolState.height.toNumber(); key++) {
             await this.db.del(key);
         }
-        await this.db.put("tail", this.poolState.height);
+        await this.db.put("tail", this.poolState.height.toNumber());
     }
     async validateProposal(bundleProposal) {
         utils_2.logger.debug(`Validating bundle ${bundleProposal.txId} ...`);

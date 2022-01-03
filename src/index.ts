@@ -276,7 +276,7 @@ class KYVE {
       await this.db.del(key);
     }
 
-    await this.db.put("tail", this.poolState.height);
+    await this.db.put("tail", this.poolState.height.toNumber());
   }
 
   private async validateProposal(bundleProposal: BundleProposal) {
