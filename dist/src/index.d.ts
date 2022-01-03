@@ -2,7 +2,7 @@
 import Arweave from "arweave";
 import { JWKInterface } from "arweave/node/lib/wallet";
 import { Contract, Wallet } from "ethers";
-import { BundleInstructions, BundleProposal } from "./faces";
+import { Bundle, BundleInstructions, BundleProposal } from "./faces";
 import { CLI } from "./utils";
 import client from "prom-client";
 import { Database } from "./utils/database";
@@ -32,7 +32,7 @@ declare class KYVE {
     private run;
     worker(): Promise<void>;
     requestWorkerBatch(workerHeight: number): Promise<any[]>;
-    createBundle(bundleInstructions: BundleInstructions): Promise<any[]>;
+    createBundle(bundleInstructions: BundleInstructions): Promise<Bundle>;
     loadBundle(bundleProposal: BundleProposal): Promise<any[]>;
     private clearFinalizedData;
     private validateProposal;

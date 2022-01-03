@@ -12,7 +12,7 @@ import {
   animals,
   uniqueNamesGenerator,
 } from "unique-names-generator";
-import { BundleInstructions, BundleProposal } from "./faces";
+import { Bundle, BundleInstructions, BundleProposal } from "./faces";
 import { CLI } from "./utils";
 import {
   getGasPrice,
@@ -253,7 +253,7 @@ class KYVE {
 
   public async createBundle(
     bundleInstructions: BundleInstructions
-  ): Promise<any[]> {
+  ): Promise<Bundle> {
     logger.error(`❌ "createBundle" not implemented. Exiting ...`);
     process.exit(1);
   }
@@ -327,11 +327,11 @@ class KYVE {
       return false;
     }
 
-    console.log(gunzipSync(uploadBundle).byteLength);
-    console.log(gunzipSync(downloadBundle).byteLength);
+    console.log(JSON.parse(gunzipSync(uploadBundle).toString()).length);
+    console.log(JSON.parse(gunzipSync(downloadBundle).toString()).length);
     console.log("---");
-    console.log(hash(Buffer.from(gunzipSync(uploadBundle)).buffer));
-    console.log(hash(Buffer.from(gunzipSync(downloadBundle)).buffer));
+    console.log(hash(uploadBundle));
+    console.log(hash(downloadBundle));
     if (hash(uploadBundle) !== hash(downloadBundle)) {
       return false;
     }
@@ -376,25 +376,19 @@ class KYVE {
       logger.info("💾 Uploading bundle to Arweave ...");
 
       const transaction = await this.arweave.createTransaction({
-        data: gzipSync(Buffer.from(JSON.stringify(uploadBundle))),
+        data: gzipSync(Buffer.from(JSON.stringify(uploadBundle.bundle))),
       });
 
       logger.debug(`Bundle data size = ${transaction.data_size} Bytes`);
-      logger.debug(`Bundle size = ${uploadBundle.length}`);
+      logger.debug(`Bundle size = ${uploadBundle.bundle.length}`);
 
       transaction.addTag("Application", "KYVE - Testnet");
       transaction.addTag("Pool", this.pool.address);
       transaction.addTag("@kyve/core", version);
       transaction.addTag(this.runtime, this.version);
       transaction.addTag("Uploader", bundleInstructions.uploader);
-      transaction.addTag(
-        "FromHeight",
-        bundleInstructions.fromHeight.toString()
-      );
-      transaction.addTag(
-        "ToHeight",
-        (bundleInstructions.fromHeight + uploadBundle.length).toString()
-      );
+      transaction.addTag("FromHeight", uploadBundle.fromHeight.toString());
+      transaction.addTag("ToHeight", uploadBundle.toHeight.toString());
       transaction.addTag("Content-Type", "application/gzip");
 
       if (bundleProposal.uploader === ADDRESS_ZERO) {
@@ -416,7 +410,10 @@ class KYVE {
 
       await this.arweave.transactions.post(transaction);
 
-      await this.submitBundleProposal(transaction, uploadBundle.length);
+      await this.submitBundleProposal(
+        transaction,
+        uploadBundle.toHeight - uploadBundle.fromHeight
+      );
     } catch (error) {
       logger.error(
         "❌ Received an error while trying to upload bundle to Arweave. Skipping upload ..."

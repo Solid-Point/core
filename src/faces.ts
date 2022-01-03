@@ -12,3 +12,9 @@ export type BundleProposal = {
   toHeight: number;
   start: number;
 };
+
+export type Bundle = {
+  fromHeight: number;
+  toHeight: number;
+  bundle: any[];
+};
