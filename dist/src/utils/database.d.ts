@@ -1,9 +1,3 @@
-/// <reference types="node" />
-export interface Operation {
-    type: "put" | "del";
-    key: string;
-    value?: Buffer;
-}
 export declare class Database {
     path: string;
     constructor(path: string);

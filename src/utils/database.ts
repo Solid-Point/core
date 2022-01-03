@@ -1,10 +1,5 @@
 import { existsSync, mkdirSync, promises as fs } from "fs";
-
-export interface Operation {
-  type: "put" | "del";
-  key: string;
-  value?: Buffer;
-}
+import { readFile, writeFile } from "jsonfile";
 
 export class Database {
   public path: string;
@@ -22,11 +17,11 @@ export class Database {
   }
 
   public async put(key: string | number, value: any): Promise<void> {
-    await fs.writeFile(`./db/${this.path}/${key}.json`, value);
+    await writeFile(`./db/${this.path}/${key}.json`, value);
   }
 
   public async get(key: string | number): Promise<any> {
-    return await fs.readFile(`./db/${this.path}/${key}.json`);
+    return await readFile(`./db/${this.path}/${key}.json`);
   }
 
   public async del(key: string | number): Promise<void> {
