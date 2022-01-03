@@ -163,7 +163,7 @@ class KYVE {
             try {
                 let workerHeight;
                 try {
-                    workerHeight = parseInt((await this.db.get("head")).toString());
+                    workerHeight = parseInt(await this.db.get("head"));
                 }
                 catch {
                     workerHeight = this.poolState.height.toNumber();
@@ -182,7 +182,7 @@ class KYVE {
                 for (let op of ops) {
                     await this.db.put(op.key, op.value);
                 }
-                await this.db.put("head", Buffer.from((workerHeight + ops.length).toString()));
+                await this.db.put("head", workerHeight + ops.length);
             }
             catch (error) {
                 utils_2.logger.error("❌ Error requesting data batch.");
@@ -206,7 +206,7 @@ class KYVE {
     async clearFinalizedData() {
         let tail;
         try {
-            tail = parseInt((await this.db.get("tail")).toString());
+            tail = parseInt(await this.db.get("tail"));
         }
         catch {
             tail = this.poolState.height.toNumber();
@@ -214,7 +214,7 @@ class KYVE {
         for (let key = tail; key < this.poolState.height.toNumber(); key++) {
             await this.db.del(key);
         }
-        await this.db.put("tail", Buffer.from(this.poolState.height.toString()));
+        await this.db.put("tail", this.poolState.height);
     }
     async validateProposal(bundleProposal) {
         utils_2.logger.debug(`Validating bundle ${bundleProposal.txId} ...`);
