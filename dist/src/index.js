@@ -219,7 +219,8 @@ class KYVE {
     async validateProposal(bundleProposal) {
         utils_2.logger.debug(`Validating bundle ${bundleProposal.txId} ...`);
         utils_2.logger.debug(`From ${bundleProposal.fromHeight} to ${bundleProposal.toHeight} ...`);
-        const uploadBundle = (0, zlib_1.gzipSync)(await this.loadBundle(bundleProposal));
+        const bundle = await this.loadBundle(bundleProposal);
+        const uploadBundle = (0, zlib_1.gzipSync)(Buffer.from(JSON.stringify(bundle)));
         try {
             const { status } = await this.arweave.transactions.getStatus(bundleProposal.txId);
             if (status === 200 || status === 202) {
@@ -280,7 +281,7 @@ class KYVE {
             const uploadBundle = await this.createBundle(bundleInstructions);
             utils_2.logger.info("💾 Uploading bundle to Arweave ...");
             const transaction = await this.arweave.createTransaction({
-                data: (0, zlib_1.gzipSync)(uploadBundle),
+                data: (0, zlib_1.gzipSync)(Buffer.from(JSON.stringify(uploadBundle))),
             });
             utils_2.logger.debug(`Bundle data size = ${transaction.data_size} Bytes`);
             utils_2.logger.debug(`Bundle size = ${uploadBundle.length}`);
