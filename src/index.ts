@@ -322,16 +322,10 @@ class KYVE {
     downloadBundle: Buffer,
     downloadBytes: number
   ): Promise<boolean> {
-    console.log(uploadBytes, downloadBytes);
     if (uploadBytes !== downloadBytes) {
       return false;
     }
 
-    console.log(JSON.parse(gunzipSync(uploadBundle).toString()).length);
-    console.log(JSON.parse(gunzipSync(downloadBundle).toString()).length);
-    console.log("---");
-    console.log(hash(uploadBundle));
-    console.log(hash(downloadBundle));
     if (hash(uploadBundle) !== hash(downloadBundle)) {
       return false;
     }

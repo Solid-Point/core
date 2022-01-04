@@ -239,15 +239,9 @@ class KYVE {
         }
     }
     async validate(uploadBundle, uploadBytes, downloadBundle, downloadBytes) {
-        console.log(uploadBytes, downloadBytes);
         if (uploadBytes !== downloadBytes) {
             return false;
         }
-        console.log(JSON.parse((0, zlib_1.gunzipSync)(uploadBundle).toString()).length);
-        console.log(JSON.parse((0, zlib_1.gunzipSync)(downloadBundle).toString()).length);
-        console.log("---");
-        console.log((0, object_hash_1.default)(uploadBundle));
-        console.log((0, object_hash_1.default)(downloadBundle));
         if ((0, object_hash_1.default)(uploadBundle) !== (0, object_hash_1.default)(downloadBundle)) {
             return false;
         }
