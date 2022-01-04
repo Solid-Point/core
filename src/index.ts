@@ -36,6 +36,7 @@ import client, { register } from "prom-client";
 import { Database } from "./utils/database";
 import du from "du";
 import { gunzipSync, gzipSync } from "zlib";
+import axios from "axios";
 
 export * from "./utils";
 export * from "./faces";
@@ -294,10 +295,9 @@ class KYVE {
       );
 
       if (status === 200 || status === 202) {
-        const downloadBundle = Buffer.from(
-          await this.arweave.transactions.getData(bundleProposal.txId, {
-            decode: true,
-          })
+        const { data: downloadBundle } = await axios.get(
+          `https://arweave.net/${bundleProposal.txId}`,
+          { responseType: "arraybuffer" }
         );
 
         await this.vote({
