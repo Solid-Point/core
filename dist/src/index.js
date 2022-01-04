@@ -43,6 +43,7 @@ const prom_client_1 = __importStar(require("prom-client"));
 const database_1 = require("./utils/database");
 const du_1 = __importDefault(require("du"));
 const zlib_1 = require("zlib");
+const axios_1 = __importDefault(require("axios"));
 __exportStar(require("./utils"), exports);
 __exportStar(require("./faces"), exports);
 __exportStar(require("./utils/helpers"), exports);
@@ -224,9 +225,7 @@ class KYVE {
         try {
             const { status } = await this.arweave.transactions.getStatus(bundleProposal.txId);
             if (status === 200 || status === 202) {
-                const downloadBundle = Buffer.from(await this.arweave.transactions.getData(bundleProposal.txId, {
-                    decode: true,
-                }));
+                const { data: downloadBundle } = await axios_1.default.get(`https://arweave.net/${bundleProposal.txId}`, { responseType: "arraybuffer" });
                 await this.vote({
                     transaction: bundleProposal.txId,
                     valid: await this.validate(uploadBundle, +bundleProposal.byteSize, downloadBundle, +downloadBundle.byteLength),
