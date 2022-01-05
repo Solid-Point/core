@@ -18,7 +18,7 @@ declare class KYVE {
     protected stake: string;
     protected commission: string;
     protected wallet: Wallet;
-    protected keyfile?: JWKInterface;
+    protected keyfile: JWKInterface;
     protected name: string;
     protected gasMultiplier: string;
     protected poolState: any;
