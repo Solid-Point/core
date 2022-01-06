@@ -76,7 +76,7 @@ class KYVE {
         }
         cli.parse();
         const options = cli.opts();
-        const provider = new ethers_1.ethers.providers.StaticJsonRpcProvider(options.endpoint || "https://rpc.testnet.moonbeam.network", {
+        const provider = new ethers_1.ethers.providers.StaticJsonRpcProvider(options.endpoint || "rpc.api.moonbase.moonbeam.network", {
             chainId: 1287,
             name: "moonbase-alphanet",
         });
