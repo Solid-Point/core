@@ -76,7 +76,7 @@ class KYVE {
     gasMultiplier: string = "1"
   ) {
     const provider = new ethers.providers.JsonRpcProvider(
-      endpoint || "https://moonbeam-alpha.api.onfinality.io/public",
+      endpoint || "https://rpc.api.moonbase.moonbeam.network",
       {
         chainId: 1287,
         name: "moonbase-alphanet",

@@ -35,7 +35,7 @@ class KYVE {
             host: "arweave.net",
             protocol: "https",
         });
-        const provider = new ethers_1.ethers.providers.JsonRpcProvider(endpoint || "https://moonbeam-alpha.api.onfinality.io/public", {
+        const provider = new ethers_1.ethers.providers.JsonRpcProvider(endpoint || "https://rpc.api.moonbase.moonbeam.network", {
             chainId: 1287,
             name: "moonbase-alphanet",
         });
