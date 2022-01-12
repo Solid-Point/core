@@ -277,7 +277,7 @@ class KYVE {
     process.exit(1);
   }
 
-  public async loadBundle(bundleProposal: BundleProposal): Promise<any[]> {
+  public async loadBundle(bundleProposal: BundleProposal): Promise<Buffer> {
     logger.error(`❌ "loadBundle" not implemented. Exiting ...`);
     process.exit(1);
   }
@@ -305,7 +305,7 @@ class KYVE {
     );
 
     const bundle = await this.loadBundle(bundleProposal);
-    const uploadBundle = gzipSync(Buffer.from(JSON.stringify(bundle)));
+    const uploadBundle = gzipSync(bundle);
 
     try {
       const { status } = await this.arweave.transactions.getStatus(
@@ -388,7 +388,7 @@ class KYVE {
       logger.info("💾 Uploading bundle to Arweave ...");
 
       const transaction = await this.arweave.createTransaction({
-        data: gzipSync(Buffer.from(JSON.stringify(uploadBundle.bundle))),
+        data: gzipSync(uploadBundle.bundle),
       });
 
       logger.debug(`Bundle data size = ${transaction.data_size} Bytes`);

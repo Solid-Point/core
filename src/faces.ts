@@ -16,5 +16,5 @@ export type BundleProposal = {
 export type Bundle = {
   fromHeight: number;
   toHeight: number;
-  bundle: any[];
+  bundle: Buffer;
 };
