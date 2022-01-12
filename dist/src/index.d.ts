@@ -33,7 +33,7 @@ declare class KYVE {
     worker(): Promise<void>;
     requestWorkerBatch(workerHeight: number): Promise<any[]>;
     createBundle(bundleInstructions: BundleInstructions): Promise<Bundle>;
-    loadBundle(bundleProposal: BundleProposal): Promise<any[]>;
+    loadBundle(bundleProposal: BundleProposal): Promise<Buffer>;
     private clearFinalizedData;
     private validateProposal;
     validate(uploadBundle: Buffer, uploadBytes: number, downloadBundle: Buffer, downloadBytes: number): Promise<boolean>;
