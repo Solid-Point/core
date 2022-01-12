@@ -115,10 +115,20 @@ class KYVE {
     async start() {
         this.logNodeInfo();
         this.setupMetrics();
-        await this.fetchPoolState();
+        try {
+            await this.fetchPoolState();
+        }
+        catch {
+            process.exit(1);
+        }
         await this.setupNodeStake();
         await this.setupNodeCommission();
-        await this.checkIfNodeIsValidator();
+        try {
+            await this.checkIfNodeIsValidator();
+        }
+        catch {
+            process.exit(1);
+        }
         this.worker();
         this.run();
     }
@@ -126,13 +136,25 @@ class KYVE {
         try {
             while (true) {
                 console.log(`Starting new round`);
-                await this.fetchPoolState(false);
+                try {
+                    await this.fetchPoolState(false);
+                }
+                catch {
+                    await (0, helpers_1.sleep)(60 * 1000);
+                    continue;
+                }
                 if (this.poolState.paused) {
                     utils_2.logger.info("💤  Pool is paused. Waiting ...");
                     await (0, helpers_1.sleep)(60 * 1000);
                     continue;
                 }
-                await this.checkIfNodeIsValidator(false);
+                try {
+                    await this.checkIfNodeIsValidator(false);
+                }
+                catch {
+                    await (0, helpers_1.sleep)(60 * 1000);
+                    continue;
+                }
                 await this.clearFinalizedData();
                 const bundleProposal = await this.getBundleProposal();
                 const bundleInstructions = await this.getBundleInstructions();
@@ -398,22 +420,25 @@ class KYVE {
             this.poolState = { ...(await this.pool.pool()) };
         }
         catch (error) {
-            utils_2.logger.error("❌ Received an error while trying to fetch the pool state:", error);
-            process.exit(1);
+            utils_2.logger.error("❌ Received an error while trying to fetch the pool state:");
+            utils_2.logger.debug(error);
+            throw new Error();
         }
         try {
             this.poolState.config = JSON.parse(this.poolState.config);
         }
         catch (error) {
-            utils_2.logger.error("❌ Received an error while trying to parse the config:", error);
-            process.exit(1);
+            utils_2.logger.error("❌ Received an error while trying to parse the config:");
+            utils_2.logger.debug(error);
+            throw new Error();
         }
         try {
             this.poolState.metadata = JSON.parse(this.poolState.metadata);
         }
         catch (error) {
-            utils_2.logger.error("❌ Received an error while trying to parse the metadata:", error);
-            process.exit(1);
+            utils_2.logger.error("❌ Received an error while trying to parse the metadata:");
+            utils_2.logger.debug(error);
+            throw new Error();
         }
         if (((_a = this.poolState.metadata) === null || _a === void 0 ? void 0 : _a.runtime) === this.runtime) {
             if (logs) {
@@ -458,7 +483,7 @@ class KYVE {
         catch (error) {
             utils_2.logger.error("❌ Received an error while trying to fetch validator info");
             utils_2.logger.debug(error);
-            process.exit(1);
+            throw new Error();
         }
     }
     async setupNodeStake() {

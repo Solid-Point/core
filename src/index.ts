@@ -143,12 +143,20 @@ class KYVE {
     this.logNodeInfo();
     this.setupMetrics();
 
-    await this.fetchPoolState();
+    try {
+      await this.fetchPoolState();
+    } catch {
+      process.exit(1);
+    }
 
     await this.setupNodeStake();
     await this.setupNodeCommission();
 
-    await this.checkIfNodeIsValidator();
+    try {
+      await this.checkIfNodeIsValidator();
+    } catch {
+      process.exit(1);
+    }
 
     this.worker();
     this.run();
@@ -159,7 +167,12 @@ class KYVE {
       while (true) {
         console.log(`Starting new round`);
 
-        await this.fetchPoolState(false);
+        try {
+          await this.fetchPoolState(false);
+        } catch {
+          await sleep(60 * 1000);
+          continue;
+        }
 
         if (this.poolState.paused) {
           logger.info("💤  Pool is paused. Waiting ...");
@@ -167,7 +180,12 @@ class KYVE {
           continue;
         }
 
-        await this.checkIfNodeIsValidator(false);
+        try {
+          await this.checkIfNodeIsValidator(false);
+        } catch {
+          await sleep(60 * 1000);
+          continue;
+        }
 
         await this.clearFinalizedData();
 
@@ -557,30 +575,26 @@ class KYVE {
       this.poolState = { ...(await this.pool.pool()) };
     } catch (error) {
       logger.error(
-        "❌ Received an error while trying to fetch the pool state:",
-        error
+        "❌ Received an error while trying to fetch the pool state:"
       );
-      process.exit(1);
+      logger.debug(error);
+      throw new Error();
     }
 
     try {
       this.poolState.config = JSON.parse(this.poolState.config);
     } catch (error) {
-      logger.error(
-        "❌ Received an error while trying to parse the config:",
-        error
-      );
-      process.exit(1);
+      logger.error("❌ Received an error while trying to parse the config:");
+      logger.debug(error);
+      throw new Error();
     }
 
     try {
       this.poolState.metadata = JSON.parse(this.poolState.metadata);
     } catch (error) {
-      logger.error(
-        "❌ Received an error while trying to parse the metadata:",
-        error
-      );
-      process.exit(1);
+      logger.error("❌ Received an error while trying to parse the metadata:");
+      logger.debug(error);
+      throw new Error();
     }
 
     if (this.poolState.metadata?.runtime === this.runtime) {
@@ -632,7 +646,7 @@ class KYVE {
     } catch (error) {
       logger.error("❌ Received an error while trying to fetch validator info");
       logger.debug(error);
-      process.exit(1);
+      throw new Error();
     }
   }
 
