@@ -210,13 +210,13 @@ class KYVE {
           await this.claimUploaderRole();
         }
 
-        bundleProposal = await this.getBundleProposal();
-        bundleInstructions = await this.getBundleInstructions();
+        while (true) {
+          bundleProposal = await this.getBundleProposal();
+          bundleInstructions = await this.getBundleInstructions();
 
-        if (bundleInstructions.uploader === this.wallet.address) {
-          logger.info("Selected as uploader ...");
+          if (bundleInstructions.uploader === this.wallet.address) {
+            logger.info("Selected as uploader ...");
 
-          while (true) {
             if (await this.pool.canPropose()) {
               await this.uploadBundleToArweave(
                 bundleProposal,
@@ -226,6 +226,8 @@ class KYVE {
             } else {
               await sleep(10 * 1000);
             }
+          } else {
+            break;
           }
         }
 
