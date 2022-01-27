@@ -183,6 +183,12 @@
         "inputs": [
             {
                 "indexed": false,
+                "internalType": "bytes32",
+                "name": "nodeId",
+                "type": "bytes32"
+            },
+            {
+                "indexed": false,
                 "internalType": "address",
                 "name": "node",
                 "type": "address"
@@ -385,6 +391,12 @@
         "inputs": [
             {
                 "indexed": false,
+                "internalType": "bytes32",
+                "name": "nodeId",
+                "type": "bytes32"
+            },
+            {
+                "indexed": false,
                 "internalType": "address",
                 "name": "node",
                 "type": "address"
@@ -516,6 +528,19 @@
     {
         "inputs": [],
         "name": "MAX_VALIDATORS",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "MIN_UPLOAD_TIMEOUT",
         "outputs": [
             {
                 "internalType": "uint256",
@@ -671,13 +696,20 @@
         "type": "function"
     },
     {
-        "inputs": [
+        "inputs": [],
+        "name": "canPropose",
+        "outputs": [
             {
-                "internalType": "address",
-                "name": "_node",
-                "type": "address"
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
             }
         ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
         "name": "canVote",
         "outputs": [
             {
@@ -745,25 +777,6 @@
         "name": "delegate",
         "outputs": [],
         "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "delegator",
-                "type": "address"
-            }
-        ],
-        "name": "delegatedNodesList",
-        "outputs": [
-            {
-                "internalType": "address[]",
-                "name": "",
-                "type": "address[]"
-            }
-        ],
-        "stateMutability": "view",
         "type": "function"
     },
     {
@@ -968,6 +981,11 @@
         "outputs": [
             {
                 "components": [
+                    {
+                        "internalType": "bytes32",
+                        "name": "nodeId",
+                        "type": "bytes32"
+                    },
                     {
                         "internalType": "address",
                         "name": "nodeAddress",
@@ -1559,32 +1577,6 @@
         "name": "updateStorageCost",
         "outputs": [],
         "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "_uploadTimeout",
-                "type": "uint256"
-            }
-        ],
-        "name": "updateUploadTimeout",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "uploadTimeout",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
         "type": "function"
     },
     {

@@ -156,22 +156,34 @@ class KYVE {
                     continue;
                 }
                 await this.clearFinalizedData();
-                const bundleProposal = await this.getBundleProposal();
-                const bundleInstructions = await this.getBundleInstructions();
+                let bundleProposal = await this.getBundleProposal();
+                let bundleInstructions = await this.getBundleInstructions();
                 console.log(bundleProposal);
                 console.log(bundleInstructions);
                 if (bundleProposal.uploader !== helpers_1.ADDRESS_ZERO &&
                     bundleProposal.uploader !== this.wallet.address) {
-                    await this.validateProposal(bundleProposal);
-                }
-                if (bundleInstructions.uploader === helpers_1.ADDRESS_ZERO ||
-                    bundleInstructions.uploader === this.wallet.address) {
-                    utils_2.logger.info("Selected as uploader.");
-                    if (bundleProposal.uploader !== helpers_1.ADDRESS_ZERO) {
-                        utils_2.logger.debug(`Waiting ${this.poolState.bundleDelay}s ...`);
-                        await (0, helpers_1.sleep)(this.poolState.bundleDelay * 1000);
+                    if (await this.pool.canVote()) {
+                        await this.validateProposal(bundleProposal);
                     }
-                    await this.uploadBundleToArweave(bundleProposal, bundleInstructions);
+                    else {
+                        utils_2.logger.warn("Can not vote. Skipping proposal...");
+                    }
+                }
+                if (bundleInstructions.uploader === helpers_1.ADDRESS_ZERO) {
+                    await this.claimUploaderRole();
+                    bundleInstructions = await this.getBundleInstructions();
+                }
+                if (bundleInstructions.uploader === this.wallet.address) {
+                    utils_2.logger.info("Selected as uploader ...");
+                    while (true) {
+                        if (await this.pool.canPropose()) {
+                            await this.uploadBundleToArweave(bundleProposal, bundleInstructions);
+                            break;
+                        }
+                        else {
+                            await (0, helpers_1.sleep)(10 * 1000);
+                        }
+                    }
                 }
                 await this.nextBundleInstructions(bundleInstructions);
             }
@@ -343,38 +355,41 @@ class KYVE {
             utils_2.logger.debug(error);
         }
     }
+    async claimUploaderRole() {
+        try {
+            utils_2.logger.info("Claiming uploader role ...");
+            const tx = await this.pool.claimUploaderRole();
+            await tx.wait();
+        }
+        catch (error) {
+            utils_2.logger.error("❌ Received an error while to claim uploader role. Skipping proposal ...");
+            utils_2.logger.debug(error);
+        }
+    }
     async nextBundleInstructions(bundleInstructions) {
         return new Promise((resolve) => {
             utils_2.logger.debug("Waiting for next bundle instructions ...");
-            const uploadTimeout = setTimeout(async () => {
+            const uploadTimeout = setInterval(async () => {
                 try {
-                    if ((bundleInstructions === null || bundleInstructions === void 0 ? void 0 : bundleInstructions.uploader) !== this.wallet.address) {
-                        utils_2.logger.debug("Reached upload timeout. Claiming uploader role ...");
-                        const tx = await this.pool.claimUploaderRole({
-                            gasLimit: 100000,
-                            gasPrice: await (0, helpers_1.getGasPrice)(this.pool, this.gasMultiplier),
-                        });
-                        utils_2.logger.debug(`Transaction = ${tx.hash}`);
+                    if (bundleInstructions.uploader !== this.wallet.address) {
+                        if (await this.pool.canClaim()) {
+                            await this.claimUploaderRole();
+                        }
                     }
                 }
                 catch (error) {
-                    utils_2.logger.error("❌ Received an error while claiming uploader slot. Skipping claim ...");
+                    utils_2.logger.error("❌ Received an error while claiming uploader role. Skipping claim ...");
                     utils_2.logger.debug(error);
                 }
-            }, this.poolState.uploadTimeout.toNumber() * 1000);
+            }, 10 * 1000);
             this.pool.on("NextBundleInstructions", () => {
-                clearTimeout(uploadTimeout);
+                clearInterval(uploadTimeout);
                 resolve();
             });
         });
     }
     async vote(vote) {
         utils_2.logger.info(`🖋  Voting ${vote.valid ? "valid" : "invalid"} on bundle ${vote.transaction} ...`);
-        const canVote = await this.pool.canVote(this.wallet.address);
-        if (!canVote) {
-            utils_2.logger.info("⚠️  Node has no voting power because it has no delegators. Skipping vote ...");
-            return;
-        }
         try {
             const tx = await this.pool.vote((0, helpers_1.toBytes)(vote.transaction), vote.valid, {
                 gasLimit: await this.pool.estimateGas.vote((0, helpers_1.toBytes)(vote.transaction), vote.valid),

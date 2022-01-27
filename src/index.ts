@@ -189,8 +189,8 @@ class KYVE {
 
         await this.clearFinalizedData();
 
-        const bundleProposal = await this.getBundleProposal();
-        const bundleInstructions = await this.getBundleInstructions();
+        let bundleProposal = await this.getBundleProposal();
+        let bundleInstructions = await this.getBundleInstructions();
 
         console.log(bundleProposal);
         console.log(bundleInstructions);
@@ -199,21 +199,32 @@ class KYVE {
           bundleProposal.uploader !== ADDRESS_ZERO &&
           bundleProposal.uploader !== this.wallet.address
         ) {
-          await this.validateProposal(bundleProposal);
+          if (await this.pool.canVote()) {
+            await this.validateProposal(bundleProposal);
+          } else {
+            logger.warn("Can not vote. Skipping proposal...");
+          }
         }
 
-        if (
-          bundleInstructions.uploader === ADDRESS_ZERO ||
-          bundleInstructions.uploader === this.wallet.address
-        ) {
-          logger.info("Selected as uploader.");
+        if (bundleInstructions.uploader === ADDRESS_ZERO) {
+          await this.claimUploaderRole();
+          bundleInstructions = await this.getBundleInstructions();
+        }
 
-          if (bundleProposal.uploader !== ADDRESS_ZERO) {
-            logger.debug(`Waiting ${this.poolState.bundleDelay}s ...`);
-            await sleep(this.poolState.bundleDelay * 1000);
+        if (bundleInstructions.uploader === this.wallet.address) {
+          logger.info("Selected as uploader ...");
+
+          while (true) {
+            if (await this.pool.canPropose()) {
+              await this.uploadBundleToArweave(
+                bundleProposal,
+                bundleInstructions
+              );
+              break;
+            } else {
+              await sleep(10 * 1000);
+            }
           }
-
-          await this.uploadBundleToArweave(bundleProposal, bundleInstructions);
         }
 
         await this.nextBundleInstructions(bundleInstructions);
@@ -462,32 +473,43 @@ class KYVE {
     }
   }
 
+  private async claimUploaderRole() {
+    try {
+      logger.info("Claiming uploader role ...");
+
+      const tx = await this.pool.claimUploaderRole();
+      await tx.wait();
+    } catch (error) {
+      logger.error(
+        "❌ Received an error while to claim uploader role. Skipping proposal ..."
+      );
+      logger.debug(error);
+    }
+  }
+
   private async nextBundleInstructions(
     bundleInstructions: BundleInstructions
   ): Promise<void> {
     return new Promise((resolve) => {
       logger.debug("Waiting for next bundle instructions ...");
 
-      const uploadTimeout = setTimeout(async () => {
+      const uploadTimeout = setInterval(async () => {
         try {
-          if (bundleInstructions?.uploader !== this.wallet.address) {
-            logger.debug("Reached upload timeout. Claiming uploader role ...");
-            const tx = await this.pool.claimUploaderRole({
-              gasLimit: 100000,
-              gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
-            });
-            logger.debug(`Transaction = ${tx.hash}`);
+          if (bundleInstructions.uploader !== this.wallet.address) {
+            if (await this.pool.canClaim()) {
+              await this.claimUploaderRole();
+            }
           }
         } catch (error) {
           logger.error(
-            "❌ Received an error while claiming uploader slot. Skipping claim ..."
+            "❌ Received an error while claiming uploader role. Skipping claim ..."
           );
           logger.debug(error);
         }
-      }, this.poolState.uploadTimeout.toNumber() * 1000);
+      }, 10 * 1000);
 
       this.pool.on("NextBundleInstructions", () => {
-        clearTimeout(uploadTimeout);
+        clearInterval(uploadTimeout);
         resolve();
       });
     });
@@ -499,14 +521,6 @@ class KYVE {
         vote.transaction
       } ...`
     );
-
-    const canVote: boolean = await this.pool.canVote(this.wallet.address);
-    if (!canVote) {
-      logger.info(
-        "⚠️  Node has no voting power because it has no delegators. Skipping vote ..."
-      );
-      return;
-    }
 
     try {
       const tx = await this.pool.vote(toBytes(vote.transaction), vote.valid, {
