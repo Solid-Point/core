@@ -215,9 +215,9 @@ class KYVE {
           bundleInstructions = await this.getBundleInstructions();
 
           if (bundleInstructions.uploader === this.wallet.address) {
-            logger.info("Selected as uploader ...");
-
             if (await this.pool.canPropose()) {
+              logger.info("Selected as uploader ...");
+
               await this.uploadBundleToArweave(
                 bundleProposal,
                 bundleInstructions
