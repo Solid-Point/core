@@ -208,8 +208,10 @@ class KYVE {
 
         if (bundleInstructions.uploader === ADDRESS_ZERO) {
           await this.claimUploaderRole();
-          bundleInstructions = await this.getBundleInstructions();
         }
+
+        bundleProposal = await this.getBundleProposal();
+        bundleInstructions = await this.getBundleInstructions();
 
         if (bundleInstructions.uploader === this.wallet.address) {
           logger.info("Selected as uploader ...");
