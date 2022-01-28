@@ -165,8 +165,8 @@ class KYVE {
   private async run() {
     try {
       while (true) {
-        console.log("\n");
-        logger.info("⚡️ Starting new proposal round ...");
+        console.log("");
+        logger.info("⚡️ Starting new proposal");
 
         let bundleProposal;
         let bundleInstructions;
@@ -221,6 +221,10 @@ class KYVE {
 
           bundleProposal = await this.getBundleProposal();
           bundleInstructions = await this.getBundleInstructions();
+        }
+
+        if (bundleInstructions.uploader === this.wallet.address) {
+          logger.debug("Waiting for proposal quorum ...");
         }
 
         while (true) {
@@ -430,16 +434,18 @@ class KYVE {
     bundleInstructions: BundleInstructions
   ): Promise<void> {
     try {
+      logger.info("📦 Creating new bundle proposal");
+
       const uploadBundle = await this.createBundle(bundleInstructions);
 
-      logger.info("💾 Uploading bundle to Arweave ...");
+      logger.debug("Uploading bundle to Arweave ...");
 
       const transaction = await this.arweave.createTransaction({
         data: gzipSync(uploadBundle.bundle),
       });
 
       logger.debug(
-        `bytes: ${transaction.data_size} - items: ${
+        `Bundle details = bytes: ${transaction.data_size}, items: ${
           uploadBundle.toHeight - uploadBundle.fromHeight
         }`
       );
@@ -527,7 +533,7 @@ class KYVE {
     bundleInstructions: BundleInstructions
   ): Promise<void> {
     return new Promise((resolve) => {
-      logger.info("💤 Waiting for new proposal round ...");
+      logger.debug("Waiting for new proposal ...");
 
       const uploadTimeout = setInterval(async () => {
         try {
@@ -617,7 +623,9 @@ class KYVE {
   }
 
   private async fetchPoolState(logs: boolean = true) {
-    logger.debug("Attempting to fetch pool state.");
+    if (logs) {
+      logger.debug("Attempting to fetch pool state.");
+    }
 
     try {
       this.poolState = { ...(await this.pool.pool()) };
@@ -676,7 +684,9 @@ class KYVE {
       process.exit(1);
     }
 
-    logger.info("✅ Fetched pool state.");
+    if (logs) {
+      logger.info("✅ Fetched pool state.");
+    }
   }
 
   private async checkIfNodeIsValidator(logs: boolean = true) {

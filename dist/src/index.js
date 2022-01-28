@@ -135,8 +135,8 @@ class KYVE {
     async run() {
         try {
             while (true) {
-                console.log("\n");
-                utils_2.logger.info("⚡️ Starting new proposal round ...");
+                console.log("");
+                utils_2.logger.info("⚡️ Starting new proposal");
                 let bundleProposal;
                 let bundleInstructions;
                 try {
@@ -182,6 +182,9 @@ class KYVE {
                     await this.claimUploaderRole();
                     bundleProposal = await this.getBundleProposal();
                     bundleInstructions = await this.getBundleInstructions();
+                }
+                if (bundleInstructions.uploader === this.wallet.address) {
+                    utils_2.logger.debug("Waiting for proposal quorum ...");
                 }
                 while (true) {
                     bundleProposal = await this.getBundleProposal();
@@ -333,12 +336,13 @@ class KYVE {
     }
     async uploadBundleToArweave(bundleProposal, bundleInstructions) {
         try {
+            utils_2.logger.info("📦 Creating new bundle proposal");
             const uploadBundle = await this.createBundle(bundleInstructions);
-            utils_2.logger.info("💾 Uploading bundle to Arweave ...");
+            utils_2.logger.debug("Uploading bundle to Arweave ...");
             const transaction = await this.arweave.createTransaction({
                 data: (0, zlib_1.gzipSync)(uploadBundle.bundle),
             });
-            utils_2.logger.debug(`bytes: ${transaction.data_size} - items: ${uploadBundle.toHeight - uploadBundle.fromHeight}`);
+            utils_2.logger.debug(`Bundle details = bytes: ${transaction.data_size}, items: ${uploadBundle.toHeight - uploadBundle.fromHeight}`);
             transaction.addTag("Application", "KYVE - Testnet");
             transaction.addTag("Pool", this.pool.address);
             transaction.addTag("@kyve/core", package_json_1.version);
@@ -394,7 +398,7 @@ class KYVE {
     }
     async nextBundleInstructions(bundleInstructions) {
         return new Promise((resolve) => {
-            utils_2.logger.info("💤 Waiting for new proposal round ...");
+            utils_2.logger.debug("Waiting for new proposal ...");
             const uploadTimeout = setInterval(async () => {
                 try {
                     if (bundleInstructions.uploader !== this.wallet.address) {
@@ -456,7 +460,9 @@ class KYVE {
     }
     async fetchPoolState(logs = true) {
         var _a, _b;
-        utils_2.logger.debug("Attempting to fetch pool state.");
+        if (logs) {
+            utils_2.logger.debug("Attempting to fetch pool state.");
+        }
         try {
             this.poolState = { ...(await this.pool.pool()) };
         }
@@ -506,7 +512,9 @@ class KYVE {
             utils_2.logger.debug(error);
             process.exit(1);
         }
-        utils_2.logger.info("✅ Fetched pool state.");
+        if (logs) {
+            utils_2.logger.info("✅ Fetched pool state.");
+        }
     }
     async checkIfNodeIsValidator(logs = true) {
         try {
