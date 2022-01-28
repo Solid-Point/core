@@ -165,7 +165,7 @@ class KYVE {
   private async run() {
     try {
       while (true) {
-        console.log(`Starting new round`);
+        logger.info("💫 Starting new proposal round ...");
 
         let bundleProposal;
         let bundleInstructions;
@@ -195,9 +195,6 @@ class KYVE {
         bundleProposal = await this.getBundleProposal();
         bundleInstructions = await this.getBundleInstructions();
 
-        console.log(bundleProposal);
-        console.log(bundleInstructions);
-
         if (
           bundleProposal.uploader !== ADDRESS_ZERO &&
           bundleProposal.uploader !== this.wallet.address
@@ -208,7 +205,7 @@ class KYVE {
             bundleProposal = await this.getBundleProposal();
             bundleInstructions = await this.getBundleInstructions();
           } else {
-            logger.warn("Can not vote. Skipping proposal...");
+            logger.debug("Can not vote this round. Skipping ...");
           }
         }
 
@@ -220,12 +217,15 @@ class KYVE {
         }
 
         if (bundleInstructions.uploader === this.wallet.address) {
-          logger.debug("Selected as uploader ...");
+          logger.info("📚 Selected as UPLOADER for next proposal");
+        } else {
+          logger.info("🧐 Selected as VALIDATOR for next proposal");
         }
 
         while (true) {
           if (bundleInstructions.uploader === this.wallet.address) {
             if (await this.pool.canPropose()) {
+              // if upload fails try again & refetch bundleInstructions
               await this.uploadBundleToArweave(
                 bundleProposal,
                 bundleInstructions
@@ -325,7 +325,7 @@ class KYVE {
   }
 
   private async validateProposal(bundleProposal: BundleProposal) {
-    logger.debug(`Validating bundle ${bundleProposal.txId} ...`);
+    logger.info(`🔬 Validating bundle ${bundleProposal.txId} ...`);
     logger.debug(
       `From ${bundleProposal.fromHeight} to ${bundleProposal.toHeight} ...`
     );
@@ -437,10 +437,10 @@ class KYVE {
         data: gzipSync(uploadBundle.bundle),
       });
 
-      logger.debug(`Bundle data size = ${transaction.data_size} Bytes`);
-      logger.debug(`Data size = ${uploadBundle.bundle.length}`);
       logger.debug(
-        `Bundle size = ${uploadBundle.toHeight - uploadBundle.fromHeight}`
+        `bytes: ${transaction.data_size} - items: ${
+          uploadBundle.toHeight - uploadBundle.fromHeight
+        }`
       );
 
       transaction.addTag("Application", "KYVE - Testnet");
@@ -498,7 +498,7 @@ class KYVE {
         }
       );
 
-      logger.debug(`Submitting bundle proposal ${transaction.id} ...`);
+      logger.debug(`Arweave Transaction ${transaction.id} ...`);
       logger.debug(`Transaction = ${tx.hash}`);
     } catch (error) {
       logger.error(
@@ -510,13 +510,13 @@ class KYVE {
 
   private async claimUploaderRole() {
     try {
-      logger.info("Claiming uploader role ...");
+      logger.info("🔍 Claiming uploader role ...");
 
       const tx = await this.pool.claimUploaderRole();
       await tx.wait();
     } catch (error) {
       logger.error(
-        "❌ Received an error while to claim uploader role. Skipping proposal ..."
+        "❌ Received an error while to claim uploader role. Skipping ..."
       );
       logger.debug(error);
     }
@@ -526,7 +526,7 @@ class KYVE {
     bundleInstructions: BundleInstructions
   ): Promise<void> {
     return new Promise((resolve) => {
-      logger.debug("Waiting for next bundle instructions ...");
+      logger.info("💤 Waiting for new proposal round ...");
 
       const uploadTimeout = setInterval(async () => {
         try {
@@ -567,9 +567,7 @@ class KYVE {
       });
       logger.debug(`Transaction = ${tx.hash}`);
     } catch (error) {
-      logger.error(
-        "❌ Received an error while trying to vote. Skipping vote ..."
-      );
+      logger.error("❌ Received an error while trying to vote. Skipping ...");
       logger.debug(error);
     }
   }
