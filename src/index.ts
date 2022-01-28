@@ -167,6 +167,9 @@ class KYVE {
       while (true) {
         console.log(`Starting new round`);
 
+        let bundleProposal;
+        let bundleInstructions;
+
         try {
           await this.fetchPoolState(false);
         } catch {
@@ -189,8 +192,8 @@ class KYVE {
 
         await this.clearFinalizedData();
 
-        let bundleProposal = await this.getBundleProposal();
-        let bundleInstructions = await this.getBundleInstructions();
+        bundleProposal = await this.getBundleProposal();
+        bundleInstructions = await this.getBundleInstructions();
 
         console.log(bundleProposal);
         console.log(bundleInstructions);
@@ -201,6 +204,9 @@ class KYVE {
         ) {
           if (await this.pool.canVote()) {
             await this.validateProposal(bundleProposal);
+
+            bundleProposal = await this.getBundleProposal();
+            bundleInstructions = await this.getBundleInstructions();
           } else {
             logger.warn("Can not vote. Skipping proposal...");
           }
@@ -208,16 +214,18 @@ class KYVE {
 
         if (bundleInstructions.uploader === ADDRESS_ZERO) {
           await this.claimUploaderRole();
+
+          bundleProposal = await this.getBundleProposal();
+          bundleInstructions = await this.getBundleInstructions();
+        }
+
+        if (bundleInstructions.uploader === this.wallet.address) {
+          logger.debug("Selected as uploader ...");
         }
 
         while (true) {
-          bundleProposal = await this.getBundleProposal();
-          bundleInstructions = await this.getBundleInstructions();
-
           if (bundleInstructions.uploader === this.wallet.address) {
             if (await this.pool.canPropose()) {
-              logger.info("Selected as uploader ...");
-
               await this.uploadBundleToArweave(
                 bundleProposal,
                 bundleInstructions
@@ -225,6 +233,9 @@ class KYVE {
               break;
             } else {
               await sleep(10 * 1000);
+
+              bundleProposal = await this.getBundleProposal();
+              bundleInstructions = await this.getBundleInstructions();
             }
           } else {
             break;
@@ -322,17 +333,12 @@ class KYVE {
     const bundle = await this.loadBundle(bundleProposal);
     const uploadBundle = gzipSync(bundle);
 
-    try {
-      const { status } = await this.arweave.transactions.getStatus(
-        bundleProposal.txId
+    while (true) {
+      const downloadBundle = await this.downloadBundleFromArweave(
+        bundleProposal
       );
 
-      if (status === 200 || status === 202) {
-        const { data: downloadBundle } = await axios.get(
-          `https://arweave.net/${bundleProposal.txId}`,
-          { responseType: "arraybuffer" }
-        );
-
+      if (downloadBundle) {
         await this.vote({
           transaction: bundleProposal.txId,
           valid: await this.validate(
@@ -342,10 +348,13 @@ class KYVE {
             +downloadBundle.byteLength
           ),
         });
+        break;
+      } else {
+        logger.error(
+          `❌ Error fetching bundle from Arweave. Retrying in 30s ...`
+        );
+        await sleep(30 * 1000);
       }
-    } catch (error) {
-      logger.error(`❌ Error fetching bundle from Arweave. Skipping vote ...`);
-      logger.debug(error);
     }
   }
 
@@ -391,6 +400,28 @@ class KYVE {
       uploader: instructions.uploader,
       fromHeight: instructions.fromHeight.toNumber(),
     };
+  }
+
+  private async downloadBundleFromArweave(
+    bundleProposal: BundleProposal
+  ): Promise<any> {
+    try {
+      const { status } = await this.arweave.transactions.getStatus(
+        bundleProposal.txId
+      );
+
+      if (status === 200 || status === 202) {
+        const { data: downloadBundle } = await axios.get(
+          `https://arweave.net/${bundleProposal.txId}`,
+          { responseType: "arraybuffer" }
+        );
+
+        return downloadBundle;
+      }
+      return null;
+    } catch {
+      return null;
+    }
   }
 
   private async uploadBundleToArweave(

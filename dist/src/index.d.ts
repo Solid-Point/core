@@ -39,6 +39,7 @@ declare class KYVE {
     validate(uploadBundle: Buffer, uploadBytes: number, downloadBundle: Buffer, downloadBytes: number): Promise<boolean>;
     private getBundleProposal;
     private getBundleInstructions;
+    private downloadBundleFromArweave;
     private uploadBundleToArweave;
     private submitBundleProposal;
     private claimUploaderRole;
