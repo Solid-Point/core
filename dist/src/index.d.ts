@@ -41,7 +41,6 @@ declare class KYVE {
     private getBundleInstructions;
     private downloadBundleFromArweave;
     private uploadBundleToArweave;
-    private submitBundleProposal;
     private claimUploaderRole;
     private nextBundleInstructions;
     private vote;

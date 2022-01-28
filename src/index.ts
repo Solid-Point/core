@@ -330,20 +330,22 @@ class KYVE {
   }
 
   private async validateProposal(bundleProposal: BundleProposal) {
-    logger.info(`🔬 Validating bundle ${bundleProposal.txId} ...`);
-    logger.debug(
-      `Loading bundle from ${bundleProposal.fromHeight} to ${bundleProposal.toHeight} ...`
-    );
+    logger.info(`🔬 Validating bundle ${bundleProposal.txId}`);
+    logger.debug(`Downloading bundle from Arweave ...`);
 
-    const bundle = await this.loadBundle(bundleProposal);
-    const uploadBundle = gzipSync(bundle);
+    let uploadBundle;
+    let downloadBundle;
 
     while (true) {
-      const downloadBundle = await this.downloadBundleFromArweave(
-        bundleProposal
-      );
+      downloadBundle = await this.downloadBundleFromArweave(bundleProposal);
 
       if (downloadBundle) {
+        logger.debug(
+          `Loading local bundle from ${bundleProposal.fromHeight} to ${bundleProposal.toHeight} ...`
+        );
+
+        uploadBundle = gzipSync(await this.loadBundle(bundleProposal));
+
         await this.vote({
           transaction: bundleProposal.txId,
           valid: await this.validate(
@@ -478,27 +480,10 @@ class KYVE {
 
       await this.arweave.transactions.post(transaction);
 
-      await this.submitBundleProposal(
-        transaction,
-        uploadBundle.toHeight - uploadBundle.fromHeight
-      );
-    } catch (error) {
-      logger.error(
-        "❌ Received an error while trying to upload bundle to Arweave. Skipping upload ..."
-      );
-      logger.debug(error);
-    }
-  }
-
-  private async submitBundleProposal(
-    transaction: Transaction,
-    bundleSize: number
-  ) {
-    try {
       const tx = await this.pool.submitBundleProposal(
         toBytes(transaction.id),
         +transaction.data_size,
-        bundleSize,
+        uploadBundle.toHeight - uploadBundle.fromHeight,
         {
           gasLimit: ethers.BigNumber.from(1000000),
           gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
@@ -509,7 +494,7 @@ class KYVE {
       logger.debug(`Transaction = ${tx.hash}`);
     } catch (error) {
       logger.error(
-        "❌ Received an error while submitting bundle proposal. Skipping submit ..."
+        "❌ Received an error while trying to upload bundle to Arweave. Skipping upload ..."
       );
       logger.debug(error);
     }
@@ -520,6 +505,8 @@ class KYVE {
       logger.info("🔍 Claiming uploader role ...");
 
       const tx = await this.pool.claimUploaderRole();
+      logger.debug(`Transaction = ${tx.hash}`);
+
       await tx.wait();
     } catch (error) {
       logger.error(
