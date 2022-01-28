@@ -165,7 +165,8 @@ class KYVE {
   private async run() {
     try {
       while (true) {
-        logger.info("\n\n💫 Starting new proposal round ...");
+        console.log("\n");
+        logger.info("💫 Starting new proposal round ...");
 
         let bundleProposal;
         let bundleInstructions;
@@ -217,9 +218,9 @@ class KYVE {
         }
 
         if (bundleInstructions.uploader === this.wallet.address) {
-          logger.info("📚 Selected as UPLOADER");
+          logger.info("📚 Selected as UPLOADER for next round");
         } else {
-          logger.info("🧐 Selected as VALIDATOR");
+          logger.info("🧐 Selected as VALIDATOR for next round");
         }
 
         while (true) {
