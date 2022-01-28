@@ -165,7 +165,7 @@ class KYVE {
   private async run() {
     try {
       while (true) {
-        logger.info("💫 Starting new proposal round ...");
+        logger.info("\n\n💫 Starting new proposal round ...");
 
         let bundleProposal;
         let bundleInstructions;
@@ -217,9 +217,9 @@ class KYVE {
         }
 
         if (bundleInstructions.uploader === this.wallet.address) {
-          logger.info("📚 Selected as UPLOADER for next proposal");
+          logger.info("📚 Selected as UPLOADER");
         } else {
-          logger.info("🧐 Selected as VALIDATOR for next proposal");
+          logger.info("🧐 Selected as VALIDATOR");
         }
 
         while (true) {
@@ -327,7 +327,7 @@ class KYVE {
   private async validateProposal(bundleProposal: BundleProposal) {
     logger.info(`🔬 Validating bundle ${bundleProposal.txId} ...`);
     logger.debug(
-      `From ${bundleProposal.fromHeight} to ${bundleProposal.toHeight} ...`
+      `Loading bundle from ${bundleProposal.fromHeight} to ${bundleProposal.toHeight} ...`
     );
 
     const bundle = await this.loadBundle(bundleProposal);
