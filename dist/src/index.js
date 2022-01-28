@@ -136,7 +136,7 @@ class KYVE {
         try {
             while (true) {
                 console.log("\n");
-                utils_2.logger.info("💫 Starting new proposal round ...");
+                utils_2.logger.info("⚡️ Starting new proposal round ...");
                 let bundleProposal;
                 let bundleInstructions;
                 try {
@@ -161,6 +161,12 @@ class KYVE {
                 await this.clearFinalizedData();
                 bundleProposal = await this.getBundleProposal();
                 bundleInstructions = await this.getBundleInstructions();
+                if (bundleInstructions.uploader === this.wallet.address) {
+                    utils_2.logger.info("📚 Selected as UPLOADER");
+                }
+                else {
+                    utils_2.logger.info("🧐 Selected as VALIDATOR");
+                }
                 if (bundleProposal.uploader !== helpers_1.ADDRESS_ZERO &&
                     bundleProposal.uploader !== this.wallet.address) {
                     if (await this.pool.canVote()) {
@@ -177,13 +183,9 @@ class KYVE {
                     bundleProposal = await this.getBundleProposal();
                     bundleInstructions = await this.getBundleInstructions();
                 }
-                if (bundleInstructions.uploader === this.wallet.address) {
-                    utils_2.logger.info("📚 Selected as UPLOADER for next round");
-                }
-                else {
-                    utils_2.logger.info("🧐 Selected as VALIDATOR for next round");
-                }
                 while (true) {
+                    bundleProposal = await this.getBundleProposal();
+                    bundleInstructions = await this.getBundleInstructions();
                     if (bundleInstructions.uploader === this.wallet.address) {
                         if (await this.pool.canPropose()) {
                             // if upload fails try again & refetch bundleInstructions
@@ -192,8 +194,6 @@ class KYVE {
                         }
                         else {
                             await (0, helpers_1.sleep)(10 * 1000);
-                            bundleProposal = await this.getBundleProposal();
-                            bundleInstructions = await this.getBundleInstructions();
                         }
                     }
                     else {

@@ -166,7 +166,7 @@ class KYVE {
     try {
       while (true) {
         console.log("\n");
-        logger.info("💫 Starting new proposal round ...");
+        logger.info("⚡️ Starting new proposal round ...");
 
         let bundleProposal;
         let bundleInstructions;
@@ -196,6 +196,12 @@ class KYVE {
         bundleProposal = await this.getBundleProposal();
         bundleInstructions = await this.getBundleInstructions();
 
+        if (bundleInstructions.uploader === this.wallet.address) {
+          logger.info("📚 Selected as UPLOADER");
+        } else {
+          logger.info("🧐 Selected as VALIDATOR");
+        }
+
         if (
           bundleProposal.uploader !== ADDRESS_ZERO &&
           bundleProposal.uploader !== this.wallet.address
@@ -217,13 +223,10 @@ class KYVE {
           bundleInstructions = await this.getBundleInstructions();
         }
 
-        if (bundleInstructions.uploader === this.wallet.address) {
-          logger.info("📚 Selected as UPLOADER for next round");
-        } else {
-          logger.info("🧐 Selected as VALIDATOR for next round");
-        }
-
         while (true) {
+          bundleProposal = await this.getBundleProposal();
+          bundleInstructions = await this.getBundleInstructions();
+
           if (bundleInstructions.uploader === this.wallet.address) {
             if (await this.pool.canPropose()) {
               // if upload fails try again & refetch bundleInstructions
@@ -234,9 +237,6 @@ class KYVE {
               break;
             } else {
               await sleep(10 * 1000);
-
-              bundleProposal = await this.getBundleProposal();
-              bundleInstructions = await this.getBundleInstructions();
             }
           } else {
             break;
