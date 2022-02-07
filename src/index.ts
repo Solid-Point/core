@@ -93,10 +93,10 @@ class KYVE {
     const options = cli.opts();
 
     const provider = new ethers.providers.StaticJsonRpcProvider(
-      options.endpoint || "https://testnet.aurora.dev",
+      "https://testnet.aurora.dev",
       {
         chainId: 1313161555,
-        name: "testnet",
+        name: "Testnet",
       }
     );
 
