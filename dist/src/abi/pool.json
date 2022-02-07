@@ -1,52 +1,17 @@
 [
     {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "_creator",
-                "type": "address"
-            },
-            {
-                "internalType": "string",
-                "name": "_metadata",
-                "type": "string"
-            },
-            {
-                "internalType": "string",
-                "name": "_config",
-                "type": "string"
-            },
-            {
-                "internalType": "uint256",
-                "name": "_startHeight",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "_uploadTimeout",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "_operatingCost",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "_storageCost",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "nonpayable",
-        "type": "constructor"
-    },
-    {
         "anonymous": false,
         "inputs": [
             {
-                "indexed": false,
+                "indexed": true,
                 "internalType": "bytes32",
                 "name": "txId",
+                "type": "bytes32"
+            },
+            {
+                "indexed": false,
+                "internalType": "bytes32",
+                "name": "parentTxId",
                 "type": "bytes32"
             },
             {
@@ -63,7 +28,7 @@
             },
             {
                 "indexed": false,
-                "internalType": "enum Pool.Status",
+                "internalType": "enum PoolStorage.Status",
                 "name": "status",
                 "type": "uint8"
             },
@@ -100,47 +65,21 @@
         "inputs": [
             {
                 "indexed": true,
-                "internalType": "address",
-                "name": "admin",
-                "type": "address"
-            },
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "adminAdded",
-                "type": "address"
-            }
-        ],
-        "name": "AdminAdded",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "admin",
-                "type": "address"
-            },
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "adminRemoved",
-                "type": "address"
-            }
-        ],
-        "name": "AdminRemoved",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": false,
                 "internalType": "bytes32",
                 "name": "txId",
                 "type": "bytes32"
+            },
+            {
+                "indexed": false,
+                "internalType": "bytes32",
+                "name": "parentTxId",
+                "type": "bytes32"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "poolHeight",
+                "type": "uint256"
             },
             {
                 "indexed": false,
@@ -187,6 +126,25 @@
         "inputs": [
             {
                 "indexed": false,
+                "internalType": "uint256",
+                "name": "previous",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "current",
+                "type": "uint256"
+            }
+        ],
+        "name": "BundleDelayChanged",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
                 "internalType": "string",
                 "name": "previous",
                 "type": "string"
@@ -223,6 +181,12 @@
     {
         "anonymous": false,
         "inputs": [
+            {
+                "indexed": false,
+                "internalType": "bytes32",
+                "name": "nodeId",
+                "type": "bytes32"
+            },
             {
                 "indexed": false,
                 "internalType": "address",
@@ -427,6 +391,12 @@
         "inputs": [
             {
                 "indexed": false,
+                "internalType": "bytes32",
+                "name": "nodeId",
+                "type": "bytes32"
+            },
+            {
+                "indexed": false,
                 "internalType": "address",
                 "name": "node",
                 "type": "address"
@@ -570,6 +540,19 @@
     },
     {
         "inputs": [],
+        "name": "MIN_UPLOAD_TIMEOUT",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
         "name": "SLASH_THRESHOLD",
         "outputs": [
             {
@@ -595,26 +578,13 @@
         "type": "function"
     },
     {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "_admin",
-                "type": "address"
-            }
-        ],
-        "name": "addAdmin",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
         "inputs": [],
-        "name": "adminsList",
+        "name": "bundleDelay",
         "outputs": [
             {
-                "internalType": "address[]",
+                "internalType": "uint256",
                 "name": "",
-                "type": "address[]"
+                "type": "uint256"
             }
         ],
         "stateMutability": "view",
@@ -655,6 +625,11 @@
             {
                 "internalType": "bytes32",
                 "name": "txId",
+                "type": "bytes32"
+            },
+            {
+                "internalType": "bytes32",
+                "name": "parentTxId",
                 "type": "bytes32"
             },
             {
@@ -704,11 +679,50 @@
     {
         "inputs": [
             {
-                "internalType": "address",
-                "name": "_node",
-                "type": "address"
+                "internalType": "uint256",
+                "name": "_amount",
+                "type": "uint256"
             }
         ],
+        "name": "calculateVotingPower",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "pure",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "canClaim",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "canPropose",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
         "name": "canVote",
         "outputs": [
             {
@@ -782,25 +796,6 @@
         "inputs": [
             {
                 "internalType": "address",
-                "name": "delegator",
-                "type": "address"
-            }
-        ],
-        "name": "delegatedNodesList",
-        "outputs": [
-            {
-                "internalType": "address[]",
-                "name": "",
-                "type": "address[]"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
                 "name": "_node",
                 "type": "address"
             },
@@ -846,6 +841,19 @@
         "type": "function"
     },
     {
+        "inputs": [],
+        "name": "destroyed",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
         "inputs": [
             {
                 "internalType": "uint256",
@@ -885,6 +893,19 @@
                 "internalType": "uint256",
                 "name": "",
                 "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "governance",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
             }
         ],
         "stateMutability": "view",
@@ -974,6 +995,11 @@
             {
                 "components": [
                     {
+                        "internalType": "bytes32",
+                        "name": "nodeId",
+                        "type": "bytes32"
+                    },
+                    {
                         "internalType": "address",
                         "name": "nodeAddress",
                         "type": "address"
@@ -1039,7 +1065,7 @@
                         "type": "uint256"
                     }
                 ],
-                "internalType": "struct Pool.NodeState",
+                "internalType": "struct PoolStorage.NodeState",
                 "name": "",
                 "type": "tuple"
             }
@@ -1172,6 +1198,11 @@
                     },
                     {
                         "internalType": "uint256",
+                        "name": "poolHeight",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
                         "name": "size",
                         "type": "uint256"
                     },
@@ -1183,6 +1214,11 @@
                     {
                         "internalType": "uint256",
                         "name": "uploadTimeout",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "bundleDelay",
                         "type": "uint256"
                     },
                     {
@@ -1256,6 +1292,11 @@
                         "type": "bool"
                     },
                     {
+                        "internalType": "bool",
+                        "name": "destroyed",
+                        "type": "bool"
+                    },
+                    {
                         "internalType": "string",
                         "name": "metadata",
                         "type": "string"
@@ -1266,9 +1307,22 @@
                         "type": "string"
                     }
                 ],
-                "internalType": "struct Pool.PoolState",
+                "internalType": "struct PoolStorage.PoolState",
                 "name": "",
                 "type": "tuple"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "poolHeight",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
             }
         ],
         "stateMutability": "view",
@@ -1285,19 +1339,6 @@
             }
         ],
         "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "_admin",
-                "type": "address"
-            }
-        ],
-        "name": "removeAdmin",
-        "outputs": [],
-        "stateMutability": "nonpayable",
         "type": "function"
     },
     {
@@ -1441,19 +1482,6 @@
         "type": "function"
     },
     {
-        "inputs": [],
-        "name": "treasury",
-        "outputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
         "inputs": [
             {
                 "internalType": "address",
@@ -1482,6 +1510,19 @@
             }
         ],
         "name": "unstake",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_bundleDelay",
+                "type": "uint256"
+            }
+        ],
+        "name": "updateBundleDelay",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -1549,32 +1590,6 @@
         "name": "updateStorageCost",
         "outputs": [],
         "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "_uploadTimeout",
-                "type": "uint256"
-            }
-        ],
-        "name": "updateUploadTimeout",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "uploadTimeout",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
         "type": "function"
     },
     {

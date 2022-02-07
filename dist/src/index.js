@@ -43,10 +43,12 @@ const prom_client_1 = __importStar(require("prom-client"));
 const database_1 = require("./utils/database");
 const du_1 = __importDefault(require("du"));
 const zlib_1 = require("zlib");
+const axios_1 = __importDefault(require("axios"));
 __exportStar(require("./utils"), exports);
 __exportStar(require("./faces"), exports);
 __exportStar(require("./utils/helpers"), exports);
 __exportStar(require("./utils/database"), exports);
+__exportStar(require("./utils/progress"), exports);
 prom_client_1.default.collectDefaultMetrics({
     labels: { app: "kyve-core" },
 });
@@ -74,7 +76,7 @@ class KYVE {
         }
         cli.parse();
         const options = cli.opts();
-        const provider = new ethers_1.ethers.providers.StaticJsonRpcProvider(options.endpoint || "https://rpc.testnet.moonbeam.network", {
+        const provider = new ethers_1.ethers.providers.StaticJsonRpcProvider(options.endpoint || "https://rpc.api.moonbase.moonbeam.network", {
             chainId: 1287,
             name: "moonbase-alphanet",
         });
@@ -88,7 +90,7 @@ class KYVE {
             options.keyfile && JSON.parse((0, fs_1.readFileSync)(options.keyfile, "utf-8"));
         this.gasMultiplier = options.gasMultiplier;
         this.runMetrics = options.metrics;
-        this.diskSpace = +options.space;
+        this.space = +options.space;
         this.name = (_a = options === null || options === void 0 ? void 0 : options.name) !== null && _a !== void 0 ? _a : this.generateRandomName();
         this.db = new database_1.Database(this.name);
         if (!(0, fs_1.existsSync)("./logs")) {
@@ -113,73 +115,95 @@ class KYVE {
     async start() {
         this.logNodeInfo();
         this.setupMetrics();
-        await this.fetchPoolState();
+        try {
+            await this.fetchPoolState();
+        }
+        catch {
+            process.exit(1);
+        }
         await this.setupNodeStake();
         await this.setupNodeCommission();
-        await this.checkIfNodeIsValidator();
+        try {
+            await this.checkIfNodeIsValidator();
+        }
+        catch {
+            process.exit(1);
+        }
         this.worker();
         this.run();
     }
     async run() {
         try {
-            let bundleInstructions = null;
-            let bundleProposal = null;
             while (true) {
-                console.log(`Starting new round`);
-                await this.fetchPoolState(false);
+                console.log("");
+                utils_2.logger.info("⚡️ Starting new proposal");
+                let bundleProposal;
+                let bundleInstructions;
+                try {
+                    await this.fetchPoolState(false);
+                }
+                catch {
+                    await (0, helpers_1.sleep)(60 * 1000);
+                    continue;
+                }
                 if (this.poolState.paused) {
                     utils_2.logger.info("💤  Pool is paused. Waiting ...");
                     await (0, helpers_1.sleep)(60 * 1000);
                     continue;
                 }
-                await this.checkIfNodeIsValidator(false);
-                let tail;
                 try {
-                    tail = parseInt((await this.db.get("tail")).toString());
-                    const usedDiskSpace = await (0, du_1.default)(`./db/${this.name}/`);
-                    const usedDiskSpacePercent = parseFloat(((usedDiskSpace * 100) / this.diskSpace).toFixed(2));
-                    console.log(`Worker height = ${(await this.db.get("head")).toString()}`);
-                    console.log(`Deleting keys from ${tail} to ${this.poolState.height.toNumber()}`);
-                    console.log(`Used disk space: ${usedDiskSpacePercent}%`);
+                    await this.checkIfNodeIsValidator(false);
                 }
                 catch {
-                    tail = this.poolState.height.toNumber();
-                    console.log(`Deleting keys from ${tail} to ${this.poolState.height.toNumber()}`);
-                }
-                for (let key = tail; key < this.poolState.height.toNumber(); key++) {
-                    await this.db.del(key.toString());
-                }
-                await this.db.put("tail", Buffer.from(this.poolState.height.toString()));
-                bundleInstructions = await this.getBundleInstructions();
-                console.log(bundleInstructions);
-                const uploadBundle = await this.createBundle(bundleInstructions);
-                bundleProposal = await this.getBundleProposal();
-                console.log(bundleProposal);
-                if (bundleProposal.uploader !== ethers_1.ethers.constants.AddressZero &&
-                    bundleProposal.uploader !== this.wallet.address) {
-                    if (bundleInstructions.fromHeight === bundleProposal.fromHeight) {
-                        await this.validateProposal(bundleProposal, uploadBundle);
-                        continue;
-                    }
-                }
-                bundleInstructions = await this.getBundleInstructions();
-                console.log(bundleInstructions);
-                if (bundleInstructions.uploader === ethers_1.ethers.constants.AddressZero ||
-                    bundleInstructions.uploader === this.wallet.address) {
-                    utils_2.logger.debug("Selected as uploader. Waiting 60s ...");
                     await (0, helpers_1.sleep)(60 * 1000);
-                    const transaction = await this.uploadBundleToArweave(uploadBundle, bundleInstructions);
-                    if (transaction) {
-                        await this.submitBundleProposal(transaction, uploadBundle.length);
+                    continue;
+                }
+                await this.clearFinalizedData();
+                bundleProposal = await this.getBundleProposal();
+                bundleInstructions = await this.getBundleInstructions();
+                if (bundleInstructions.uploader === this.wallet.address) {
+                    utils_2.logger.info("📚 Selected as UPLOADER");
+                }
+                else {
+                    utils_2.logger.info("🧐 Selected as VALIDATOR");
+                }
+                if (bundleProposal.uploader !== helpers_1.ADDRESS_ZERO &&
+                    bundleProposal.uploader !== this.wallet.address) {
+                    if (await this.pool.canVote()) {
+                        await this.validateProposal(bundleProposal);
+                        bundleProposal = await this.getBundleProposal();
+                        bundleInstructions = await this.getBundleInstructions();
+                    }
+                    else {
+                        utils_2.logger.debug("Can not vote this round. Skipping ...");
                     }
                 }
-                await this.waitForNextBundleInstructions(bundleInstructions);
-                bundleProposal = await this.getBundleProposal();
-                console.log(bundleProposal);
-                if (bundleProposal.uploader !== ethers_1.ethers.constants.AddressZero &&
-                    bundleProposal.uploader !== this.wallet.address) {
-                    await this.validateProposal(bundleProposal, uploadBundle);
+                if (bundleInstructions.uploader === helpers_1.ADDRESS_ZERO) {
+                    await this.claimUploaderRole();
+                    bundleProposal = await this.getBundleProposal();
+                    bundleInstructions = await this.getBundleInstructions();
                 }
+                if (bundleInstructions.uploader === this.wallet.address) {
+                    utils_2.logger.debug("Waiting for proposal quorum ...");
+                }
+                while (true) {
+                    bundleProposal = await this.getBundleProposal();
+                    bundleInstructions = await this.getBundleInstructions();
+                    if (bundleInstructions.uploader === this.wallet.address) {
+                        if (await this.pool.canPropose()) {
+                            // if upload fails try again & refetch bundleInstructions
+                            await this.uploadBundleToArweave(bundleProposal, bundleInstructions);
+                            break;
+                        }
+                        else {
+                            await (0, helpers_1.sleep)(10 * 1000);
+                        }
+                    }
+                    else {
+                        break;
+                    }
+                }
+                await this.nextBundleInstructions(bundleInstructions);
             }
         }
         catch (error) {
@@ -192,17 +216,17 @@ class KYVE {
             try {
                 let workerHeight;
                 try {
-                    workerHeight = parseInt((await this.db.get("head")).toString());
+                    workerHeight = parseInt(await this.db.get("head"));
                 }
                 catch {
                     workerHeight = this.poolState.height.toNumber();
                 }
                 const usedDiskSpace = await (0, du_1.default)(`./db/${this.name}/`);
-                const usedDiskSpacePercent = parseFloat(((usedDiskSpace * 100) / this.diskSpace).toFixed(2));
+                const usedDiskSpacePercent = parseFloat(((usedDiskSpace * 100) / this.space).toFixed(2));
                 metricsWorkerHeight.set(workerHeight);
                 metricsDbSize.set(usedDiskSpace);
                 metricsDbUsed.set(usedDiskSpacePercent);
-                if (usedDiskSpace > this.diskSpace) {
+                if (usedDiskSpace > this.space) {
                     utils_2.logger.debug(`Used disk space: ${usedDiskSpacePercent}%`);
                     await (0, helpers_1.sleep)(60 * 1000);
                     continue;
@@ -211,7 +235,7 @@ class KYVE {
                 for (let op of ops) {
                     await this.db.put(op.key, op.value);
                 }
-                await this.db.put("head", Buffer.from((workerHeight + ops.length).toString()));
+                await this.db.put("head", workerHeight + ops.length);
             }
             catch (error) {
                 utils_2.logger.error("❌ Error requesting data batch.");
@@ -228,25 +252,43 @@ class KYVE {
         utils_2.logger.error(`❌ "createBundle" not implemented. Exiting ...`);
         process.exit(1);
     }
-    async validateProposal(bundleProposal, uploadBundle) {
-        utils_2.logger.debug(`Validating bundle ${bundleProposal.txId} ...`);
+    async loadBundle(bundleProposal) {
+        utils_2.logger.error(`❌ "loadBundle" not implemented. Exiting ...`);
+        process.exit(1);
+    }
+    async clearFinalizedData() {
+        let tail;
         try {
-            const { status } = await this.arweave.transactions.getStatus(bundleProposal.txId);
-            if (status === 200 || status === 202) {
-                const _data = (await this.arweave.transactions.getData(bundleProposal.txId, {
-                    decode: true,
-                }));
-                const downloadBytes = _data.byteLength;
-                const downloadBundle = (0, helpers_1.parseBundle)(Buffer.from((0, zlib_1.gunzipSync)(_data)));
+            tail = parseInt(await this.db.get("tail"));
+        }
+        catch {
+            tail = this.poolState.height.toNumber();
+        }
+        for (let key = tail; key < this.poolState.height.toNumber(); key++) {
+            await this.db.del(key);
+        }
+        await this.db.put("tail", this.poolState.height.toNumber());
+    }
+    async validateProposal(bundleProposal) {
+        utils_2.logger.info(`🔬 Validating bundle ${bundleProposal.txId}`);
+        utils_2.logger.debug(`Downloading bundle from Arweave ...`);
+        let uploadBundle;
+        let downloadBundle;
+        while (true) {
+            downloadBundle = await this.downloadBundleFromArweave(bundleProposal);
+            if (downloadBundle) {
+                utils_2.logger.debug(`Loading local bundle from ${bundleProposal.fromHeight} to ${bundleProposal.toHeight} ...`);
+                uploadBundle = (0, zlib_1.gzipSync)(await this.loadBundle(bundleProposal));
                 await this.vote({
                     transaction: bundleProposal.txId,
-                    valid: await this.validate(uploadBundle, +bundleProposal.byteSize, downloadBundle, +downloadBytes),
+                    valid: await this.validate(uploadBundle, +bundleProposal.byteSize, downloadBundle, +downloadBundle.byteLength),
                 });
+                break;
             }
-        }
-        catch (error) {
-            utils_2.logger.error(`❌ Error fetching bundle from Arweave. Skipping vote ...`);
-            utils_2.logger.debug(error);
+            else {
+                utils_2.logger.error(`❌ Error fetching bundle from Arweave. Retrying in 30s ...`);
+                await (0, helpers_1.sleep)(30 * 1000);
+            }
         }
     }
     async validate(uploadBundle, uploadBytes, downloadBundle, downloadBytes) {
@@ -265,6 +307,7 @@ class KYVE {
         return {
             uploader: proposal.uploader,
             txId: (0, helpers_1.fromBytes)(proposal.txId),
+            parentTxId: (0, helpers_1.fromBytes)(proposal.parentTxId),
             byteSize: proposal.byteSize.toNumber(),
             fromHeight: proposal.fromHeight.toNumber(),
             toHeight: proposal.toHeight.toNumber(),
@@ -280,22 +323,42 @@ class KYVE {
             fromHeight: instructions.fromHeight.toNumber(),
         };
     }
-    async uploadBundleToArweave(bundle, instructions) {
+    async downloadBundleFromArweave(bundleProposal) {
         try {
-            utils_2.logger.info("💾 Uploading bundle to Arweave ...");
+            const { status } = await this.arweave.transactions.getStatus(bundleProposal.txId);
+            if (status === 200 || status === 202) {
+                const { data: downloadBundle } = await axios_1.default.get(`https://arweave.net/${bundleProposal.txId}`, { responseType: "arraybuffer" });
+                return downloadBundle;
+            }
+            return null;
+        }
+        catch {
+            return null;
+        }
+    }
+    async uploadBundleToArweave(bundleProposal, bundleInstructions) {
+        try {
+            utils_2.logger.info("📦 Creating new bundle proposal");
+            const uploadBundle = await this.createBundle(bundleInstructions);
+            utils_2.logger.debug("Uploading bundle to Arweave ...");
             const transaction = await this.arweave.createTransaction({
-                data: (0, zlib_1.gzipSync)((0, helpers_1.formatBundle)(bundle)),
+                data: (0, zlib_1.gzipSync)(uploadBundle.bundle),
             });
-            utils_2.logger.debug(`Bundle data size = ${transaction.data_size} Bytes`);
-            utils_2.logger.debug(`Bundle size = ${bundle.length}`);
+            utils_2.logger.debug(`Bundle details = bytes: ${transaction.data_size}, items: ${uploadBundle.toHeight - uploadBundle.fromHeight}`);
             transaction.addTag("Application", "KYVE - Testnet");
             transaction.addTag("Pool", this.pool.address);
             transaction.addTag("@kyve/core", package_json_1.version);
             transaction.addTag(this.runtime, this.version);
-            transaction.addTag("Uploader", instructions.uploader);
-            transaction.addTag("FromHeight", instructions.fromHeight.toString());
-            transaction.addTag("ToHeight", (instructions.fromHeight + bundle.length).toString());
+            transaction.addTag("Uploader", bundleInstructions.uploader);
+            transaction.addTag("FromHeight", uploadBundle.fromHeight.toString());
+            transaction.addTag("ToHeight", uploadBundle.toHeight.toString());
             transaction.addTag("Content-Type", "application/gzip");
+            if (bundleProposal.uploader === helpers_1.ADDRESS_ZERO) {
+                transaction.addTag("Parent", bundleProposal.parentTxId);
+            }
+            else {
+                transaction.addTag("Parent", bundleProposal.txId);
+            }
             await this.arweave.transactions.sign(transaction, this.keyfile);
             const balance = await this.arweave.wallets.getBalance(await this.arweave.wallets.getAddress(this.keyfile));
             if (+transaction.reward > +balance) {
@@ -303,60 +366,54 @@ class KYVE {
                 process.exit(1);
             }
             await this.arweave.transactions.post(transaction);
-            return transaction;
+            const tx = await this.pool.submitBundleProposal((0, helpers_1.toBytes)(transaction.id), +transaction.data_size, uploadBundle.toHeight - uploadBundle.fromHeight, {
+                gasLimit: ethers_1.ethers.BigNumber.from(1000000),
+                gasPrice: await (0, helpers_1.getGasPrice)(this.pool, this.gasMultiplier),
+            });
+            utils_2.logger.debug(`Arweave Transaction ${transaction.id} ...`);
+            utils_2.logger.debug(`Transaction = ${tx.hash}`);
         }
         catch (error) {
             utils_2.logger.error("❌ Received an error while trying to upload bundle to Arweave. Skipping upload ...");
             utils_2.logger.debug(error);
-            return null;
         }
     }
-    async submitBundleProposal(transaction, bundleSize) {
+    async claimUploaderRole() {
         try {
-            const tx = await this.pool.submitBundleProposal((0, helpers_1.toBytes)(transaction.id), +transaction.data_size, bundleSize, {
-                gasLimit: ethers_1.ethers.BigNumber.from(1000000),
-                gasPrice: await (0, helpers_1.getGasPrice)(this.pool, this.gasMultiplier),
-            });
-            utils_2.logger.debug(`Submitting bundle proposal ${transaction.id} ...`);
+            utils_2.logger.info("🔍 Claiming uploader role ...");
+            const tx = await this.pool.claimUploaderRole();
             utils_2.logger.debug(`Transaction = ${tx.hash}`);
+            await tx.wait();
         }
         catch (error) {
-            utils_2.logger.error("❌ Received an error while submitting bundle proposal. Skipping submit ...");
+            utils_2.logger.error("❌ Received an error while to claim uploader role. Skipping ...");
             utils_2.logger.debug(error);
         }
     }
-    async waitForNextBundleInstructions(bundleInstructions) {
+    async nextBundleInstructions(bundleInstructions) {
         return new Promise((resolve) => {
-            utils_2.logger.debug("Waiting for next bundle instructions ...");
-            const uploadTimeout = setTimeout(async () => {
+            utils_2.logger.debug("Waiting for new proposal ...");
+            const uploadTimeout = setInterval(async () => {
                 try {
-                    if ((bundleInstructions === null || bundleInstructions === void 0 ? void 0 : bundleInstructions.uploader) !== this.wallet.address) {
-                        utils_2.logger.debug("Reached upload timeout. Claiming uploader role ...");
-                        const tx = await this.pool.claimUploaderRole({
-                            gasLimit: await this.pool.estimateGas.claimUploaderRole(),
-                            gasPrice: await (0, helpers_1.getGasPrice)(this.pool, this.gasMultiplier),
-                        });
-                        utils_2.logger.debug(`Transaction = ${tx.hash}`);
+                    if (bundleInstructions.uploader !== this.wallet.address) {
+                        if (await this.pool.canClaim()) {
+                            await this.claimUploaderRole();
+                        }
                     }
                 }
                 catch (error) {
-                    utils_2.logger.error("❌ Received an error while claiming uploader slot. Skipping claim ...");
+                    utils_2.logger.error("❌ Received an error while claiming uploader role. Skipping claim ...");
                     utils_2.logger.debug(error);
                 }
-            }, this.poolState.uploadTimeout.toNumber() * 1000);
+            }, 10 * 1000);
             this.pool.on("NextBundleInstructions", () => {
-                clearTimeout(uploadTimeout);
+                clearInterval(uploadTimeout);
                 resolve();
             });
         });
     }
     async vote(vote) {
         utils_2.logger.info(`🖋  Voting ${vote.valid ? "valid" : "invalid"} on bundle ${vote.transaction} ...`);
-        const canVote = await this.pool.canVote(this.wallet.address);
-        if (!canVote) {
-            utils_2.logger.info("⚠️  Node has no voting power because it has no delegators. Skipping vote ...");
-            return;
-        }
         try {
             const tx = await this.pool.vote((0, helpers_1.toBytes)(vote.transaction), vote.valid, {
                 gasLimit: await this.pool.estimateGas.vote((0, helpers_1.toBytes)(vote.transaction), vote.valid),
@@ -365,7 +422,7 @@ class KYVE {
             utils_2.logger.debug(`Transaction = ${tx.hash}`);
         }
         catch (error) {
-            utils_2.logger.error("❌ Received an error while trying to vote. Skipping vote ...");
+            utils_2.logger.error("❌ Received an error while trying to vote. Skipping ...");
             utils_2.logger.debug(error);
         }
     }
@@ -397,27 +454,32 @@ class KYVE {
     }
     async fetchPoolState(logs = true) {
         var _a, _b;
-        utils_2.logger.debug("Attempting to fetch pool state.");
+        if (logs) {
+            utils_2.logger.debug("Attempting to fetch pool state.");
+        }
         try {
             this.poolState = { ...(await this.pool.pool()) };
         }
         catch (error) {
-            utils_2.logger.error("❌ Received an error while trying to fetch the pool state:", error);
-            process.exit(1);
+            utils_2.logger.error("❌ Received an error while trying to fetch the pool state:");
+            utils_2.logger.debug(error);
+            throw new Error();
         }
         try {
             this.poolState.config = JSON.parse(this.poolState.config);
         }
         catch (error) {
-            utils_2.logger.error("❌ Received an error while trying to parse the config:", error);
-            process.exit(1);
+            utils_2.logger.error("❌ Received an error while trying to parse the config:");
+            utils_2.logger.debug(error);
+            throw new Error();
         }
         try {
             this.poolState.metadata = JSON.parse(this.poolState.metadata);
         }
         catch (error) {
-            utils_2.logger.error("❌ Received an error while trying to parse the metadata:", error);
-            process.exit(1);
+            utils_2.logger.error("❌ Received an error while trying to parse the metadata:");
+            utils_2.logger.debug(error);
+            throw new Error();
         }
         if (((_a = this.poolState.metadata) === null || _a === void 0 ? void 0 : _a.runtime) === this.runtime) {
             if (logs) {
@@ -444,7 +506,9 @@ class KYVE {
             utils_2.logger.debug(error);
             process.exit(1);
         }
-        utils_2.logger.info("✅ Fetched pool state.");
+        if (logs) {
+            utils_2.logger.info("✅ Fetched pool state.");
+        }
     }
     async checkIfNodeIsValidator(logs = true) {
         try {
@@ -462,7 +526,7 @@ class KYVE {
         catch (error) {
             utils_2.logger.error("❌ Received an error while trying to fetch validator info");
             utils_2.logger.debug(error);
-            process.exit(1);
+            throw new Error();
         }
     }
     async setupNodeStake() {

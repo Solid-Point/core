@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Database = void 0;
 const fs_1 = require("fs");
+const jsonfile_1 = require("jsonfile");
 class Database {
     constructor(path) {
         this.path = path;
@@ -13,13 +14,13 @@ class Database {
         }
     }
     async put(key, value) {
-        await fs_1.promises.writeFile(`./db/${this.path}/${key}`, value);
+        await (0, jsonfile_1.writeFile)(`./db/${this.path}/${key}.json`, value);
     }
     async get(key) {
-        return await fs_1.promises.readFile(`./db/${this.path}/${key}`);
+        return await (0, jsonfile_1.readFile)(`./db/${this.path}/${key}.json`);
     }
     async del(key) {
-        await fs_1.promises.unlink(`./db/${this.path}/${key}`);
+        await fs_1.promises.unlink(`./db/${this.path}/${key}.json`);
     }
 }
 exports.Database = Database;
