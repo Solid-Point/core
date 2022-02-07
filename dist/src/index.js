@@ -76,9 +76,9 @@ class KYVE {
         }
         cli.parse();
         const options = cli.opts();
-        const provider = new ethers_1.ethers.providers.StaticJsonRpcProvider(options.endpoint || "https://rpc.api.moonbase.moonbeam.network", {
-            chainId: 1287,
-            name: "moonbase-alphanet",
+        const provider = new ethers_1.ethers.providers.StaticJsonRpcProvider(options.endpoint || "https://testnet.aurora.dev", {
+            chainId: 1313161555,
+            name: "testnet",
         });
         this.wallet = new ethers_1.Wallet(options.privateKey, provider);
         this.pool = (0, helpers_1.getPoolContract)(options.pool, this.wallet);

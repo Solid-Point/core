@@ -17,6 +17,12 @@
             {
                 "indexed": false,
                 "internalType": "uint256",
+                "name": "poolHeight",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
                 "name": "byteSize",
                 "type": "uint256"
             },
@@ -31,6 +37,12 @@
                 "internalType": "enum PoolStorage.Status",
                 "name": "status",
                 "type": "uint8"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "bundleReward",
+                "type": "uint256"
             },
             {
                 "indexed": false,
@@ -58,67 +70,6 @@
             }
         ],
         "name": "Activity",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "internalType": "bytes32",
-                "name": "txId",
-                "type": "bytes32"
-            },
-            {
-                "indexed": false,
-                "internalType": "bytes32",
-                "name": "parentTxId",
-                "type": "bytes32"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "poolHeight",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "byteSize",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "address",
-                "name": "uploader",
-                "type": "address"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "bundleReward",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "valid",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "fromHeight",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "toHeight",
-                "type": "uint256"
-            }
-        ],
-        "name": "BundleCreated",
         "type": "event"
     },
     {
@@ -919,6 +870,25 @@
                 "internalType": "uint256",
                 "name": "",
                 "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_funder",
+                "type": "address"
+            }
+        ],
+        "name": "isFunder",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
             }
         ],
         "stateMutability": "view",
