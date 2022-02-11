@@ -1,6 +1,10 @@
 import base64url from "base64url";
 import { BigNumber } from "bignumber.js";
 
+export const toBN = (amount: string) => {
+  return new BigNumber(amount);
+};
+
 export const toHumanReadable = (amount: BigNumber) => {
   return amount.dividedBy(new BigNumber(10).exponentiatedBy(9)).toFixed(4);
 };

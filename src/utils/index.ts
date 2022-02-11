@@ -14,7 +14,7 @@ export class CLI extends Command {
     super(runtime);
 
     this.requiredOption(
-      "-p, --pool <number>",
+      "-p, --poolId <number>",
       "The id of the pool you want to run on."
     );
     this.requiredOption(

@@ -13,7 +13,13 @@ import {
 } from "unique-names-generator";
 import { Bundle, BundleInstructions, BundleProposal } from "./faces";
 import { CLI } from "./utils";
-import { toHumanReadable, sleep, fromBytes, toBytes } from "./utils/helpers";
+import {
+  toHumanReadable,
+  sleep,
+  fromBytes,
+  toBytes,
+  toBN,
+} from "./utils/helpers";
 import { logger } from "./utils";
 import { version } from "../package.json";
 import hash from "object-hash";
@@ -52,17 +58,17 @@ const metricsDbUsed = new client.Gauge({
 });
 
 class KYVE {
-  protected pool: number;
+  protected poolId: number;
+  protected pool: any;
   protected runtime: string;
   protected version: string;
-  protected stake: string;
+  protected desiredStake: string;
   protected commission: string;
   protected mnemonic: string;
   protected keyfile: JWKInterface;
   protected endpoint: string;
   protected name: string;
   protected gasMultiplier: string;
-  protected poolState: any;
   protected runMetrics: boolean;
   protected space: number;
   protected db: Database;
@@ -81,10 +87,10 @@ class KYVE {
     cli.parse();
     const options = cli.opts();
 
-    this.pool = options.pool;
+    this.poolId = options.poolId;
     this.runtime = cli.runtime;
     this.version = cli.packageVersion;
-    this.stake = options.stake;
+    this.desiredStake = options.stake;
     this.commission = options.commission;
     this.mnemonic = options.mnemonic;
     this.keyfile = JSON.parse(readFileSync(options.keyfile, "utf-8"));
@@ -129,11 +135,10 @@ class KYVE {
       process.exit(1);
     }
 
-    await this.setupNodeStake();
-    await this.setupNodeCommission();
+    // await this.setupNodeCommission();
 
     try {
-      await this.checkIfNodeIsValidator();
+      await this.verifyNode();
     } catch {
       process.exit(1);
     }
@@ -145,11 +150,7 @@ class KYVE {
   private async run() {
     try {
       while (true) {
-        console.log("");
-        logger.info("⚡️ Starting new proposal");
-
-        let bundleProposal;
-        let bundleInstructions;
+        logger.info("\n⚡️ Starting new proposal");
 
         try {
           await this.getPool(false);
@@ -158,14 +159,14 @@ class KYVE {
           continue;
         }
 
-        if (this.poolState.paused) {
+        if (this.pool.paused) {
           logger.info("💤  Pool is paused. Waiting ...");
           await sleep(60 * 1000);
           continue;
         }
 
         try {
-          await this.checkIfNodeIsValidator(false);
+          await this.verifyNode(false);
         } catch {
           await sleep(60 * 1000);
           continue;
@@ -173,19 +174,26 @@ class KYVE {
 
         await this.clearFinalizedData();
 
-        bundleProposal = await this.getBundleProposal();
-        bundleInstructions = await this.getBundleInstructions();
-
-        if (bundleInstructions.uploader === this.wallet.address) {
+        if (
+          this.pool.bundleProposal.nextUploader === (await this.getAddress())
+        ) {
           logger.info("📚 Selected as UPLOADER");
         } else {
           logger.info("🧐 Selected as VALIDATOR");
         }
 
         if (
-          bundleProposal.uploader !== ADDRESS_ZERO &&
-          bundleProposal.uploader !== this.wallet.address
+          this.pool.bundleProposal.uploader &&
+          this.pool.bundleProposal.uploader !== (await this.getAddress())
         ) {
+          const { data } = await axios.get(
+            `${this.endpoint}/kyve/registry/can_vote/${
+              this.poolId
+            }/${await this.getAddress()}?bundleId=${
+              this.pool.bundleProposal.bundleId
+            }`
+          );
+
           if (await this.pool.canVote()) {
             await this.validateProposal(bundleProposal);
 
@@ -362,33 +370,6 @@ class KYVE {
     return true;
   }
 
-  private async getBundleProposal(): Promise<BundleProposal> {
-    const proposal = {
-      ...(await this.pool.bundleProposal()),
-    };
-
-    return {
-      uploader: proposal.uploader,
-      txId: fromBytes(proposal.txId),
-      parentTxId: fromBytes(proposal.parentTxId),
-      byteSize: proposal.byteSize.toNumber(),
-      fromHeight: proposal.fromHeight.toNumber(),
-      toHeight: proposal.toHeight.toNumber(),
-      start: proposal.start.toNumber(),
-    };
-  }
-
-  private async getBundleInstructions(): Promise<BundleInstructions> {
-    const instructions = {
-      ...(await this.pool.bundleInstructions()),
-    };
-
-    return {
-      uploader: instructions.uploader,
-      fromHeight: instructions.fromHeight.toNumber(),
-    };
-  }
-
   private async downloadBundleFromArweave(
     bundleProposal: BundleProposal
   ): Promise<any> {
@@ -433,19 +414,13 @@ class KYVE {
       );
 
       transaction.addTag("Application", "KYVE - Testnet");
-      transaction.addTag("Pool", this.pool.address);
+      transaction.addTag("Pool", this.pool.toString());
       transaction.addTag("@kyve/core", version);
       transaction.addTag(this.runtime, this.version);
       transaction.addTag("Uploader", bundleInstructions.uploader);
       transaction.addTag("FromHeight", uploadBundle.fromHeight.toString());
       transaction.addTag("ToHeight", uploadBundle.toHeight.toString());
       transaction.addTag("Content-Type", "application/gzip");
-
-      if (bundleProposal.uploader === ADDRESS_ZERO) {
-        transaction.addTag("Parent", bundleProposal.parentTxId);
-      } else {
-        transaction.addTag("Parent", bundleProposal.txId);
-      }
 
       await this.arweave.transactions.sign(transaction, this.keyfile);
 
@@ -560,7 +535,7 @@ class KYVE {
       )} = ${await this.getAddress()}\n\t${formatInfoLogs("Pool Id")} = ${
         this.pool
       }\n\t${formatInfoLogs("Desired Stake")} = ${
-        this.stake
+        this.desiredStake
       } $KYVE\n\n\t${formatInfoLogs(
         "@kyve/core"
       )} = v${version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}`
@@ -597,10 +572,10 @@ class KYVE {
     }
 
     try {
-      const { data } = await axios.get(
-        `${this.endpoint}/kyve/registry/pool/${this.pool}`
-      );
-      this.poolState = { ...data };
+      const {
+        data: { Pool },
+      } = await axios.get(`${this.endpoint}/kyve/registry/pool/${this.poolId}`);
+      this.pool = { ...Pool };
     } catch (error) {
       logger.error(
         "❌ Received an error while trying to fetch the pool state:"
@@ -610,14 +585,14 @@ class KYVE {
     }
 
     try {
-      this.poolState.metadata = JSON.parse(this.poolState.metadata);
+      this.pool.metadata = JSON.parse(this.pool.metadata);
     } catch (error) {
       logger.error("❌ Received an error while trying to parse the metadata:");
       logger.debug(error);
       throw new Error();
     }
 
-    if (this.poolState.metadata?.runtime === this.runtime) {
+    if (this.pool.metadata?.runtime === this.runtime) {
       if (logs) {
         logger.info(`💻 Running node on runtime ${this.runtime}.`);
       }
@@ -628,17 +603,14 @@ class KYVE {
 
     try {
       if (
-        satisfies(
-          this.version,
-          this.poolState.metadata?.versions || this.version
-        )
+        satisfies(this.version, this.pool.metadata?.versions || this.version)
       ) {
         if (logs) {
           logger.info("⏱  Pool version requirements met.");
         }
       } else {
         logger.error(
-          `❌ Running an invalid version for the specified pool. Version requirements are ${this.poolState.metadata.versions}.`
+          `❌ Running an invalid version for the specified pool. Version requirements are ${this.pool.metadata.versions}.`
         );
         process.exit(1);
       }
@@ -649,15 +621,15 @@ class KYVE {
     }
 
     if (logs) {
-      logger.info("✅ Fetched pool state.");
+      logger.info("✅ Fetched pool state");
     }
   }
 
-  private async checkIfNodeIsValidator(logs: boolean = true) {
+  private async verifyNode(logs: boolean = true) {
     try {
-      const isValidator = await this.pool.isValidator(this.wallet.address);
+      const isStaker = !!this.pool.stakers[await this.getAddress()];
 
-      if (isValidator) {
+      if (isStaker) {
         if (logs) {
           logger.info("🔍  Node is running as a validator.");
         }
@@ -672,164 +644,55 @@ class KYVE {
     }
   }
 
-  private async setupNodeStake() {
-    let parsedStake;
+  // private async setupNodeCommission() {
+  //   let parsedCommission;
 
-    logger.info("🌐 Joining KYVE Network ...");
+  //   logger.info("👥 Setting node commission ...");
 
-    let nodeStake = toBN(
-      (await this.pool.nodeState(this.wallet.address)).personalStake
-    );
+  //   let nodeCommission = toBN(
+  //     (await this.pool.nodeState(this.wallet.address)).commission
+  //   );
 
-    try {
-      parsedStake = new BigNumber(this.stake).multipliedBy(
-        new BigNumber(10).exponentiatedBy(18)
-      );
+  //   try {
+  //     parsedCommission = new BigNumber(this.commission).multipliedBy(
+  //       new BigNumber(10).exponentiatedBy(18)
+  //     );
 
-      if (parsedStake.isZero()) {
-        logger.error("❌ Desired stake can't be zero.");
-        process.exit(1);
-      }
-    } catch (error) {
-      logger.error("❌ Provided invalid staking amount:", error);
-      process.exit(1);
-    }
+  //     if (parsedCommission.lt(0) && parsedCommission.gt(100)) {
+  //       logger.error("❌ Desired commission must be between 0 and 100.");
+  //       process.exit(1);
+  //     }
+  //   } catch (error) {
+  //     logger.error("❌ Provided invalid commission amount:", error);
+  //     process.exit(1);
+  //   }
 
-    if (parsedStake.lt(toBN(this.poolState.minStake))) {
-      logger.error(
-        `❌ Desired stake is lower than the minimum stake. Desired Stake = ${toHumanReadable(
-          parsedStake
-        )}, Minimum Stake = ${toHumanReadable(toBN(this.poolState.minStake))}`
-      );
-      process.exit();
-    }
+  //   if (!parsedCommission.eq(nodeCommission)) {
+  //     try {
+  //       const tx = await this.pool.updateCommission(
+  //         toEthersBN(parsedCommission),
+  //         {
+  //           gasLimit: await this.pool.estimateGas.updateCommission(
+  //             toEthersBN(parsedCommission)
+  //           ),
+  //           gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
+  //         }
+  //       );
+  //       logger.debug(`Updating commission. Transaction = ${tx.hash}`);
 
-    if (parsedStake.gt(nodeStake)) {
-      // Stake the difference.
-      const diff = parsedStake.minus(nodeStake);
-      await this.selfStake(diff);
-    } else if (parsedStake.lt(nodeStake)) {
-      // Unstake the difference.
-      const diff = nodeStake.minus(parsedStake);
-      await this.selfUnstake(diff);
-    } else {
-      logger.info("👌 Already staked with the correct amount.");
-    }
-  }
-
-  private async selfStake(amount: BigNumber) {
-    const token = await getTokenContract(this.pool);
-    let tx: ContractTransaction;
-
-    const balance = toBN(
-      (await token.balanceOf(this.wallet.address)) as ethers.BigNumber
-    );
-
-    if (balance.lt(amount)) {
-      logger.error("❌ Supplied wallet does not have enough $KYVE to stake.");
-      process.exit(1);
-    }
-
-    try {
-      tx = await token.approve(this.pool.address, toEthersBN(amount), {
-        gasLimit: await token.estimateGas.approve(
-          this.pool.address,
-          toEthersBN(amount)
-        ),
-        gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
-      });
-      logger.debug(
-        `Approving ${toHumanReadable(
-          amount
-        )} $KYVE to be spent. Transaction = ${tx.hash}`
-      );
-
-      await tx.wait();
-      logger.info("👍 Successfully approved.");
-
-      tx = await this.pool.stake(toEthersBN(amount), {
-        gasLimit: await this.pool.estimateGas.stake(toEthersBN(amount)),
-        gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
-      });
-      logger.debug(
-        `Staking ${toHumanReadable(amount)} $KYVE. Transaction = ${tx.hash}`
-      );
-
-      await tx.wait();
-      logger.info("📈 Successfully staked.");
-    } catch (error) {
-      logger.error("❌ Received an error while trying to stake:", error);
-      process.exit(1);
-    }
-  }
-
-  private async selfUnstake(amount: BigNumber) {
-    let tx: ContractTransaction;
-
-    try {
-      tx = await this.pool.unstake(toEthersBN(amount), {
-        gasLimit: await this.pool.estimateGas.unstake(toEthersBN(amount)),
-        gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
-      });
-      logger.debug(`Unstaking. Transaction = ${tx.hash}`);
-
-      await tx.wait();
-      logger.info("📉 Successfully unstaked.");
-    } catch (error) {
-      logger.error("❌ Received an error while trying to unstake:", error);
-      process.exit(1);
-    }
-  }
-
-  private async setupNodeCommission() {
-    let parsedCommission;
-
-    logger.info("👥 Setting node commission ...");
-
-    let nodeCommission = toBN(
-      (await this.pool.nodeState(this.wallet.address)).commission
-    );
-
-    try {
-      parsedCommission = new BigNumber(this.commission).multipliedBy(
-        new BigNumber(10).exponentiatedBy(18)
-      );
-
-      if (parsedCommission.lt(0) && parsedCommission.gt(100)) {
-        logger.error("❌ Desired commission must be between 0 and 100.");
-        process.exit(1);
-      }
-    } catch (error) {
-      logger.error("❌ Provided invalid commission amount:", error);
-      process.exit(1);
-    }
-
-    if (!parsedCommission.eq(nodeCommission)) {
-      try {
-        const tx = await this.pool.updateCommission(
-          toEthersBN(parsedCommission),
-          {
-            gasLimit: await this.pool.estimateGas.updateCommission(
-              toEthersBN(parsedCommission)
-            ),
-            gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
-          }
-        );
-        logger.debug(`Updating commission. Transaction = ${tx.hash}`);
-
-        await tx.wait();
-        logger.info("💼 Successfully updated commission.");
-      } catch (error) {
-        logger.error(
-          "❌ Received an error while trying to update commission:",
-          error
-        );
-        process.exit(1);
-      }
-    } else {
-      logger.info("👌 Already set correct commission.");
-    }
-  }
+  //       await tx.wait();
+  //       logger.info("💼 Successfully updated commission.");
+  //     } catch (error) {
+  //       logger.error(
+  //         "❌ Received an error while trying to update commission:",
+  //         error
+  //       );
+  //       process.exit(1);
+  //     }
+  //   } else {
+  //     logger.info("👌 Already set correct commission.");
+  //   }
+  // }
 
   private async getWallet() {
     return await Secp256k1HdWallet.fromMnemonic(this.mnemonic);
@@ -838,6 +701,20 @@ class KYVE {
   private async getAddress() {
     const [{ address }] = await (await this.getWallet()).getAccounts();
     return address;
+  }
+
+  private async getBalance() {
+    const address = await this.getAddress();
+
+    const { data } = await axios.get(
+      `${this.endpoint}/bank/balances/${address}`
+    );
+
+    const coin = data.result.find(
+      (coin: { denom: string; amount: string }) => coin.denom === "kyve"
+    );
+
+    return coin ? coin.amount : "0";
   }
 
   private async getClient() {
