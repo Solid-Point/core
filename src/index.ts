@@ -1,7 +1,6 @@
 import Arweave from "arweave";
 import { JWKInterface } from "arweave/node/lib/wallet";
 import BigNumber from "bignumber.js";
-import { Contract, ContractTransaction, ethers, Wallet } from "ethers";
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from "fs";
 import Prando from "prando";
 import { satisfies } from "semver";
@@ -14,29 +13,18 @@ import {
 } from "unique-names-generator";
 import { Bundle, BundleInstructions, BundleProposal } from "./faces";
 import { CLI } from "./utils";
-import {
-  getGasPrice,
-  toBN,
-  toEthersBN,
-  toHumanReadable,
-  getPoolContract,
-  getTokenContract,
-  sleep,
-  fromBytes,
-  toBytes,
-  ADDRESS_ZERO,
-} from "./utils/helpers";
+import { toHumanReadable, sleep, fromBytes, toBytes } from "./utils/helpers";
 import { logger } from "./utils";
 import { version } from "../package.json";
-import Transaction from "arweave/node/lib/transaction";
 import hash from "object-hash";
 import http from "http";
 import url from "url";
 import client, { register } from "prom-client";
 import { Database } from "./utils/database";
 import du from "du";
-import { gunzipSync, gzipSync } from "zlib";
+import { gzipSync } from "zlib";
 import axios from "axios";
+import { Secp256k1HdWallet, SigningCosmosClient } from "@cosmjs/launchpad";
 
 export * from "./utils";
 export * from "./faces";
@@ -64,13 +52,14 @@ const metricsDbUsed = new client.Gauge({
 });
 
 class KYVE {
-  protected pool: Contract;
+  protected pool: number;
   protected runtime: string;
   protected version: string;
   protected stake: string;
   protected commission: string;
-  protected wallet: Wallet;
+  protected mnemonic: string;
   protected keyfile: JWKInterface;
+  protected endpoint: string;
   protected name: string;
   protected gasMultiplier: string;
   protected poolState: any;
@@ -92,23 +81,14 @@ class KYVE {
     cli.parse();
     const options = cli.opts();
 
-    const provider = new ethers.providers.StaticJsonRpcProvider(
-      "https://testnet.aurora.dev",
-      {
-        chainId: 1313161555,
-        name: "Testnet",
-      }
-    );
-
-    this.wallet = new Wallet(options.privateKey, provider);
-
-    this.pool = getPoolContract(options.pool, this.wallet);
+    this.pool = options.pool;
     this.runtime = cli.runtime;
     this.version = cli.packageVersion;
     this.stake = options.stake;
     this.commission = options.commission;
-    this.keyfile =
-      options.keyfile && JSON.parse(readFileSync(options.keyfile, "utf-8"));
+    this.mnemonic = options.mnemonic;
+    this.keyfile = JSON.parse(readFileSync(options.keyfile, "utf-8"));
+    this.endpoint = options.endpoint || "http://0.0.0.0:1317";
     this.gasMultiplier = options.gasMultiplier;
     this.runMetrics = options.metrics;
     this.space = +options.space;
@@ -140,11 +120,11 @@ class KYVE {
   }
 
   async start() {
-    this.logNodeInfo();
+    await this.logNodeInfo();
     this.setupMetrics();
 
     try {
-      await this.fetchPoolState();
+      await this.getPool();
     } catch {
       process.exit(1);
     }
@@ -172,7 +152,7 @@ class KYVE {
         let bundleInstructions;
 
         try {
-          await this.fetchPoolState(false);
+          await this.getPool(false);
         } catch {
           await sleep(60 * 1000);
           continue;
@@ -566,7 +546,7 @@ class KYVE {
     }
   }
 
-  private logNodeInfo() {
+  private async logNodeInfo() {
     const formatInfoLogs = (input: string) => {
       const length = Math.max(13, this.runtime.length);
       return input.padEnd(length, " ");
@@ -575,11 +555,13 @@ class KYVE {
     logger.info(
       `🚀 Starting node ...\n\t${formatInfoLogs("Name")} = ${
         this.name
-      }\n\t${formatInfoLogs("Address")} = ${
-        this.wallet.address
-      }\n\t${formatInfoLogs("Pool")} = ${this.pool.address}\n\t${formatInfoLogs(
-        "Desired Stake"
-      )} = ${this.stake} $KYVE\n\n\t${formatInfoLogs(
+      }\n\t${formatInfoLogs(
+        "Address"
+      )} = ${await this.getAddress()}\n\t${formatInfoLogs("Pool Id")} = ${
+        this.pool
+      }\n\t${formatInfoLogs("Desired Stake")} = ${
+        this.stake
+      } $KYVE\n\n\t${formatInfoLogs(
         "@kyve/core"
       )} = v${version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}`
     );
@@ -609,25 +591,20 @@ class KYVE {
     }
   }
 
-  private async fetchPoolState(logs: boolean = true) {
+  private async getPool(logs: boolean = true) {
     if (logs) {
       logger.debug("Attempting to fetch pool state.");
     }
 
     try {
-      this.poolState = { ...(await this.pool.pool()) };
+      const { data } = await axios.get(
+        `${this.endpoint}/kyve/registry/pool/${this.pool}`
+      );
+      this.poolState = { ...data };
     } catch (error) {
       logger.error(
         "❌ Received an error while trying to fetch the pool state:"
       );
-      logger.debug(error);
-      throw new Error();
-    }
-
-    try {
-      this.poolState.config = JSON.parse(this.poolState.config);
-    } catch (error) {
-      logger.error("❌ Received an error while trying to parse the config:");
       logger.debug(error);
       throw new Error();
     }
@@ -854,9 +831,26 @@ class KYVE {
     }
   }
 
+  private async getWallet() {
+    return await Secp256k1HdWallet.fromMnemonic(this.mnemonic);
+  }
+
+  private async getAddress() {
+    const [{ address }] = await (await this.getWallet()).getAccounts();
+    return address;
+  }
+
+  private async getClient() {
+    return new SigningCosmosClient(
+      this.endpoint,
+      await this.getAddress(),
+      await this.getWallet()
+    );
+  }
+
   // TODO: move to separate file
   private generateRandomName() {
-    const r = new Prando(this.wallet.address + this.pool.address);
+    const r = new Prando(this.mnemonic + this.pool);
 
     return uniqueNamesGenerator({
       dictionaries: [adjectives, colors, animals],

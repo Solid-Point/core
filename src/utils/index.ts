@@ -14,8 +14,8 @@ export class CLI extends Command {
     super(runtime);
 
     this.requiredOption(
-      "-p, --pool <string>",
-      "The address of the pool you want to run on."
+      "-p, --pool <number>",
+      "The id of the pool you want to run on."
     );
     this.requiredOption(
       "-s, --stake <number>",
@@ -26,8 +26,8 @@ export class CLI extends Command {
       "The commission rate of your node."
     );
     this.requiredOption(
-      "-pk, --private-key <string>",
-      "Your Ethereum private key that holds $KYVE."
+      "-mn, --mnemonic <string>",
+      "Your mnemonic of your account."
     );
     this.option(
       "-k, --keyfile <string>",
