@@ -186,7 +186,7 @@ class KYVE {
           this.pool.bundleProposal.uploader &&
           this.pool.bundleProposal.uploader !== (await this.getAddress())
         ) {
-          const { data } = await axios.get(
+          const { data: canVote } = await axios.get(
             `${this.endpoint}/kyve/registry/can_vote/${
               this.poolId
             }/${await this.getAddress()}?bundleId=${
@@ -194,38 +194,29 @@ class KYVE {
             }`
           );
 
-          if (await this.pool.canVote()) {
-            await this.validateProposal(bundleProposal);
-
-            bundleProposal = await this.getBundleProposal();
-            bundleInstructions = await this.getBundleInstructions();
+          if (canVote.possible) {
+            await this.validateProposal();
+            await this.getPool(false);
           } else {
-            logger.debug("Can not vote this round. Skipping ...");
+            logger.debug(`Can not vote this round: Reason: ${canVote.reason}`);
           }
         }
 
-        if (bundleInstructions.uploader === ADDRESS_ZERO) {
-          await this.claimUploaderRole();
-
-          bundleProposal = await this.getBundleProposal();
-          bundleInstructions = await this.getBundleInstructions();
-        }
-
-        if (bundleInstructions.uploader === this.wallet.address) {
+        if (
+          this.pool.bundleProposal.nextUploader === (await this.getAddress())
+        ) {
           logger.debug("Waiting for proposal quorum ...");
         }
 
         while (true) {
-          bundleProposal = await this.getBundleProposal();
-          bundleInstructions = await this.getBundleInstructions();
+          await this.getPool();
 
-          if (bundleInstructions.uploader === this.wallet.address) {
+          if (
+            this.pool.bundleProposal.nextUploader === (await this.getAddress())
+          ) {
             if (await this.pool.canPropose()) {
               // if upload fails try again & refetch bundleInstructions
-              await this.uploadBundleToArweave(
-                bundleProposal,
-                bundleInstructions
-              );
+              await this.uploadBundleToArweave();
               break;
             } else {
               await sleep(10 * 1000);
@@ -235,7 +226,7 @@ class KYVE {
           }
         }
 
-        await this.nextBundleInstructions(bundleInstructions);
+        await this.nextBundleInstructions();
       }
     } catch (error) {
       logger.error(`❌ Runtime error. Exiting ...`);
@@ -251,7 +242,7 @@ class KYVE {
         try {
           workerHeight = parseInt(await this.db.get("head"));
         } catch {
-          workerHeight = this.poolState.height.toNumber();
+          workerHeight = parseInt(this.pool.heightArchived);
         }
 
         const usedDiskSpace = await du(`./db/${this.name}/`);
@@ -307,38 +298,40 @@ class KYVE {
     try {
       tail = parseInt(await this.db.get("tail"));
     } catch {
-      tail = this.poolState.height.toNumber();
+      tail = parseInt(this.pool.heightArchived);
     }
 
-    for (let key = tail; key < this.poolState.height.toNumber(); key++) {
+    for (let key = tail; key < parseInt(this.pool.heightArchived); key++) {
       await this.db.del(key);
     }
 
-    await this.db.put("tail", this.poolState.height.toNumber());
+    await this.db.put("tail", parseInt(this.pool.heightArchived));
   }
 
-  private async validateProposal(bundleProposal: BundleProposal) {
-    logger.info(`🔬 Validating bundle ${bundleProposal.txId}`);
+  private async validateProposal() {
+    logger.info(`🔬 Validating bundle ${this.pool.bundleProposal.bundleId}`);
     logger.debug(`Downloading bundle from Arweave ...`);
 
     let uploadBundle;
     let downloadBundle;
 
     while (true) {
-      downloadBundle = await this.downloadBundleFromArweave(bundleProposal);
+      downloadBundle = await this.downloadBundleFromArweave();
 
       if (downloadBundle) {
         logger.debug(
-          `Loading local bundle from ${bundleProposal.fromHeight} to ${bundleProposal.toHeight} ...`
+          `Loading local bundle from ${this.pool.bundleProposal.fromHeight} to ${this.pool.bundleProposal.toHeight} ...`
         );
 
-        uploadBundle = gzipSync(await this.loadBundle(bundleProposal));
+        uploadBundle = gzipSync(
+          await this.loadBundle(this.pool.bundleProposal)
+        );
 
         await this.vote({
-          transaction: bundleProposal.txId,
+          transaction: this.pool.bundleProposal.bundleId,
           valid: await this.validate(
             uploadBundle,
-            +bundleProposal.byteSize,
+            +this.pool.bundleProposal.byteSize,
             downloadBundle,
             +downloadBundle.byteLength
           ),
@@ -370,17 +363,15 @@ class KYVE {
     return true;
   }
 
-  private async downloadBundleFromArweave(
-    bundleProposal: BundleProposal
-  ): Promise<any> {
+  private async downloadBundleFromArweave(): Promise<any> {
     try {
       const { status } = await this.arweave.transactions.getStatus(
-        bundleProposal.txId
+        this.pool.bundleProposal.bundleId
       );
 
       if (status === 200 || status === 202) {
         const { data: downloadBundle } = await axios.get(
-          `https://arweave.net/${bundleProposal.txId}`,
+          `https://arweave.net/${this.pool.bundleProposal.bundleId}`,
           { responseType: "arraybuffer" }
         );
 
@@ -392,14 +383,11 @@ class KYVE {
     }
   }
 
-  private async uploadBundleToArweave(
-    bundleProposal: BundleProposal,
-    bundleInstructions: BundleInstructions
-  ): Promise<void> {
+  private async uploadBundleToArweave(): Promise<void> {
     try {
       logger.info("📦 Creating new bundle proposal");
 
-      const uploadBundle = await this.createBundle(bundleInstructions);
+      const uploadBundle = await this.createBundle(this.pool.bundleProposal);
 
       logger.debug("Uploading bundle to Arweave ...");
 
@@ -417,7 +405,7 @@ class KYVE {
       transaction.addTag("Pool", this.pool.toString());
       transaction.addTag("@kyve/core", version);
       transaction.addTag(this.runtime, this.version);
-      transaction.addTag("Uploader", bundleInstructions.uploader);
+      transaction.addTag("Uploader", this.pool.bundleProposal.nextUploader);
       transaction.addTag("FromHeight", uploadBundle.fromHeight.toString());
       transaction.addTag("ToHeight", uploadBundle.toHeight.toString());
       transaction.addTag("Content-Type", "application/gzip");
@@ -438,11 +426,7 @@ class KYVE {
       const tx = await this.pool.submitBundleProposal(
         toBytes(transaction.id),
         +transaction.data_size,
-        uploadBundle.toHeight - uploadBundle.fromHeight,
-        {
-          gasLimit: ethers.BigNumber.from(1000000),
-          gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
-        }
+        uploadBundle.toHeight - uploadBundle.fromHeight
       );
 
       logger.debug(`Arweave Transaction ${transaction.id} ...`);
@@ -471,15 +455,15 @@ class KYVE {
     }
   }
 
-  private async nextBundleInstructions(
-    bundleInstructions: BundleInstructions
-  ): Promise<void> {
+  private async nextBundleInstructions(): Promise<void> {
     return new Promise((resolve) => {
       logger.debug("Waiting for new proposal ...");
 
       const uploadTimeout = setInterval(async () => {
         try {
-          if (bundleInstructions.uploader !== this.wallet.address) {
+          if (
+            this.pool.bundleProposal.nextUploader !== (await this.getAddress())
+          ) {
             if (await this.pool.canClaim()) {
               await this.claimUploaderRole();
             }
@@ -512,7 +496,6 @@ class KYVE {
           toBytes(vote.transaction),
           vote.valid
         ),
-        gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
       });
       logger.debug(`Transaction = ${tx.hash}`);
     } catch (error) {
