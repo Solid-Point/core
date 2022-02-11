@@ -1,7 +1,6 @@
 /// <reference types="node" />
 import Arweave from "arweave";
 import { JWKInterface } from "arweave/node/lib/wallet";
-import { Contract, Wallet } from "ethers";
 import { Bundle, BundleInstructions, BundleProposal } from "./faces";
 import { CLI } from "./utils";
 import client from "prom-client";
@@ -12,16 +11,17 @@ export * from "./utils/helpers";
 export * from "./utils/database";
 export * from "./utils/progress";
 declare class KYVE {
-    protected pool: Contract;
+    protected poolId: number;
+    protected pool: any;
     protected runtime: string;
     protected version: string;
-    protected stake: string;
+    protected desiredStake: string;
     protected commission: string;
-    protected wallet: Wallet;
+    protected mnemonic: string;
     protected keyfile: JWKInterface;
+    protected endpoint: string;
     protected name: string;
     protected gasMultiplier: string;
-    protected poolState: any;
     protected runMetrics: boolean;
     protected space: number;
     protected db: Database;
@@ -37,8 +37,6 @@ declare class KYVE {
     private clearFinalizedData;
     private validateProposal;
     validate(uploadBundle: Buffer, uploadBytes: number, downloadBundle: Buffer, downloadBytes: number): Promise<boolean>;
-    private getBundleProposal;
-    private getBundleInstructions;
     private downloadBundleFromArweave;
     private uploadBundleToArweave;
     private claimUploaderRole;
@@ -46,12 +44,12 @@ declare class KYVE {
     private vote;
     private logNodeInfo;
     private setupMetrics;
-    private fetchPoolState;
-    private checkIfNodeIsValidator;
-    private setupNodeStake;
-    private selfStake;
-    private selfUnstake;
-    private setupNodeCommission;
+    private getPool;
+    private verifyNode;
+    private getWallet;
+    private getAddress;
+    private getBalance;
+    private getClient;
     private generateRandomName;
 }
 export default KYVE;
