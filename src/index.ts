@@ -23,11 +23,8 @@ import { Database } from "./utils/database";
 import du from "du";
 import { gzipSync } from "zlib";
 import axios from "axios";
-import {
-  Secp256k1HdWallet,
-  SigningCosmosClient,
-  coins,
-} from "@cosmjs/launchpad";
+import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
+import { SigningStargateClient, coins } from "@cosmjs/stargate";
 
 export * from "./utils";
 export * from "./faces";
@@ -694,7 +691,7 @@ class KYVE {
   // }
 
   private async getWallet() {
-    return await Secp256k1HdWallet.fromMnemonic(this.mnemonic, {
+    return await DirectSecp256k1HdWallet.fromMnemonic(this.mnemonic, {
       prefix: "kyve",
     });
   }
@@ -718,12 +715,9 @@ class KYVE {
     return coin ? coin.amount : "0";
   }
 
-  private async getClient() {
-    return new SigningCosmosClient(
-      "http://0.0.0.0:26657",
-      await this.getAddress(),
-      await this.getWallet()
-    );
+  private async getClient(): Promise<any> {
+    // TODO: implement
+    return null;
   }
 
   // TODO: move to separate file
