@@ -381,7 +381,7 @@ class KYVE {
             const length = Math.max(13, this.runtime.length);
             return input.padEnd(length, " ");
         };
-        utils_2.logger.info(`🚀 Starting node ...\n\t${formatInfoLogs("Name")} = ${this.name}\n\t${formatInfoLogs("Address")} = ${await this.getAddress()}\n\t${formatInfoLogs("Pool Id")} = ${this.pool}\n\t${formatInfoLogs("Desired Stake")} = ${this.desiredStake} $KYVE\n\n\t${formatInfoLogs("@kyve/core")} = v${package_json_1.version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}`);
+        utils_2.logger.info(`🚀 Starting node ...\n\t${formatInfoLogs("Name")} = ${this.name}\n\t${formatInfoLogs("Address")} = ${await this.getAddress()}\n\t${formatInfoLogs("Pool Id")} = ${this.poolId}\n\t${formatInfoLogs("Desired Stake")} = ${this.desiredStake} $KYVE\n\n\t${formatInfoLogs("@kyve/core")} = v${package_json_1.version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}`);
     }
     setupMetrics() {
         if (this.runMetrics) {
@@ -516,7 +516,9 @@ class KYVE {
     //   }
     // }
     async getWallet() {
-        return await launchpad_1.Secp256k1HdWallet.fromMnemonic(this.mnemonic);
+        return await launchpad_1.Secp256k1HdWallet.fromMnemonic(this.mnemonic, {
+            prefix: "kyve",
+        });
     }
     async getAddress() {
         const [{ address }] = await (await this.getWallet()).getAccounts();

@@ -1,6 +1,5 @@
 import Arweave from "arweave";
 import { JWKInterface } from "arweave/node/lib/wallet";
-import BigNumber from "bignumber.js";
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from "fs";
 import Prando from "prando";
 import { satisfies } from "semver";
@@ -13,13 +12,7 @@ import {
 } from "unique-names-generator";
 import { Bundle, BundleInstructions, BundleProposal } from "./faces";
 import { CLI } from "./utils";
-import {
-  toHumanReadable,
-  sleep,
-  fromBytes,
-  toBytes,
-  toBN,
-} from "./utils/helpers";
+import { sleep, toBytes } from "./utils/helpers";
 import { logger } from "./utils";
 import { version } from "../package.json";
 import hash from "object-hash";
@@ -516,7 +509,7 @@ class KYVE {
       }\n\t${formatInfoLogs(
         "Address"
       )} = ${await this.getAddress()}\n\t${formatInfoLogs("Pool Id")} = ${
-        this.pool
+        this.poolId
       }\n\t${formatInfoLogs("Desired Stake")} = ${
         this.desiredStake
       } $KYVE\n\n\t${formatInfoLogs(
@@ -678,7 +671,9 @@ class KYVE {
   // }
 
   private async getWallet() {
-    return await Secp256k1HdWallet.fromMnemonic(this.mnemonic);
+    return await Secp256k1HdWallet.fromMnemonic(this.mnemonic, {
+      prefix: "kyve",
+    });
   }
 
   private async getAddress() {
