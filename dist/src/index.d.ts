@@ -15,7 +15,6 @@ declare class KYVE {
     protected pool: any;
     protected runtime: string;
     protected version: string;
-    protected desiredStake: string;
     protected commission: string;
     protected mnemonic: string;
     protected keyfile: JWKInterface;

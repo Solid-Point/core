@@ -18,10 +18,6 @@ export class CLI extends Command {
       "The id of the pool you want to run on."
     );
     this.requiredOption(
-      "-s, --stake <number>",
-      "The amount of tokens you want to stake."
-    );
-    this.requiredOption(
       "-c, --commission <number>",
       "The commission rate of your node."
     );

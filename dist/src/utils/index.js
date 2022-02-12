@@ -13,7 +13,6 @@ class CLI extends commander_1.Command {
         this.runtime = runtime;
         this.packageVersion = packageVersion;
         this.requiredOption("-p, --poolId <number>", "The id of the pool you want to run on.");
-        this.requiredOption("-s, --stake <number>", "The amount of tokens you want to stake.");
         this.requiredOption("-c, --commission <number>", "The commission rate of your node.");
         this.requiredOption("-mn, --mnemonic <string>", "Your mnemonic of your account.");
         this.option("-k, --keyfile <string>", "The path to your Arweave keyfile. [optional]");
