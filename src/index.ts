@@ -720,7 +720,7 @@ class KYVE {
 
   private async getClient() {
     return new SigningCosmosClient(
-      this.endpoint,
+      "http://0.0.0.0:26657",
       await this.getAddress(),
       await this.getWallet()
     );

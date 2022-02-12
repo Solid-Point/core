@@ -544,7 +544,7 @@ class KYVE {
         return coin ? coin.amount : "0";
     }
     async getClient() {
-        return new launchpad_1.SigningCosmosClient(this.endpoint, await this.getAddress(), await this.getWallet());
+        return new launchpad_1.SigningCosmosClient("http://0.0.0.0:26657", await this.getAddress(), await this.getWallet());
     }
     // TODO: move to separate file
     generateRandomName() {
