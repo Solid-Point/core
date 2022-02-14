@@ -423,7 +423,7 @@ class KYVE {
         typeUrl: "/KYVENetwork.kyve.registry.MsgSubmitBundleProposal",
         value: {
           creator: await this.client.getAddress(),
-          id: this.pool,
+          id: this.poolId,
           bundleId: transaction.id,
           byteSize: +transaction.data_size,
           bundleSize: uploadBundle.toHeight - uploadBundle.fromHeight,
@@ -448,7 +448,7 @@ class KYVE {
         typeUrl: "/KYVENetwork.kyve.registry.MsgClaimUploaderRole",
         value: {
           creator: await this.client.getAddress(),
-          id: this.pool,
+          id: this.poolId,
         },
       });
 
@@ -491,7 +491,7 @@ class KYVE {
         typeUrl: "/KYVENetwork.kyve.registry.MsgVoteProposal",
         value: {
           creator: await this.client.getAddress(),
-          id: this.pool,
+          id: this.poolId,
           bundleId: vote.transaction,
           support: vote.valid,
         },
