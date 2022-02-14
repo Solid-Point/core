@@ -34,10 +34,6 @@ export class CLI extends Command {
       "The identifier name of the node. [optional, default = random]"
     );
     this.option(
-      "-e, --endpoint <string>",
-      "A custom Moonbase Alpha endpoint. [optional]"
-    );
-    this.option(
       "-sp, --space <number>",
       "The size of disk space in bytes the node is allowed to use. [optional, default = 1000000000 (1 GB)]",
       "1000000000"

@@ -24,14 +24,14 @@ interface Endpoints {
 
 type Signer = DirectSecp256k1HdWallet | OfflineDirectSigner;
 
-export class KyveWallet {
+export class Client {
   private signer?: Signer;
   private address?: string;
   private client?: SigningStargateClient;
 
   constructor(
     private readonly mnemonic: string,
-    private readonly endpoints: Endpoints = KYVE_ENDPOINTS
+    public readonly endpoints: Endpoints = KYVE_ENDPOINTS
   ) {}
 
   async getSigner(): Promise<Signer> {
