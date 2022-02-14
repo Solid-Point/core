@@ -566,7 +566,7 @@ class KYVE {
       const {
         data: { Pool },
       } = await axios.get(
-        `${this.client.endpoints.rest}/KYVENetwork/kyve/registry/pool/${this.poolId}`
+        `${this.client.endpoints.rest}/kyve/registry/pool/${this.poolId}`
       );
       this.pool = { ...Pool };
     } catch (error) {

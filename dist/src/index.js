@@ -434,7 +434,7 @@ class KYVE {
             utils_2.logger.debug("Attempting to fetch pool state.");
         }
         try {
-            const { data: { Pool }, } = await axios_1.default.get(`${this.client.endpoints.rest}/KYVENetwork/kyve/registry/pool/${this.poolId}`);
+            const { data: { Pool }, } = await axios_1.default.get(`${this.client.endpoints.rest}/kyve/registry/pool/${this.poolId}`);
             this.pool = { ...Pool };
         }
         catch (error) {
