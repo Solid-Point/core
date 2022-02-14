@@ -1,12 +1,10 @@
-import { DirectSecp256k1HdWallet, OfflineDirectSigner, EncodeObject, Registry } from "@cosmjs/proto-signing";
+import { DirectSecp256k1HdWallet, OfflineDirectSigner, EncodeObject } from "@cosmjs/proto-signing";
 import { SigningStargateClient, DeliverTxResponse } from "@cosmjs/stargate";
 interface Endpoints {
     rpc: string;
     rest: string;
 }
 declare type Signer = DirectSecp256k1HdWallet | OfflineDirectSigner;
-declare const _default: Registry;
-export default _default;
 export declare class Client {
     private readonly mnemonic;
     readonly endpoints: Endpoints;
@@ -20,3 +18,4 @@ export declare class Client {
     getAddress(): Promise<string>;
     getBalance(): Promise<string>;
 }
+export {};

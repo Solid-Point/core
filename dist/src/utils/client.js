@@ -8,21 +8,30 @@ const proto_signing_1 = require("@cosmjs/proto-signing");
 const stargate_1 = require("@cosmjs/stargate");
 const constants_1 = require("./constants");
 const axios_1 = __importDefault(require("axios"));
-const path_1 = require("path");
 const protobufjs_1 = require("protobufjs");
-const root = (0, protobufjs_1.loadSync)((0, path_1.join)(__dirname, "../proto/registry/tx.proto"));
-exports.default = new proto_signing_1.Registry(Array.from([
+const registry = new proto_signing_1.Registry(Array.from([
     [
         `/KYVENetwork.kyve.registry.MsgSubmitBundleProposal`,
-        root.lookupType("MsgSubmitBundleProposal"),
+        new protobufjs_1.Type("MsgSubmitBundleProposal")
+            .add(new protobufjs_1.Field("creator", 1, "string"))
+            .add(new protobufjs_1.Field("id", 2, "uint64"))
+            .add(new protobufjs_1.Field("bundleId", 3, "string"))
+            .add(new protobufjs_1.Field("byteSize", 4, "uint64"))
+            .add(new protobufjs_1.Field("bundleSize", 5, "uint64")),
     ],
     [
         `/KYVENetwork.kyve.registry.MsgVoteProposal`,
-        root.lookupType("MsgVoteProposal"),
+        new protobufjs_1.Type("MsgVoteProposal")
+            .add(new protobufjs_1.Field("creator", 1, "string"))
+            .add(new protobufjs_1.Field("id", 2, "uint64"))
+            .add(new protobufjs_1.Field("bundleId", 3, "string"))
+            .add(new protobufjs_1.Field("support", 4, "bool")),
     ],
     [
         `/KYVENetwork.kyve.registry.MsgClaimUploaderRole`,
-        root.lookupType("MsgClaimUploaderRole"),
+        new protobufjs_1.Type("MsgClaimUploaderRole")
+            .add(new protobufjs_1.Field("creator", 1, "string"))
+            .add(new protobufjs_1.Field("id", 2, "uint64")),
     ],
 ]));
 class Client {
@@ -38,9 +47,7 @@ class Client {
     }
     async getClient() {
         if (!this.client) {
-            this.client = await stargate_1.SigningStargateClient.connectWithSigner(this.endpoints.rpc, await this.getSigner()
-            // { registry } TODO: import
-            );
+            this.client = await stargate_1.SigningStargateClient.connectWithSigner(this.endpoints.rpc, await this.getSigner(), { registry });
         }
         return this.client;
     }

@@ -13,7 +13,7 @@ import {
 } from "./constants";
 import axios from "axios";
 import { join } from "path";
-import { loadSync } from "protobufjs";
+import { Field, Type } from "protobufjs";
 
 interface BalanceResponse {
   height: string;
@@ -27,21 +27,30 @@ interface Endpoints {
 
 type Signer = DirectSecp256k1HdWallet | OfflineDirectSigner;
 
-const root = loadSync(join(__dirname, "../proto/registry/tx.proto"));
-
-export default new Registry(
+const registry = new Registry(
   Array.from([
     [
       `/KYVENetwork.kyve.registry.MsgSubmitBundleProposal`,
-      root.lookupType("MsgSubmitBundleProposal"),
+      new Type("MsgSubmitBundleProposal")
+        .add(new Field("creator", 1, "string"))
+        .add(new Field("id", 2, "uint64"))
+        .add(new Field("bundleId", 3, "string"))
+        .add(new Field("byteSize", 4, "uint64"))
+        .add(new Field("bundleSize", 5, "uint64")),
     ],
     [
       `/KYVENetwork.kyve.registry.MsgVoteProposal`,
-      root.lookupType("MsgVoteProposal"),
+      new Type("MsgVoteProposal")
+        .add(new Field("creator", 1, "string"))
+        .add(new Field("id", 2, "uint64"))
+        .add(new Field("bundleId", 3, "string"))
+        .add(new Field("support", 4, "bool")),
     ],
     [
       `/KYVENetwork.kyve.registry.MsgClaimUploaderRole`,
-      root.lookupType("MsgClaimUploaderRole"),
+      new Type("MsgClaimUploaderRole")
+        .add(new Field("creator", 1, "string"))
+        .add(new Field("id", 2, "uint64")),
     ],
   ])
 );
@@ -71,8 +80,8 @@ export class Client {
     if (!this.client) {
       this.client = await SigningStargateClient.connectWithSigner(
         this.endpoints.rpc,
-        await this.getSigner()
-        // { registry } TODO: import
+        await this.getSigner(),
+        { registry }
       );
     }
 
