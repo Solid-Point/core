@@ -398,7 +398,7 @@ class KYVE {
       );
 
       transaction.addTag("Application", "KYVE - Testnet");
-      transaction.addTag("Pool", this.pool.toString());
+      transaction.addTag("Pool", this.poolId.toString());
       transaction.addTag("@kyve/core", version);
       transaction.addTag(this.runtime, this.version);
       transaction.addTag("Uploader", this.pool.bundleProposal.nextUploader);

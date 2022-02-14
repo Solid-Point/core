@@ -312,7 +312,7 @@ class KYVE {
             });
             utils_2.logger.debug(`Bundle details = bytes: ${transaction.data_size}, items: ${uploadBundle.toHeight - uploadBundle.fromHeight}`);
             transaction.addTag("Application", "KYVE - Testnet");
-            transaction.addTag("Pool", this.pool.toString());
+            transaction.addTag("Pool", this.poolId.toString());
             transaction.addTag("@kyve/core", package_json_1.version);
             transaction.addTag(this.runtime, this.version);
             transaction.addTag("Uploader", this.pool.bundleProposal.nextUploader);
