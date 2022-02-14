@@ -12,7 +12,7 @@ import {
 } from "unique-names-generator";
 import { Bundle, BundleInstructions, BundleProposal } from "./faces";
 import { CLI } from "./utils";
-import { sleep, toBytes } from "./utils/helpers";
+import { sleep } from "./utils/helpers";
 import { logger } from "./utils";
 import { version } from "../package.json";
 import hash from "object-hash";
@@ -24,7 +24,6 @@ import { Client } from "./utils/client";
 import du from "du";
 import { gzipSync } from "zlib";
 import axios from "axios";
-import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
 
 export * from "./utils";
 export * from "./faces";
