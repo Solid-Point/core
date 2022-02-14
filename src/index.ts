@@ -266,7 +266,7 @@ class KYVE {
         await this.db.put("head", workerHeight + ops.length);
       } catch (error) {
         logger.error("❌ Error requesting data batch.");
-        logger.debug(error);
+        // logger.debug(error);
         await sleep(10 * 1000);
       }
     }

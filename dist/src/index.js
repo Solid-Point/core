@@ -227,7 +227,7 @@ class KYVE {
             }
             catch (error) {
                 utils_2.logger.error("❌ Error requesting data batch.");
-                utils_2.logger.debug(error);
+                // logger.debug(error);
                 await (0, helpers_1.sleep)(10 * 1000);
             }
         }
