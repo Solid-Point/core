@@ -39,10 +39,10 @@ const http_1 = __importDefault(require("http"));
 const url_1 = __importDefault(require("url"));
 const prom_client_1 = __importStar(require("prom-client"));
 const database_1 = require("./utils/database");
+const client_1 = require("./utils/client");
 const du_1 = __importDefault(require("du"));
 const zlib_1 = require("zlib");
 const axios_1 = __importDefault(require("axios"));
-const launchpad_1 = require("@cosmjs/launchpad");
 __exportStar(require("./utils"), exports);
 __exportStar(require("./faces"), exports);
 __exportStar(require("./utils/helpers"), exports);
@@ -79,13 +79,12 @@ class KYVE {
         this.runtime = cli.runtime;
         this.version = cli.packageVersion;
         this.commission = options.commission;
-        this.mnemonic = options.mnemonic;
+        this.client = new client_1.Client(options.mnemonic);
         this.keyfile = JSON.parse((0, fs_1.readFileSync)(options.keyfile, "utf-8"));
-        this.endpoint = options.endpoint || "http://0.0.0.0:1317";
         this.gasMultiplier = options.gasMultiplier;
         this.runMetrics = options.metrics;
         this.space = +options.space;
-        this.name = (_a = options === null || options === void 0 ? void 0 : options.name) !== null && _a !== void 0 ? _a : this.generateRandomName();
+        this.name = (_a = options === null || options === void 0 ? void 0 : options.name) !== null && _a !== void 0 ? _a : this.generateRandomName(options.mnemonic);
         this.db = new database_1.Database(this.name);
         if (!(0, fs_1.existsSync)("./logs")) {
             (0, fs_1.mkdirSync)("./logs");
@@ -129,6 +128,7 @@ class KYVE {
         try {
             while (true) {
                 utils_2.logger.info("\n⚡️ Starting new proposal");
+                const address = await this.client.getAddress();
                 try {
                     await this.getPool(false);
                 }
@@ -149,15 +149,15 @@ class KYVE {
                     continue;
                 }
                 await this.clearFinalizedData();
-                if (this.pool.bundleProposal.nextUploader === (await this.getAddress())) {
+                if (this.pool.bundleProposal.nextUploader === address) {
                     utils_2.logger.info("📚 Selected as UPLOADER");
                 }
                 else {
                     utils_2.logger.info("🧐 Selected as VALIDATOR");
                 }
                 if (this.pool.bundleProposal.uploader &&
-                    this.pool.bundleProposal.uploader !== (await this.getAddress())) {
-                    const { data: canVote } = await axios_1.default.get(`${this.endpoint}/kyve/registry/can_vote/${this.poolId}/${await this.getAddress()}?bundleId=${this.pool.bundleProposal.bundleId}`);
+                    this.pool.bundleProposal.uploader !== address) {
+                    const { data: canVote } = await axios_1.default.get(`${this.client.endpoints.rest}/kyve/registry/can_vote/${this.poolId}/${await this.client.getAddress()}?bundleId=${this.pool.bundleProposal.bundleId}`);
                     if (canVote.possible) {
                         await this.validateProposal();
                         await this.getPool(false);
@@ -170,13 +170,13 @@ class KYVE {
                     await this.claimUploaderRole();
                     await this.getPool(false);
                 }
-                if (this.pool.bundleProposal.nextUploader === (await this.getAddress())) {
+                if (this.pool.bundleProposal.nextUploader === address) {
                     utils_2.logger.debug("Waiting for proposal quorum ...");
                 }
                 while (true) {
                     await this.getPool(false);
-                    if (this.pool.bundleProposal.nextUploader === (await this.getAddress())) {
-                        const { data: canPropose } = await axios_1.default.get(`${this.endpoint}/kyve/registry/can_propose/${this.poolId}/${await this.getAddress()}`);
+                    if (this.pool.bundleProposal.nextUploader === address) {
+                        const { data: canPropose } = await axios_1.default.get(`${this.client.endpoints.rest}/kyve/registry/can_propose/${this.poolId}/${await this.client.getAddress()}`);
                         if (canPropose.possible) {
                             // if upload fails try again & refetch bundleProposal
                             await this.uploadBundleToArweave();
@@ -325,9 +325,18 @@ class KYVE {
                 process.exit(1);
             }
             await this.arweave.transactions.post(transaction);
-            const tx = await this.pool.submitBundleProposal((0, helpers_1.toBytes)(transaction.id), +transaction.data_size, uploadBundle.toHeight - uploadBundle.fromHeight);
+            const tx = await this.client.sendMessage({
+                typeUrl: "/KYVENetwork.kyve.registry.MsgSubmitBundleProposal",
+                value: {
+                    creator: await this.client.getAddress(),
+                    id: this.pool,
+                    bundleId: transaction.id,
+                    byteSize: +transaction.data_size,
+                    bundleSize: uploadBundle.toHeight - uploadBundle.fromHeight,
+                },
+            });
             utils_2.logger.debug(`Arweave Transaction ${transaction.id} ...`);
-            utils_2.logger.debug(`Transaction = ${tx.hash}`);
+            utils_2.logger.debug(`Transaction = ${tx.transactionHash}`);
         }
         catch (error) {
             utils_2.logger.error("❌ Received an error while trying to upload bundle to Arweave. Skipping upload ...");
@@ -337,17 +346,14 @@ class KYVE {
     async claimUploaderRole() {
         try {
             utils_2.logger.info("🔍 Claiming uploader role ...");
-            const client = await this.getClient();
-            const receipt = await client.signAndBroadcast([
-                {
-                    type: "/KYVENetwork.kyve.registry.MsgClaimUploaderRole",
-                    value: {},
+            const tx = await this.client.sendMessage({
+                typeUrl: "/KYVENetwork.kyve.registry.MsgClaimUploaderRole",
+                value: {
+                    creator: await this.client.getAddress(),
+                    id: this.pool,
                 },
-            ], {
-                amount: (0, launchpad_1.coins)(0, "kyve"),
-                gas: "200000",
             });
-            utils_2.logger.debug(`Transaction = ${receipt.transactionHash}`);
+            utils_2.logger.debug(`Transaction = ${tx.transactionHash}`);
         }
         catch (error) {
             utils_2.logger.error("❌ Received an error while to claim uploader role. Skipping ...");
@@ -359,7 +365,8 @@ class KYVE {
             utils_2.logger.debug("Waiting for new proposal ...");
             const uploadTimeout = setInterval(async () => {
                 try {
-                    if (this.pool.bundleProposal.nextUploader !== (await this.getAddress())) {
+                    if (this.pool.bundleProposal.nextUploader !==
+                        (await this.client.getAddress())) {
                         if (await this.pool.canClaim()) {
                             await this.claimUploaderRole();
                         }
@@ -379,10 +386,16 @@ class KYVE {
     async vote(vote) {
         utils_2.logger.info(`🖋  Voting ${vote.valid ? "valid" : "invalid"} on bundle ${vote.transaction} ...`);
         try {
-            const tx = await this.pool.vote((0, helpers_1.toBytes)(vote.transaction), vote.valid, {
-                gasLimit: await this.pool.estimateGas.vote((0, helpers_1.toBytes)(vote.transaction), vote.valid),
+            const tx = await this.client.sendMessage({
+                typeUrl: "/KYVENetwork.kyve.registry.MsgVoteProposal",
+                value: {
+                    creator: await this.client.getAddress(),
+                    id: this.pool,
+                    bundleId: vote.transaction,
+                    support: vote.valid,
+                },
             });
-            utils_2.logger.debug(`Transaction = ${tx.hash}`);
+            utils_2.logger.debug(`Transaction = ${tx.transactionHash}`);
         }
         catch (error) {
             utils_2.logger.error("❌ Received an error while trying to vote. Skipping ...");
@@ -394,7 +407,7 @@ class KYVE {
             const length = Math.max(13, this.runtime.length);
             return input.padEnd(length, " ");
         };
-        utils_2.logger.info(`🚀 Starting node ...\n\t${formatInfoLogs("Node name")} = ${this.name}\n\t${formatInfoLogs("Address")} = ${await this.getAddress()}\n\t${formatInfoLogs("Pool Id")} = ${this.poolId}\n\t${formatInfoLogs("@kyve/core")} = v${package_json_1.version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}`);
+        utils_2.logger.info(`🚀 Starting node ...\n\t${formatInfoLogs("Node name")} = ${this.name}\n\t${formatInfoLogs("Address")} = ${await this.client.getAddress()}\n\t${formatInfoLogs("Pool Id")} = ${this.poolId}\n\t${formatInfoLogs("@kyve/core")} = v${package_json_1.version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}`);
     }
     setupMetrics() {
         if (this.runMetrics) {
@@ -421,7 +434,7 @@ class KYVE {
             utils_2.logger.debug("Attempting to fetch pool state.");
         }
         try {
-            const { data: { Pool }, } = await axios_1.default.get(`${this.endpoint}/kyve/registry/pool/${this.poolId}`);
+            const { data: { Pool }, } = await axios_1.default.get(`${this.client.endpoints.rest}/kyve/registry/pool/${this.poolId}`);
             this.pool = { ...Pool };
         }
         catch (error) {
@@ -468,7 +481,7 @@ class KYVE {
     }
     async verifyNode(logs = true) {
         try {
-            const isStaker = !!this.pool.stakers[await this.getAddress()];
+            const isStaker = !!this.pool.stakers[await this.client.getAddress()];
             if (isStaker) {
                 if (logs) {
                     utils_2.logger.info("🔍  Node is running as a validator.");
@@ -528,27 +541,9 @@ class KYVE {
     //     logger.info("👌 Already set correct commission.");
     //   }
     // }
-    async getWallet() {
-        return await launchpad_1.Secp256k1HdWallet.fromMnemonic(this.mnemonic, {
-            prefix: "kyve",
-        });
-    }
-    async getAddress() {
-        const [{ address }] = await (await this.getWallet()).getAccounts();
-        return address;
-    }
-    async getBalance() {
-        const address = await this.getAddress();
-        const { data } = await axios_1.default.get(`${this.endpoint}/bank/balances/${address}`);
-        const coin = data.result.find((coin) => coin.denom === "kyve");
-        return coin ? coin.amount : "0";
-    }
-    async getClient() {
-        return new launchpad_1.SigningCosmosClient("http://0.0.0.0:26657", await this.getAddress(), await this.getWallet());
-    }
     // TODO: move to separate file
-    generateRandomName() {
-        const r = new prando_1.default(this.mnemonic + this.pool);
+    generateRandomName(mnemonic) {
+        const r = new prando_1.default(mnemonic + this.pool);
         return (0, unique_names_generator_1.uniqueNamesGenerator)({
             dictionaries: [unique_names_generator_1.adjectives, unique_names_generator_1.colors, unique_names_generator_1.animals],
             separator: "-",

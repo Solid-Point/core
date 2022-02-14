@@ -3,14 +3,17 @@ import {
   DirectSecp256k1HdWallet,
   OfflineDirectSigner,
   EncodeObject,
+  Registry,
 } from "@cosmjs/proto-signing";
 import { SigningStargateClient, DeliverTxResponse } from "@cosmjs/stargate";
-import axios from "axios";
 import {
   KYVE_DEFAULT_FEE,
   KYVE_ENDPOINTS,
   KYVE_WALLET_OPTIONS,
 } from "./constants";
+import axios from "axios";
+import { join } from "path";
+import { loadSync } from "protobufjs";
 
 interface BalanceResponse {
   height: string;
@@ -23,6 +26,25 @@ interface Endpoints {
 }
 
 type Signer = DirectSecp256k1HdWallet | OfflineDirectSigner;
+
+const root = loadSync(join(__dirname, "../proto/registry/tx.proto"));
+
+export default new Registry(
+  Array.from([
+    [
+      `/KYVENetwork.kyve.registry.MsgSubmitBundleProposal`,
+      root.lookupType("MsgSubmitBundleProposal"),
+    ],
+    [
+      `/KYVENetwork.kyve.registry.MsgVoteProposal`,
+      root.lookupType("MsgVoteProposal"),
+    ],
+    [
+      `/KYVENetwork.kyve.registry.MsgClaimUploaderRole`,
+      root.lookupType("MsgClaimUploaderRole"),
+    ],
+  ])
+);
 
 export class Client {
   private signer?: Signer;

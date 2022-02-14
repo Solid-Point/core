@@ -5,6 +5,7 @@ import { Bundle, BundleInstructions, BundleProposal } from "./faces";
 import { CLI } from "./utils";
 import client from "prom-client";
 import { Database } from "./utils/database";
+import { Client } from "./utils/client";
 export * from "./utils";
 export * from "./faces";
 export * from "./utils/helpers";
@@ -16,9 +17,8 @@ declare class KYVE {
     protected runtime: string;
     protected version: string;
     protected commission: string;
-    protected mnemonic: string;
+    protected client: Client;
     protected keyfile: JWKInterface;
-    protected endpoint: string;
     protected name: string;
     protected gasMultiplier: string;
     protected runMetrics: boolean;
@@ -45,10 +45,6 @@ declare class KYVE {
     private setupMetrics;
     private getPool;
     private verifyNode;
-    private getWallet;
-    private getAddress;
-    private getBalance;
-    private getClient;
     private generateRandomName;
 }
 export default KYVE;

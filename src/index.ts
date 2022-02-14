@@ -501,7 +501,7 @@ class KYVE {
 
     try {
       const tx = await this.client.sendMessage({
-        typeUrl: "/KYVENetwork.kyve.registry.MsgClaimUploaderRole",
+        typeUrl: "/KYVENetwork.kyve.registry.MsgVoteProposal",
         value: {
           creator: await this.client.getAddress(),
           id: this.pool,
