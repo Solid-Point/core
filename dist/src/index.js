@@ -236,11 +236,11 @@ class KYVE {
         utils_2.logger.error(`❌ "requestWorkerBatch" not implemented. Exiting ...`);
         process.exit(1);
     }
-    async createBundle(bundleInstructions) {
+    async createBundle() {
         utils_2.logger.error(`❌ "createBundle" not implemented. Exiting ...`);
         process.exit(1);
     }
-    async loadBundle(bundleProposal) {
+    async loadBundle() {
         utils_2.logger.error(`❌ "loadBundle" not implemented. Exiting ...`);
         process.exit(1);
     }
@@ -266,7 +266,7 @@ class KYVE {
             downloadBundle = await this.downloadBundleFromArweave();
             if (downloadBundle) {
                 utils_2.logger.debug(`Loading local bundle from ${this.pool.bundleProposal.fromHeight} to ${this.pool.bundleProposal.toHeight} ...`);
-                uploadBundle = (0, zlib_1.gzipSync)(await this.loadBundle(this.pool.bundleProposal));
+                uploadBundle = (0, zlib_1.gzipSync)(await this.loadBundle());
                 await this.vote({
                     transaction: this.pool.bundleProposal.bundleId,
                     valid: await this.validate(uploadBundle, +this.pool.bundleProposal.byteSize, downloadBundle, +downloadBundle.byteLength),
@@ -304,7 +304,7 @@ class KYVE {
     async uploadBundleToArweave() {
         try {
             utils_2.logger.info("📦 Creating new bundle proposal");
-            const uploadBundle = await this.createBundle(this.pool.bundleProposal);
+            const uploadBundle = await this.createBundle();
             utils_2.logger.debug("Uploading bundle to Arweave ...");
             const transaction = await this.arweave.createTransaction({
                 data: (0, zlib_1.gzipSync)(uploadBundle.bundle),
