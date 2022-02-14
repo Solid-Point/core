@@ -10,7 +10,7 @@ import {
   animals,
   uniqueNamesGenerator,
 } from "unique-names-generator";
-import { Bundle, BundleInstructions, BundleProposal } from "./faces";
+import { Bundle } from "./faces";
 import { CLI } from "./utils";
 import { sleep } from "./utils/helpers";
 import { logger } from "./utils";
@@ -277,14 +277,12 @@ class KYVE {
     process.exit(1);
   }
 
-  public async createBundle(
-    bundleInstructions: BundleInstructions
-  ): Promise<Bundle> {
+  public async createBundle(): Promise<Bundle> {
     logger.error(`❌ "createBundle" not implemented. Exiting ...`);
     process.exit(1);
   }
 
-  public async loadBundle(bundleProposal: BundleProposal): Promise<Buffer> {
+  public async loadBundle(): Promise<Buffer> {
     logger.error(`❌ "loadBundle" not implemented. Exiting ...`);
     process.exit(1);
   }
@@ -320,9 +318,7 @@ class KYVE {
           `Loading local bundle from ${this.pool.bundleProposal.fromHeight} to ${this.pool.bundleProposal.toHeight} ...`
         );
 
-        uploadBundle = gzipSync(
-          await this.loadBundle(this.pool.bundleProposal)
-        );
+        uploadBundle = gzipSync(await this.loadBundle());
 
         await this.vote({
           transaction: this.pool.bundleProposal.bundleId,
@@ -384,7 +380,7 @@ class KYVE {
     try {
       logger.info("📦 Creating new bundle proposal");
 
-      const uploadBundle = await this.createBundle(this.pool.bundleProposal);
+      const uploadBundle = await this.createBundle();
 
       logger.debug("Uploading bundle to Arweave ...");
 
