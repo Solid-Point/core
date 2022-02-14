@@ -266,7 +266,7 @@ class KYVE {
         while (true) {
             downloadBundle = await this.downloadBundleFromArweave();
             if (downloadBundle) {
-                utils_2.logger.debug(`Roading local bundle from ${this.pool.bundleProposal.fromHeight} to ${this.pool.bundleProposal.toHeight} ...`);
+                utils_2.logger.debug(`Loading local bundle from ${this.pool.bundleProposal.fromHeight} to ${this.pool.bundleProposal.toHeight} ...`);
                 uploadBundle = (0, zlib_1.gzipSync)(await this.loadBundle());
                 await this.vote({
                     transaction: this.pool.bundleProposal.bundleId,

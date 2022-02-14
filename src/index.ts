@@ -318,7 +318,7 @@ class KYVE {
 
       if (downloadBundle) {
         logger.debug(
-          `Roading local bundle from ${this.pool.bundleProposal.fromHeight} to ${this.pool.bundleProposal.toHeight} ...`
+          `Loading local bundle from ${this.pool.bundleProposal.fromHeight} to ${this.pool.bundleProposal.toHeight} ...`
         );
 
         uploadBundle = gzipSync(await this.loadBundle());
