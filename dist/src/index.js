@@ -157,7 +157,7 @@ class KYVE {
                 }
                 if (this.pool.bundleProposal.uploader &&
                     this.pool.bundleProposal.uploader !== address) {
-                    const { data: canVote } = await axios_1.default.get(`${this.client.endpoints.rest}/kyve/registry/can_vote/${this.poolId}/${await this.client.getAddress()}?bundleId=${this.pool.bundleProposal.bundleId}`);
+                    const { data: canVote } = await axios_1.default.get(`${this.client.endpoints.rest}/KYVENetwork/kyve/registry/can_vote/${this.poolId}/${await this.client.getAddress()}?bundleId=${this.pool.bundleProposal.bundleId}`);
                     if (canVote.possible) {
                         await this.validateProposal();
                         await this.getPool(false);
@@ -176,7 +176,7 @@ class KYVE {
                 while (true) {
                     await this.getPool(false);
                     if (this.pool.bundleProposal.nextUploader === address) {
-                        const { data: canPropose } = await axios_1.default.get(`${this.client.endpoints.rest}/kyve/registry/can_propose/${this.poolId}/${await this.client.getAddress()}`);
+                        const { data: canPropose } = await axios_1.default.get(`${this.client.endpoints.rest}/KYVENetwork/kyve/registry/can_propose/${this.poolId}/${await this.client.getAddress()}`);
                         if (canPropose.possible) {
                             // if upload fails try again & refetch bundleProposal
                             await this.uploadBundleToArweave();
@@ -227,7 +227,7 @@ class KYVE {
             }
             catch (error) {
                 utils_2.logger.error("❌ Error requesting data batch.");
-                // logger.debug(error);
+                utils_2.logger.debug(error);
                 await (0, helpers_1.sleep)(10 * 1000);
             }
         }
@@ -434,7 +434,7 @@ class KYVE {
             utils_2.logger.debug("Attempting to fetch pool state.");
         }
         try {
-            const { data: { Pool }, } = await axios_1.default.get(`${this.client.endpoints.rest}/kyve/registry/pool/${this.poolId}`);
+            const { data: { Pool }, } = await axios_1.default.get(`${this.client.endpoints.rest}/KYVENetwork/kyve/registry/pool/${this.poolId}`);
             this.pool = { ...Pool };
         }
         catch (error) {
