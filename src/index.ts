@@ -318,7 +318,7 @@ class KYVE {
 
       if (downloadBundle) {
         logger.debug(
-          `Loading local bundle from ${this.pool.bundleProposal.fromHeight} to ${this.pool.bundleProposal.toHeight} ...`
+          `Roading local bundle from ${this.pool.bundleProposal.fromHeight} to ${this.pool.bundleProposal.toHeight} ...`
         );
 
         uploadBundle = gzipSync(await this.loadBundle());
@@ -468,9 +468,7 @@ class KYVE {
       while (true) {
         await this.getPool(false);
 
-        if (
-          parseInt(createdAt) > parseInt(this.pool.bundleProposal.createdAt)
-        ) {
+        if (+this.pool.bundleProposal.createdAt > +createdAt) {
           break;
         } else {
           await sleep(2 * 1000); // sleep 2 secs
