@@ -1,0 +1,135 @@
+syntax = "proto3";
+package KYVENetwork.kyve.registry;
+
+import "registry/pool.proto";
+// this line is used by starport scaffolding # proto/tx/import
+
+option go_package = "github.com/KYVENetwork/kyve/x/registry/types";
+
+// Msg defines the Msg service.
+service Msg {
+  rpc CreatePool(MsgCreatePool) returns (MsgCreatePoolResponse);
+  rpc UpdatePool(MsgUpdatePool) returns (MsgUpdatePoolResponse);
+  rpc DeletePool(MsgDeletePool) returns (MsgDeletePoolResponse);
+  rpc FundPool(MsgFundPool) returns (MsgFundPoolResponse);
+  rpc DefundPool(MsgDefundPool) returns (MsgDefundPoolResponse);
+  rpc PausePool(MsgPausePool) returns (MsgPausePoolResponse);
+  rpc UnpausePool(MsgUnpausePool) returns (MsgUnpausePoolResponse);
+  rpc StakePool(MsgStakePool) returns (MsgStakePoolResponse);
+  rpc UnstakePool(MsgUnstakePool) returns (MsgUnstakePoolResponse);
+  rpc SubmitBundleProposal(MsgSubmitBundleProposal) returns (MsgSubmitBundleProposalResponse);
+  rpc VoteProposal(MsgVoteProposal) returns (MsgVoteProposalResponse);
+  rpc ClaimUploaderRole(MsgClaimUploaderRole) returns (MsgClaimUploaderRoleResponse);
+// this line is used by starport scaffolding # proto/tx/rpc
+}
+
+message MsgCreatePool {
+  string creator = 1;
+  string metadata = 2;
+  uint64 startHeight = 3;
+  uint64 bundleDelay = 4;
+  uint64 operatingCost = 5;
+  uint64 storageCost = 6;
+  BundleProposal bundleProposal = 8;
+}
+
+message MsgCreatePoolResponse {
+  uint64 id = 1;
+}
+
+message MsgUpdatePool {
+  string creator = 1;
+  uint64 id = 2;
+}
+
+message MsgUpdatePoolResponse {}
+
+message MsgDeletePool {
+  string creator = 1;
+  uint64 id = 2;
+}
+
+message MsgDeletePoolResponse {}
+
+message MsgFundPool {
+  string creator = 1;
+  uint64 id = 2;
+  uint64 amount = 3;
+}
+
+message MsgFundPoolResponse {
+}
+
+message MsgDefundPool {
+  string creator = 1;
+  uint64 id = 2;
+  uint64 amount = 3;
+}
+
+message MsgDefundPoolResponse {
+}
+
+message MsgPausePool {
+  string creator = 1;
+  uint64 id = 2;
+}
+
+message MsgPausePoolResponse {
+}
+
+message MsgUnpausePool {
+  string creator = 1;
+  uint64 id = 2;
+}
+
+message MsgUnpausePoolResponse {
+}
+
+message MsgStakePool {
+  string creator = 1;
+  uint64 id = 2;
+  uint64 amount = 3;
+}
+
+message MsgStakePoolResponse {
+}
+
+message MsgUnstakePool {
+  string creator = 1;
+  uint64 id = 2;
+  uint64 amount = 3;
+}
+
+message MsgUnstakePoolResponse {
+}
+
+message MsgSubmitBundleProposal {
+  string creator = 1;
+  uint64 id = 2;
+  string bundleId = 3;
+  uint64 byteSize = 4;
+  uint64 bundleSize = 5;
+}
+
+message MsgSubmitBundleProposalResponse {
+}
+
+message MsgVoteProposal {
+  string creator = 1;
+  uint64 id = 2;
+  string bundleId = 3;
+  bool support = 4;
+}
+
+message MsgVoteProposalResponse {
+}
+
+message MsgClaimUploaderRole {
+  string creator = 1;
+  uint64 id = 2;
+}
+
+message MsgClaimUploaderRoleResponse {
+}
+
+// this line is used by starport scaffolding # proto/tx/message

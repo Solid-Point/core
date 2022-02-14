@@ -1,0 +1,43 @@
+syntax = "proto3";
+package KYVENetwork.kyve.registry;
+
+option go_package = "github.com/KYVENetwork/kyve/x/registry/types";
+
+message BundleProposal {
+  string uploader = 1;
+  string nextUploader = 2;
+  string bundleId = 3;
+  uint64 byteSize = 4;
+  uint64 fromHeight = 5;
+  uint64 toHeight = 6;
+  uint64 createdAt = 7;
+  map<string, uint64> votersValid = 8;
+  map<string, uint64> votersInvalid = 9;
+}
+
+message Pool {
+  uint64 id = 1;
+  string creator = 2;
+  string metadata = 3;
+
+  uint64 heightArchived = 4;
+  uint64 bytesArchived = 5;
+  uint64 totalBundles = 6;
+  uint64 totalBundleRewards = 7;
+
+  uint64 startHeight = 8;
+  uint64 bundleDelay = 9;
+  uint64 operatingCost = 10;
+  uint64 storageCost = 11;
+  bool paused = 12;
+
+  map<string, uint64> funders = 13;
+  string lowestFunder = 14;
+  uint64 totalFunds = 15;
+
+  map<string, uint64> stakers = 16;
+  string lowestStaker = 17;
+  uint64 totalStake = 18;
+
+  BundleProposal bundleProposal = 19;
+}
