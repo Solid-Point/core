@@ -150,6 +150,8 @@ class KYVE {
           continue;
         }
 
+        const createdAt = this.pool.bundleProposal.createdAt;
+
         if (this.pool.paused) {
           logger.info("💤  Pool is paused. Waiting ...");
           await sleep(60 * 1000);
@@ -221,11 +223,10 @@ class KYVE {
               await sleep(10 * 1000);
             }
           } else {
+            await this.nextBundleProposal(createdAt);
             break;
           }
         }
-
-        await this.nextBundleInstructions();
       }
     } catch (error) {
       logger.error(`❌ Runtime error. Exiting ...`);
@@ -460,32 +461,23 @@ class KYVE {
     }
   }
 
-  private async nextBundleInstructions(): Promise<void> {
-    return new Promise((resolve) => {
+  private async nextBundleProposal(createdAt: string): Promise<void> {
+    return new Promise(async (resolve) => {
       logger.debug("Waiting for new proposal ...");
 
-      const uploadTimeout = setInterval(async () => {
-        try {
-          if (
-            this.pool.bundleProposal.nextUploader !==
-            (await this.client.getAddress())
-          ) {
-            if (await this.pool.canClaim()) {
-              await this.claimUploaderRole();
-            }
-          }
-        } catch (error) {
-          logger.error(
-            "❌ Received an error while claiming uploader role. Skipping claim ..."
-          );
-          logger.debug(error);
-        }
-      }, 10 * 1000);
+      while (true) {
+        await this.getPool(false);
 
-      this.pool.on("NextBundleInstructions", () => {
-        clearInterval(uploadTimeout);
-        resolve();
-      });
+        if (
+          parseInt(createdAt) > parseInt(this.pool.bundleProposal.createdAt)
+        ) {
+          break;
+        } else {
+          await sleep(2 * 1000); // sleep 2 secs
+        }
+      }
+
+      resolve();
     });
   }
 

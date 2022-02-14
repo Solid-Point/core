@@ -136,6 +136,7 @@ class KYVE {
                     await (0, helpers_1.sleep)(60 * 1000);
                     continue;
                 }
+                const createdAt = this.pool.bundleProposal.createdAt;
                 if (this.pool.paused) {
                     utils_2.logger.info("💤  Pool is paused. Waiting ...");
                     await (0, helpers_1.sleep)(60 * 1000);
@@ -188,10 +189,10 @@ class KYVE {
                         }
                     }
                     else {
+                        await this.nextBundleProposal(createdAt);
                         break;
                     }
                 }
-                await this.nextBundleInstructions();
             }
         }
         catch (error) {
@@ -360,27 +361,19 @@ class KYVE {
             utils_2.logger.debug(error);
         }
     }
-    async nextBundleInstructions() {
-        return new Promise((resolve) => {
+    async nextBundleProposal(createdAt) {
+        return new Promise(async (resolve) => {
             utils_2.logger.debug("Waiting for new proposal ...");
-            const uploadTimeout = setInterval(async () => {
-                try {
-                    if (this.pool.bundleProposal.nextUploader !==
-                        (await this.client.getAddress())) {
-                        if (await this.pool.canClaim()) {
-                            await this.claimUploaderRole();
-                        }
-                    }
+            while (true) {
+                await this.getPool(false);
+                if (parseInt(createdAt) > parseInt(this.pool.bundleProposal.createdAt)) {
+                    break;
                 }
-                catch (error) {
-                    utils_2.logger.error("❌ Received an error while claiming uploader role. Skipping claim ...");
-                    utils_2.logger.debug(error);
+                else {
+                    await (0, helpers_1.sleep)(2 * 1000); // sleep 2 secs
                 }
-            }, 10 * 1000);
-            this.pool.on("NextBundleInstructions", () => {
-                clearInterval(uploadTimeout);
-                resolve();
-            });
+            }
+            resolve();
         });
     }
     async vote(vote) {
