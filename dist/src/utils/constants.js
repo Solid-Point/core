@@ -11,6 +11,10 @@ exports.KYVE_DEFAULT_FEE = {
     gas: "200000",
 };
 exports.KYVE_ENDPOINTS = {
-    rpc: "http://0.0.0.0:26657",
-    rest: "http://0.0.0.0:1317", // https://api.node.kyve.network
+    rpc: "https://rpc.node.kyve.network",
+    rest: "https://api.node.kyve.network",
 };
+// export const KYVE_ENDPOINTS = {
+//   rpc: "http://0.0.0.0:26657",
+//   rest: "http://0.0.0.0:1317",
+// };

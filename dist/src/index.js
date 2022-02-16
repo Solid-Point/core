@@ -184,7 +184,7 @@ class KYVE {
                             break;
                         }
                         else {
-                            utils_2.logger.debug(`Can not propose: ${canPropose.reason}`);
+                            utils_2.logger.debug(`Can not propose: ${canPropose.reason}. Retrying in 10s ...`);
                             await (0, helpers_1.sleep)(10 * 1000);
                         }
                     }

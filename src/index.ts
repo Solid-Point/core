@@ -219,7 +219,9 @@ class KYVE {
               await this.uploadBundleToArweave();
               break;
             } else {
-              logger.debug(`Can not propose: ${canPropose.reason}`);
+              logger.debug(
+                `Can not propose: ${canPropose.reason}. Retrying in 10s ...`
+              );
               await sleep(10 * 1000);
             }
           } else {
