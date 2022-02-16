@@ -610,7 +610,7 @@ class KYVE {
 
   private async verifyNode(logs: boolean = true) {
     try {
-      const isStaker = this.pool.stakers.contains(
+      const isStaker = this.pool.stakers.includes(
         await this.client.getAddress()
       );
 

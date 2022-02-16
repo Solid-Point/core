@@ -474,7 +474,7 @@ class KYVE {
     }
     async verifyNode(logs = true) {
         try {
-            const isStaker = this.pool.stakers.contains(await this.client.getAddress());
+            const isStaker = this.pool.stakers.includes(await this.client.getAddress());
             if (isStaker) {
                 if (logs) {
                     utils_2.logger.info("🔍  Node is running as a validator.");
