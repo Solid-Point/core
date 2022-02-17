@@ -532,7 +532,7 @@ class KYVE {
     async setupNodeStake() {
         let parsedStake;
         utils_2.logger.info("🌐 Joining KYVE Network ...");
-        let nodeStake = (0, helpers_1.toBN)((await this.pool.nodeState(this.wallet.address)).personalStake);
+        let nodeStake = (0, helpers_1.toBN)((await this.pool.node(this.wallet.address)).personalStake);
         try {
             parsedStake = new bignumber_js_1.default(this.stake).multipliedBy(new bignumber_js_1.default(10).exponentiatedBy(18));
             if (parsedStake.isZero()) {
@@ -610,7 +610,7 @@ class KYVE {
     async setupNodeCommission() {
         let parsedCommission;
         utils_2.logger.info("👥 Setting node commission ...");
-        let nodeCommission = (0, helpers_1.toBN)((await this.pool.nodeState(this.wallet.address)).commission);
+        let nodeCommission = (0, helpers_1.toBN)((await this.pool.node(this.wallet.address)).commission);
         try {
             parsedCommission = new bignumber_js_1.default(this.commission).multipliedBy(new bignumber_js_1.default(10).exponentiatedBy(18));
             if (parsedCommission.lt(0) && parsedCommission.gt(100)) {

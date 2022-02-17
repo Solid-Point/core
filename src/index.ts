@@ -701,7 +701,7 @@ class KYVE {
     logger.info("🌐 Joining KYVE Network ...");
 
     let nodeStake = toBN(
-      (await this.pool.nodeState(this.wallet.address)).personalStake
+      (await this.pool.node(this.wallet.address)).personalStake
     );
 
     try {
@@ -810,7 +810,7 @@ class KYVE {
     logger.info("👥 Setting node commission ...");
 
     let nodeCommission = toBN(
-      (await this.pool.nodeState(this.wallet.address)).commission
+      (await this.pool.node(this.wallet.address)).commission
     );
 
     try {

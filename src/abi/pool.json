@@ -687,13 +687,6 @@
   },
   {
     "inputs": [],
-    "name": "claimCommissionRewards",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "claimUploaderRole",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -1011,11 +1004,6 @@
           },
           {
             "internalType": "uint256",
-            "name": "commissionRewards",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
             "name": "totalDelegationRewards",
             "type": "uint256"
           },
@@ -1081,11 +1069,6 @@
       {
         "internalType": "uint256",
         "name": "commission",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "commissionRewards",
         "type": "uint256"
       },
       {
