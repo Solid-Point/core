@@ -93,7 +93,7 @@ class KYVE {
     const options = cli.opts();
 
     const provider = new ethers.providers.StaticJsonRpcProvider(
-      "https://rpc.testnet.moonbeam.network",
+      "https://rpc.api.moonbase.moonbeam.network",
       {
         chainId: 1287,
         name: "Moonbase Alpha",
