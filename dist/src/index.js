@@ -158,7 +158,7 @@ class KYVE {
                 }
                 if (this.pool.bundleProposal.uploader &&
                     this.pool.bundleProposal.uploader !== address) {
-                    const { data: canVote } = await axios_1.default.get(`${this.client.endpoints.rest}/KYVENetwork/kyve/registry/can_vote/${this.poolId}/${await this.client.getAddress()}?bundleId=${this.pool.bundleProposal.bundleId}`);
+                    const { data: canVote } = await axios_1.default.get(`${this.client.endpoints.rest}/kyve/registry/can_vote/${this.poolId}/${await this.client.getAddress()}?bundleId=${this.pool.bundleProposal.bundleId}`);
                     if (canVote.possible) {
                         await this.validateProposal();
                         await this.getPool(false);
@@ -177,7 +177,7 @@ class KYVE {
                 while (true) {
                     await this.getPool(false);
                     if (this.pool.bundleProposal.nextUploader === address) {
-                        const { data: canPropose } = await axios_1.default.get(`${this.client.endpoints.rest}/KYVENetwork/kyve/registry/can_propose/${this.poolId}/${await this.client.getAddress()}`);
+                        const { data: canPropose } = await axios_1.default.get(`${this.client.endpoints.rest}/kyve/registry/can_propose/${this.poolId}/${await this.client.getAddress()}`);
                         if (canPropose.possible) {
                             // if upload fails try again & refetch bundleProposal
                             await this.uploadBundleToArweave();
