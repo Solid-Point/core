@@ -12,12 +12,10 @@ import {
   KYVE_WALLET_OPTIONS,
 } from "./constants";
 import axios from "axios";
-import { join } from "path";
 import { Field, Type } from "protobufjs";
 
 interface BalanceResponse {
-  height: string;
-  result: Coin[];
+  balance: Coin;
 }
 
 interface Endpoints {
@@ -110,10 +108,9 @@ export class Client {
     const address = await this.getAddress();
 
     const { data } = await axios.get<BalanceResponse>(
-      `${this.endpoints.rest}/bank/balances/${address}`
+      `${this.endpoints.rest}/cosmos/bank/v1beta1/balances/${address}/by_denom?denom=kyve`
     );
-    const coin = data.result.find((coin) => coin.denom === "kyve");
 
-    return coin ? coin.amount : "0";
+    return data.balance.amount;
   }
 }

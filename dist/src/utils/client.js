@@ -66,9 +66,8 @@ class Client {
     }
     async getBalance() {
         const address = await this.getAddress();
-        const { data } = await axios_1.default.get(`${this.endpoints.rest}/bank/balances/${address}`);
-        const coin = data.result.find((coin) => coin.denom === "kyve");
-        return coin ? coin.amount : "0";
+        const { data } = await axios_1.default.get(`${this.endpoints.rest}/cosmos/bank/v1beta1/balances/${address}/by_denom?denom=kyve`);
+        return data.balance.amount;
     }
 }
 exports.Client = Client;
