@@ -365,6 +365,11 @@ class KYVE {
         await sleep(30 * 1000);
         tries++;
       }
+
+      this.vote({
+        transaction: bundleProposal.txId,
+        valid: true,
+      });
     }
   }
 
@@ -530,7 +535,6 @@ class KYVE {
           if (bundleInstructions.uploader !== this.wallet.address) {
             if (await this.pool.canClaim()) {
               await this.claimUploaderRole();
-              clearInterval(uploadTimeout);
             }
           }
         } catch (error) {
