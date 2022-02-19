@@ -158,7 +158,17 @@ class KYVE {
                 }
                 if (this.pool.bundleProposal.uploader &&
                     this.pool.bundleProposal.uploader !== address) {
-                    const { data: canVote } = await axios_1.default.get(`${this.client.endpoints.rest}/kyve/registry/can_vote/${this.poolId}/${await this.client.getAddress()}?bundleId=${this.pool.bundleProposal.bundleId}`);
+                    let canVote;
+                    try {
+                        const { data } = await axios_1.default.get(`${this.client.endpoints.rest}/kyve/registry/can_vote/${this.poolId}/${await this.client.getAddress()}?bundleId=${this.pool.bundleProposal.bundleId}`);
+                        canVote = data.canVote;
+                    }
+                    catch {
+                        canVote = {
+                            possible: false,
+                            reason: "Error",
+                        };
+                    }
                     if (canVote.possible) {
                         await this.validateProposal();
                         await this.getPool(false);
