@@ -230,7 +230,7 @@ class KYVE {
       }
     } catch (error) {
       logger.error(`❌ Runtime error. Exiting ...`);
-      logger.debug(error);
+      // logger.debug(error);
     }
   }
 

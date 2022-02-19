@@ -197,7 +197,7 @@ class KYVE {
         }
         catch (error) {
             utils_2.logger.error(`❌ Runtime error. Exiting ...`);
-            utils_2.logger.debug(error);
+            // logger.debug(error);
         }
     }
     async worker() {
