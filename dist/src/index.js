@@ -400,6 +400,7 @@ class KYVE {
                     if (bundleInstructions.uploader !== this.wallet.address) {
                         if (await this.pool.canClaim()) {
                             await this.claimUploaderRole();
+                            clearInterval(uploadTimeout);
                         }
                     }
                 }
