@@ -365,12 +365,12 @@ class KYVE {
         await sleep(30 * 1000);
         tries++;
       }
-
-      this.vote({
-        transaction: bundleProposal.txId,
-        valid: true,
-      });
     }
+
+    this.vote({
+      transaction: bundleProposal.txId,
+      valid: true,
+    });
   }
 
   public async validate(
