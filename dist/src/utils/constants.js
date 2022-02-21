@@ -10,11 +10,11 @@ exports.KYVE_DEFAULT_FEE = {
     amount: (0, proto_signing_1.coins)(0, "kyve"),
     gas: "200000",
 };
-// export const KYVE_ENDPOINTS = {
-//   rpc: "https://rpc.node.kyve.network",
-//   rest: "https://api.node.kyve.network",
-// };
 exports.KYVE_ENDPOINTS = {
-    rpc: "http://0.0.0.0:26657",
-    rest: "http://0.0.0.0:1317",
+    rpc: "https://rpc.node.kyve.network",
+    rest: "https://api.node.kyve.network",
 };
+// export const KYVE_ENDPOINTS = {
+//   rpc: "http://0.0.0.0:26657",
+//   rest: "http://0.0.0.0:1317",
+// };
