@@ -186,7 +186,7 @@ class KYVE {
           );
 
           if (canVote.possible) {
-            await this.validateProposal();
+            await this.validateProposal(createdAt);
             await this.getPool(false);
           } else {
             logger.debug(`Can not vote this round: Reason: ${canVote.reason}`);
@@ -306,17 +306,22 @@ class KYVE {
     await this.db.put("tail", parseInt(this.pool.heightArchived));
   }
 
-  private async validateProposal() {
+  private async validateProposal(createdAt: string) {
     logger.info(`🔬 Validating bundle ${this.pool.bundleProposal.bundleId}`);
     logger.debug(`Downloading bundle from Arweave ...`);
 
     let uploadBundle;
     let downloadBundle;
 
-    let tries = 0;
+    // try to fetch bundle
+    while (true) {
+      await this.getPool(false);
 
-    // try 10 times to fetch from arweave
-    while (tries < 10) {
+      // check if new proposal is available in the meantime
+      if (+this.pool.bundleProposal.createdAt > +createdAt) {
+        break;
+      }
+
       downloadBundle = await this.downloadBundleFromArweave();
 
       if (downloadBundle) {
@@ -341,14 +346,7 @@ class KYVE {
           `❌ Error fetching bundle from Arweave. Retrying in 30s ...`
         );
         await sleep(30 * 1000);
-        tries++;
       }
-    }
-
-    if (tries === 10) {
-      logger.error(
-        "❌ Failed to download bundle from Arweave. Skipping vote ..."
-      );
     }
   }
 

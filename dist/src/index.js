@@ -160,7 +160,7 @@ class KYVE {
                     this.pool.bundleProposal.uploader !== address) {
                     const { data: canVote } = await axios_1.default.get(`${this.client.endpoints.rest}/kyve/registry/can_vote/${this.poolId}/${await this.client.getAddress()}?bundleId=${this.pool.bundleProposal.bundleId}`);
                     if (canVote.possible) {
-                        await this.validateProposal();
+                        await this.validateProposal(createdAt);
                         await this.getPool(false);
                     }
                     else {
@@ -258,14 +258,18 @@ class KYVE {
         }
         await this.db.put("tail", parseInt(this.pool.heightArchived));
     }
-    async validateProposal() {
+    async validateProposal(createdAt) {
         utils_2.logger.info(`🔬 Validating bundle ${this.pool.bundleProposal.bundleId}`);
         utils_2.logger.debug(`Downloading bundle from Arweave ...`);
         let uploadBundle;
         let downloadBundle;
-        let tries = 0;
-        // try 10 times to fetch from arweave
-        while (tries < 10) {
+        // try to fetch bundle
+        while (true) {
+            await this.getPool(false);
+            // check if new proposal is available in the meantime
+            if (+this.pool.bundleProposal.createdAt > +createdAt) {
+                break;
+            }
             downloadBundle = await this.downloadBundleFromArweave();
             if (downloadBundle) {
                 utils_2.logger.debug(`Loading local bundle from ${this.pool.bundleProposal.fromHeight} to ${this.pool.bundleProposal.toHeight} ...`);
@@ -279,11 +283,7 @@ class KYVE {
             else {
                 utils_2.logger.error(`❌ Error fetching bundle from Arweave. Retrying in 30s ...`);
                 await (0, helpers_1.sleep)(30 * 1000);
-                tries++;
             }
-        }
-        if (tries === 10) {
-            utils_2.logger.error("❌ Failed to download bundle from Arweave. Skipping vote ...");
         }
     }
     async validate(uploadBundle, uploadBytes, downloadBundle, downloadBytes) {
