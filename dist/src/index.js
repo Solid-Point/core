@@ -428,7 +428,6 @@ class KYVE {
         }
     }
     async getPool(logs = true) {
-        var _a, _b;
         if (logs) {
             utils_2.logger.debug("Attempting to fetch pool state.");
         }
@@ -442,14 +441,14 @@ class KYVE {
             throw new Error();
         }
         try {
-            this.pool.metadata = JSON.parse(this.pool.metadata);
+            this.pool.config = JSON.parse(this.pool.config);
         }
         catch (error) {
-            utils_2.logger.error("❌ Received an error while trying to parse the metadata:");
+            utils_2.logger.error("❌ Received an error while trying to parse the config:");
             utils_2.logger.debug(error);
             throw new Error();
         }
-        if (((_a = this.pool.metadata) === null || _a === void 0 ? void 0 : _a.runtime) === this.runtime) {
+        if (this.pool.runtime === this.runtime) {
             if (logs) {
                 utils_2.logger.info(`💻 Running node on runtime ${this.runtime}.`);
             }
@@ -459,13 +458,13 @@ class KYVE {
             process.exit(1);
         }
         try {
-            if ((0, semver_1.satisfies)(this.version, ((_b = this.pool.metadata) === null || _b === void 0 ? void 0 : _b.versions) || this.version)) {
+            if ((0, semver_1.satisfies)(this.version, this.pool.versions || this.version)) {
                 if (logs) {
                     utils_2.logger.info("⏱  Pool version requirements met.");
                 }
             }
             else {
-                utils_2.logger.error(`❌ Running an invalid version for the specified pool. Version requirements are ${this.pool.metadata.versions}.`);
+                utils_2.logger.error(`❌ Running an invalid version for the specified pool. Version requirements are ${this.pool.versions}.`);
                 process.exit(1);
             }
         }

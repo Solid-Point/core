@@ -576,14 +576,14 @@ class KYVE {
     }
 
     try {
-      this.pool.metadata = JSON.parse(this.pool.metadata);
+      this.pool.config = JSON.parse(this.pool.config);
     } catch (error) {
-      logger.error("❌ Received an error while trying to parse the metadata:");
+      logger.error("❌ Received an error while trying to parse the config:");
       logger.debug(error);
       throw new Error();
     }
 
-    if (this.pool.metadata?.runtime === this.runtime) {
+    if (this.pool.runtime === this.runtime) {
       if (logs) {
         logger.info(`💻 Running node on runtime ${this.runtime}.`);
       }
@@ -593,15 +593,13 @@ class KYVE {
     }
 
     try {
-      if (
-        satisfies(this.version, this.pool.metadata?.versions || this.version)
-      ) {
+      if (satisfies(this.version, this.pool.versions || this.version)) {
         if (logs) {
           logger.info("⏱  Pool version requirements met.");
         }
       } else {
         logger.error(
-          `❌ Running an invalid version for the specified pool. Version requirements are ${this.pool.metadata.versions}.`
+          `❌ Running an invalid version for the specified pool. Version requirements are ${this.pool.versions}.`
         );
         process.exit(1);
       }
