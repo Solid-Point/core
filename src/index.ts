@@ -510,7 +510,10 @@ class KYVE {
     try {
       logger.info("🔍 Claiming uploader role ...");
 
-      const tx = await this.pool.claimUploaderRole();
+      const tx = await this.pool.claimUploaderRole({
+        gasLimit: ethers.BigNumber.from(1000000),
+        gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
+      });
       logger.debug(`Transaction = ${tx.hash}`);
 
       await tx.wait();
