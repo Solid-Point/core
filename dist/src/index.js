@@ -274,7 +274,8 @@ class KYVE {
         utils_2.logger.debug(`Downloading bundle from Arweave ...`);
         let uploadBundle;
         let downloadBundle;
-        while (true) {
+        let tries = 0;
+        while (tries < 10) {
             downloadBundle = await this.downloadBundleFromArweave(bundleProposal);
             if (downloadBundle) {
                 utils_2.logger.debug(`Loading local bundle from ${bundleProposal.fromHeight} to ${bundleProposal.toHeight} ...`);
@@ -286,14 +287,9 @@ class KYVE {
                 break;
             }
             else {
-                // logger.error(
-                //   `❌ Error fetching bundle from Arweave. Retrying in 30s ...`
-                // );
-                // await sleep(30 * 1000);
-                this.vote({
-                    transaction: bundleProposal.txId,
-                    valid: true,
-                });
+                utils_2.logger.error(`❌ Error fetching bundle from Arweave. Retrying in 30s ...`);
+                await (0, helpers_1.sleep)(30 * 1000);
+                tries++;
                 break;
             }
         }

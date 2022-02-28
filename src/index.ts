@@ -336,7 +336,9 @@ class KYVE {
     let uploadBundle;
     let downloadBundle;
 
-    while (true) {
+    let tries = 0;
+
+    while (tries < 10) {
       downloadBundle = await this.downloadBundleFromArweave(bundleProposal);
 
       if (downloadBundle) {
@@ -357,14 +359,13 @@ class KYVE {
         });
         break;
       } else {
-        // logger.error(
-        //   `❌ Error fetching bundle from Arweave. Retrying in 30s ...`
-        // );
-        // await sleep(30 * 1000);
-        this.vote({
-          transaction: bundleProposal.txId,
-          valid: true,
-        });
+        logger.error(
+          `❌ Error fetching bundle from Arweave. Retrying in 30s ...`
+        );
+        await sleep(30 * 1000);
+
+        tries++;
+
         break;
       }
     }
