@@ -443,7 +443,7 @@ class KYVE {
         }
         catch (error) {
             utils_2.logger.error("❌ Received an error while trying to fetch the pool state:");
-            utils_2.logger.debug(error);
+            // logger.debug(error);
             throw new Error();
         }
         try {
@@ -451,7 +451,7 @@ class KYVE {
         }
         catch (error) {
             utils_2.logger.error("❌ Received an error while trying to parse the config:");
-            utils_2.logger.debug(error);
+            // logger.debug(error);
             throw new Error();
         }
         if (this.pool.runtime === this.runtime) {

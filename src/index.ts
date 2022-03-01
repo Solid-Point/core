@@ -576,7 +576,7 @@ class KYVE {
       logger.error(
         "❌ Received an error while trying to fetch the pool state:"
       );
-      logger.debug(error);
+      // logger.debug(error);
       throw new Error();
     }
 
@@ -584,7 +584,7 @@ class KYVE {
       this.pool.config = JSON.parse(this.pool.config);
     } catch (error) {
       logger.error("❌ Received an error while trying to parse the config:");
-      logger.debug(error);
+      // logger.debug(error);
       throw new Error();
     }
 
