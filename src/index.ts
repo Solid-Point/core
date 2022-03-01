@@ -230,7 +230,7 @@ class KYVE {
       }
     } catch (error) {
       logger.error(`❌ Runtime error. Exiting ...`);
-      // logger.debug(error);
+      logger.debug(error);
     }
   }
 
@@ -474,7 +474,12 @@ class KYVE {
       logger.debug("Waiting for new proposal ...");
 
       while (true) {
-        await this.getPool(false);
+        try {
+          await this.getPool(false);
+        } catch {
+          await sleep(60 * 1000);
+          continue;
+        }
 
         if (+this.pool.bundleProposal.createdAt > +createdAt) {
           break;

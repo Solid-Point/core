@@ -197,7 +197,7 @@ class KYVE {
         }
         catch (error) {
             utils_2.logger.error(`❌ Runtime error. Exiting ...`);
-            // logger.debug(error);
+            utils_2.logger.debug(error);
         }
     }
     async worker() {
@@ -371,7 +371,13 @@ class KYVE {
         return new Promise(async (resolve) => {
             utils_2.logger.debug("Waiting for new proposal ...");
             while (true) {
-                await this.getPool(false);
+                try {
+                    await this.getPool(false);
+                }
+                catch {
+                    await (0, helpers_1.sleep)(60 * 1000);
+                    continue;
+                }
                 if (+this.pool.bundleProposal.createdAt > +createdAt) {
                     break;
                 }
