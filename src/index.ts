@@ -29,7 +29,6 @@ export * from "./utils";
 export * from "./faces";
 export * from "./utils/helpers";
 export * from "./utils/database";
-export * from "./utils/progress";
 
 client.collectDefaultMetrics({
   labels: { app: "kyve-core" },
@@ -133,6 +132,7 @@ class KYVE {
     }
 
     this.worker();
+    this.logger();
     this.run();
   }
 
@@ -232,6 +232,20 @@ class KYVE {
       logger.error(`❌ Runtime error. Exiting ...`);
       logger.debug(error);
     }
+  }
+
+  public async logger() {
+    setInterval(async () => {
+      let workerHeight;
+
+      try {
+        workerHeight = parseInt(await this.db.get("head"));
+      } catch {
+        workerHeight = parseInt(this.pool.heightArchived);
+      }
+
+      logger.debug(`Worker height = ${workerHeight}`);
+    }, 60 * 1000);
   }
 
   public async worker() {
@@ -391,6 +405,10 @@ class KYVE {
     try {
       logger.info("📦 Creating new bundle proposal");
 
+      logger.debug(
+        `Creating bundle from height = ${this.pool.bundleProposal.toHeight} ...`
+      );
+
       const uploadBundle = await this.createBundle();
 
       logger.debug("Uploading bundle to Arweave ...");
@@ -523,6 +541,14 @@ class KYVE {
       return input.padEnd(length, " ");
     };
 
+    let workerHeight;
+
+    try {
+      workerHeight = parseInt(await this.db.get("head"));
+    } catch {
+      workerHeight = parseInt(this.pool.heightArchived);
+    }
+
     logger.info(
       `🚀 Starting node ...\n\t${formatInfoLogs("Node name")} = ${
         this.name
@@ -531,6 +557,8 @@ class KYVE {
       )} = ${await this.client.getAddress()}\n\t${formatInfoLogs(
         "Pool Id"
       )} = ${this.poolId}\n\t${formatInfoLogs(
+        "Worker height"
+      )} = ${workerHeight}\n\t${formatInfoLogs(
         "@kyve/core"
       )} = v${version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}`
     );
@@ -573,9 +601,7 @@ class KYVE {
       );
       this.pool = { ...Pool };
     } catch (error) {
-      logger.error(
-        "❌ Received an error while trying to fetch the pool state:"
-      );
+      logger.error("❌ Received an error while trying to fetch the pool state");
       // logger.debug(error);
       throw new Error();
     }
@@ -584,7 +610,7 @@ class KYVE {
       this.pool.config = JSON.parse(this.pool.config);
     } catch (error) {
       logger.error("❌ Received an error while trying to parse the config:");
-      // logger.debug(error);
+      logger.debug(error);
       throw new Error();
     }
 

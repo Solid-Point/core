@@ -10,7 +10,6 @@ export * from "./utils";
 export * from "./faces";
 export * from "./utils/helpers";
 export * from "./utils/database";
-export * from "./utils/progress";
 declare class KYVE {
     protected poolId: number;
     protected pool: any;
@@ -29,6 +28,7 @@ declare class KYVE {
     constructor(cli?: CLI);
     start(): Promise<void>;
     private run;
+    logger(): Promise<void>;
     worker(): Promise<void>;
     requestWorkerBatch(workerHeight: number): Promise<any[]>;
     createBundle(): Promise<Bundle>;

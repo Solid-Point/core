@@ -47,7 +47,6 @@ __exportStar(require("./utils"), exports);
 __exportStar(require("./faces"), exports);
 __exportStar(require("./utils/helpers"), exports);
 __exportStar(require("./utils/database"), exports);
-__exportStar(require("./utils/progress"), exports);
 prom_client_1.default.collectDefaultMetrics({
     labels: { app: "kyve-core" },
 });
@@ -122,6 +121,7 @@ class KYVE {
             process.exit(1);
         }
         this.worker();
+        this.logger();
         this.run();
     }
     async run() {
@@ -199,6 +199,18 @@ class KYVE {
             utils_2.logger.error(`❌ Runtime error. Exiting ...`);
             utils_2.logger.debug(error);
         }
+    }
+    async logger() {
+        setInterval(async () => {
+            let workerHeight;
+            try {
+                workerHeight = parseInt(await this.db.get("head"));
+            }
+            catch {
+                workerHeight = parseInt(this.pool.heightArchived);
+            }
+            utils_2.logger.debug(`Worker height = ${workerHeight}`);
+        }, 60 * 1000);
     }
     async worker() {
         while (true) {
@@ -311,6 +323,7 @@ class KYVE {
     async uploadBundleToArweave() {
         try {
             utils_2.logger.info("📦 Creating new bundle proposal");
+            utils_2.logger.debug(`Creating bundle from height = ${this.pool.bundleProposal.toHeight} ...`);
             const uploadBundle = await this.createBundle();
             utils_2.logger.debug("Uploading bundle to Arweave ...");
             const transaction = await this.arweave.createTransaction({
@@ -412,7 +425,14 @@ class KYVE {
             const length = Math.max(13, this.runtime.length);
             return input.padEnd(length, " ");
         };
-        utils_2.logger.info(`🚀 Starting node ...\n\t${formatInfoLogs("Node name")} = ${this.name}\n\t${formatInfoLogs("Address")} = ${await this.client.getAddress()}\n\t${formatInfoLogs("Pool Id")} = ${this.poolId}\n\t${formatInfoLogs("@kyve/core")} = v${package_json_1.version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}`);
+        let workerHeight;
+        try {
+            workerHeight = parseInt(await this.db.get("head"));
+        }
+        catch {
+            workerHeight = parseInt(this.pool.heightArchived);
+        }
+        utils_2.logger.info(`🚀 Starting node ...\n\t${formatInfoLogs("Node name")} = ${this.name}\n\t${formatInfoLogs("Address")} = ${await this.client.getAddress()}\n\t${formatInfoLogs("Pool Id")} = ${this.poolId}\n\t${formatInfoLogs("Worker height")} = ${workerHeight}\n\t${formatInfoLogs("@kyve/core")} = v${package_json_1.version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}`);
     }
     setupMetrics() {
         if (this.runMetrics) {
@@ -442,7 +462,7 @@ class KYVE {
             this.pool = { ...Pool };
         }
         catch (error) {
-            utils_2.logger.error("❌ Received an error while trying to fetch the pool state:");
+            utils_2.logger.error("❌ Received an error while trying to fetch the pool state");
             // logger.debug(error);
             throw new Error();
         }
@@ -451,7 +471,7 @@ class KYVE {
         }
         catch (error) {
             utils_2.logger.error("❌ Received an error while trying to parse the config:");
-            // logger.debug(error);
+            utils_2.logger.debug(error);
             throw new Error();
         }
         if (this.pool.runtime === this.runtime) {
