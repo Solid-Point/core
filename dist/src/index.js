@@ -266,7 +266,13 @@ class KYVE {
             tail = parseInt(this.pool.heightArchived);
         }
         for (let key = tail; key < parseInt(this.pool.heightArchived); key++) {
-            await this.db.del(key);
+            try {
+                await this.db.del(key);
+            }
+            catch (error) {
+                utils_2.logger.error(`❌ Error clearing old bundle data with key ${key}:`);
+                utils_2.logger.debug(error);
+            }
         }
         await this.db.put("tail", parseInt(this.pool.heightArchived));
     }
