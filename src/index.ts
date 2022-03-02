@@ -252,6 +252,7 @@ class KYVE {
     } catch (error) {
       logger.error(`❌ Runtime error. Exiting ...`);
       logger.debug(error);
+      process.exit(1);
     }
   }
 
@@ -323,7 +324,9 @@ class KYVE {
     }
 
     for (let key = tail; key < this.poolState.height.toNumber(); key++) {
-      await this.db.del(key);
+      try {
+        await this.db.del(key);
+      } catch {}
     }
 
     await this.db.put("tail", this.poolState.height.toNumber());
