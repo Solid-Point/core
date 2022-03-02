@@ -176,6 +176,10 @@ class KYVE {
                         utils_2.logger.debug(`Can not vote this round: Reason: ${canVote.reason}`);
                     }
                 }
+                // check if new proposal is available in the meantime
+                if (+this.pool.bundleProposal.createdAt > +createdAt) {
+                    continue;
+                }
                 if (!this.pool.bundleProposal.nextUploader) {
                     await this.claimUploaderRole();
                     await this.getPool(false);
@@ -307,8 +311,8 @@ class KYVE {
                 break;
             }
             downloadBundle = await this.downloadBundleFromArweave();
-            utils_2.logger.debug(`Successfully downloaded bundle from Arweave`);
             if (downloadBundle) {
+                utils_2.logger.debug(`Successfully downloaded bundle from Arweave`);
                 utils_2.logger.debug(`Loading local bundle from ${this.pool.bundleProposal.fromHeight} to ${this.pool.bundleProposal.toHeight} ...`);
                 uploadBundle = (0, zlib_1.gzipSync)(await this.loadBundle());
                 await this.vote({

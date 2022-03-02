@@ -203,6 +203,11 @@ class KYVE {
           }
         }
 
+        // check if new proposal is available in the meantime
+        if (+this.pool.bundleProposal.createdAt > +createdAt) {
+          continue;
+        }
+
         if (!this.pool.bundleProposal.nextUploader) {
           await this.claimUploaderRole();
           await this.getPool(false);
@@ -363,9 +368,8 @@ class KYVE {
 
       downloadBundle = await this.downloadBundleFromArweave();
 
-      logger.debug(`Successfully downloaded bundle from Arweave`);
-
       if (downloadBundle) {
+        logger.debug(`Successfully downloaded bundle from Arweave`);
         logger.debug(
           `Loading local bundle from ${this.pool.bundleProposal.fromHeight} to ${this.pool.bundleProposal.toHeight} ...`
         );
