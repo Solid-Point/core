@@ -178,13 +178,22 @@ class KYVE {
           this.pool.bundleProposal.uploader &&
           this.pool.bundleProposal.uploader !== address
         ) {
-          const { data: canVote } = await axios.get(
-            `${this.client.endpoints.rest}/kyve/registry/can_vote/${
-              this.poolId
-            }/${await this.client.getAddress()}?bundleId=${
-              this.pool.bundleProposal.bundleId
-            }`
-          );
+          let canVote = {
+            possible: false,
+            reason: "Failed to execute canVote query",
+          };
+
+          try {
+            const { data } = await axios.get(
+              `${this.client.endpoints.rest}/kyve/registry/can_vote/${
+                this.poolId
+              }/${await this.client.getAddress()}?bundleId=${
+                this.pool.bundleProposal.bundleId
+              }`
+            );
+
+            canVote = data;
+          } catch {}
 
           if (canVote.possible) {
             await this.validateProposal(createdAt);
@@ -207,11 +216,20 @@ class KYVE {
           await this.getPool(false);
 
           if (this.pool.bundleProposal.nextUploader === address) {
-            const { data: canPropose } = await axios.get(
-              `${this.client.endpoints.rest}/kyve/registry/can_propose/${
-                this.poolId
-              }/${await this.client.getAddress()}`
-            );
+            let canPropose = {
+              possible: false,
+              reason: "Failed to execute canPropose query",
+            };
+
+            try {
+              const { data } = await axios.get(
+                `${this.client.endpoints.rest}/kyve/registry/can_propose/${
+                  this.poolId
+                }/${await this.client.getAddress()}`
+              );
+
+              canPropose = data;
+            } catch {}
 
             if (canPropose.possible) {
               // if upload fails try again & refetch bundleProposal
@@ -232,6 +250,7 @@ class KYVE {
     } catch (error) {
       logger.error(`❌ Runtime error. Exiting ...`);
       logger.debug(error);
+      process.exit(1);
     }
   }
 
