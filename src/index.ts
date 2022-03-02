@@ -554,7 +554,7 @@ class KYVE {
     try {
       workerHeight = parseInt(await this.db.get("head"));
     } catch {
-      workerHeight = parseInt(this.pool.heightArchived);
+      workerHeight = 0;
     }
 
     logger.info(

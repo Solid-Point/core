@@ -438,7 +438,7 @@ class KYVE {
             workerHeight = parseInt(await this.db.get("head"));
         }
         catch {
-            workerHeight = parseInt(this.pool.heightArchived);
+            workerHeight = 0;
         }
         utils_2.logger.info(`🚀 Starting node ...\n\n\t${formatInfoLogs("Node name")} = ${this.name}\n\t${formatInfoLogs("Address")} = ${await this.client.getAddress()}\n\t${formatInfoLogs("Pool Id")} = ${this.poolId}\n\t${formatInfoLogs("Cache height")} = ${workerHeight}\n\t${formatInfoLogs("@kyve/core")} = v${package_json_1.version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}\n`);
     }
