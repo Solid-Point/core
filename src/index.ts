@@ -139,7 +139,8 @@ class KYVE {
   private async run() {
     try {
       while (true) {
-        logger.info("\n⚡️ Starting new proposal");
+        console.log("");
+        logger.info("⚡️ Starting new proposal");
 
         const address = await this.client.getAddress();
 
@@ -342,6 +343,10 @@ class KYVE {
       }
 
       downloadBundle = await this.downloadBundleFromArweave();
+
+      logger.debug(
+        `Successfully fetched bundle ${this.pool.bundleProposal.bundleId} from Arweave`
+      );
 
       if (downloadBundle) {
         logger.debug(

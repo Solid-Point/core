@@ -127,7 +127,8 @@ class KYVE {
     async run() {
         try {
             while (true) {
-                utils_2.logger.info("\n⚡️ Starting new proposal");
+                console.log("");
+                utils_2.logger.info("⚡️ Starting new proposal");
                 const address = await this.client.getAddress();
                 try {
                     await this.getPool(false);
@@ -289,6 +290,7 @@ class KYVE {
                 break;
             }
             downloadBundle = await this.downloadBundleFromArweave();
+            utils_2.logger.debug(`Successfully fetched bundle ${this.pool.bundleProposal.bundleId} from Arweave`);
             if (downloadBundle) {
                 utils_2.logger.debug(`Loading local bundle from ${this.pool.bundleProposal.fromHeight} to ${this.pool.bundleProposal.toHeight} ...`);
                 uploadBundle = (0, zlib_1.gzipSync)(await this.loadBundle());
