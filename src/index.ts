@@ -558,9 +558,9 @@ class KYVE {
     }
 
     logger.info(
-      `🚀 Starting node ...\n\t${formatInfoLogs("Node name")} = ${
+      `🚀 Starting node ...\n\n\t${formatInfoLogs("Node name")} = ${
         this.name
-      }\n\n\t${formatInfoLogs(
+      }\n\t${formatInfoLogs(
         "Address"
       )} = ${await this.client.getAddress()}\n\t${formatInfoLogs(
         "Pool Id"
@@ -726,7 +726,7 @@ class KYVE {
 
   // TODO: move to separate file
   private generateRandomName(mnemonic: string) {
-    const r = new Prando(mnemonic + this.pool);
+    const r = new Prando(mnemonic + this.poolId);
 
     return uniqueNamesGenerator({
       dictionaries: [adjectives, colors, animals],

@@ -440,7 +440,7 @@ class KYVE {
         catch {
             workerHeight = parseInt(this.pool.heightArchived);
         }
-        utils_2.logger.info(`🚀 Starting node ...\n\t${formatInfoLogs("Node name")} = ${this.name}\n\n\t${formatInfoLogs("Address")} = ${await this.client.getAddress()}\n\t${formatInfoLogs("Pool Id")} = ${this.poolId}\n\t${formatInfoLogs("Cache height")} = ${workerHeight}\n\t${formatInfoLogs("@kyve/core")} = v${package_json_1.version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}\n`);
+        utils_2.logger.info(`🚀 Starting node ...\n\n\t${formatInfoLogs("Node name")} = ${this.name}\n\t${formatInfoLogs("Address")} = ${await this.client.getAddress()}\n\t${formatInfoLogs("Pool Id")} = ${this.poolId}\n\t${formatInfoLogs("Cache height")} = ${workerHeight}\n\t${formatInfoLogs("@kyve/core")} = v${package_json_1.version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}\n`);
     }
     setupMetrics() {
         if (this.runMetrics) {
@@ -575,7 +575,7 @@ class KYVE {
     // }
     // TODO: move to separate file
     generateRandomName(mnemonic) {
-        const r = new prando_1.default(mnemonic + this.pool);
+        const r = new prando_1.default(mnemonic + this.poolId);
         return (0, unique_names_generator_1.uniqueNamesGenerator)({
             dictionaries: [unique_names_generator_1.adjectives, unique_names_generator_1.colors, unique_names_generator_1.animals],
             separator: "-",
