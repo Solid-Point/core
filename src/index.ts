@@ -245,7 +245,7 @@ class KYVE {
         workerHeight = parseInt(this.pool.heightArchived);
       }
 
-      logger.debug(`Worker height = ${workerHeight}`);
+      logger.debug(`Cached to height = ${workerHeight}`);
     }, 60 * 1000);
   }
 
@@ -344,9 +344,7 @@ class KYVE {
 
       downloadBundle = await this.downloadBundleFromArweave();
 
-      logger.debug(
-        `Successfully fetched bundle ${this.pool.bundleProposal.bundleId} from Arweave`
-      );
+      logger.debug(`Successfully downloaded bundle from Arweave`);
 
       if (downloadBundle) {
         logger.debug(
@@ -562,15 +560,15 @@ class KYVE {
     logger.info(
       `🚀 Starting node ...\n\t${formatInfoLogs("Node name")} = ${
         this.name
-      }\n\t${formatInfoLogs(
+      }\n\n\t${formatInfoLogs(
         "Address"
       )} = ${await this.client.getAddress()}\n\t${formatInfoLogs(
         "Pool Id"
       )} = ${this.poolId}\n\t${formatInfoLogs(
-        "Worker height"
+        "Cache height"
       )} = ${workerHeight}\n\t${formatInfoLogs(
         "@kyve/core"
-      )} = v${version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}`
+      )} = v${version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}\n`
     );
   }
 

@@ -210,7 +210,7 @@ class KYVE {
             catch {
                 workerHeight = parseInt(this.pool.heightArchived);
             }
-            utils_2.logger.debug(`Worker height = ${workerHeight}`);
+            utils_2.logger.debug(`Cached to height = ${workerHeight}`);
         }, 60 * 1000);
     }
     async worker() {
@@ -290,7 +290,7 @@ class KYVE {
                 break;
             }
             downloadBundle = await this.downloadBundleFromArweave();
-            utils_2.logger.debug(`Successfully fetched bundle ${this.pool.bundleProposal.bundleId} from Arweave`);
+            utils_2.logger.debug(`Successfully downloaded bundle from Arweave`);
             if (downloadBundle) {
                 utils_2.logger.debug(`Loading local bundle from ${this.pool.bundleProposal.fromHeight} to ${this.pool.bundleProposal.toHeight} ...`);
                 uploadBundle = (0, zlib_1.gzipSync)(await this.loadBundle());
@@ -440,7 +440,7 @@ class KYVE {
         catch {
             workerHeight = parseInt(this.pool.heightArchived);
         }
-        utils_2.logger.info(`🚀 Starting node ...\n\t${formatInfoLogs("Node name")} = ${this.name}\n\t${formatInfoLogs("Address")} = ${await this.client.getAddress()}\n\t${formatInfoLogs("Pool Id")} = ${this.poolId}\n\t${formatInfoLogs("Worker height")} = ${workerHeight}\n\t${formatInfoLogs("@kyve/core")} = v${package_json_1.version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}`);
+        utils_2.logger.info(`🚀 Starting node ...\n\t${formatInfoLogs("Node name")} = ${this.name}\n\n\t${formatInfoLogs("Address")} = ${await this.client.getAddress()}\n\t${formatInfoLogs("Pool Id")} = ${this.poolId}\n\t${formatInfoLogs("Cache height")} = ${workerHeight}\n\t${formatInfoLogs("@kyve/core")} = v${package_json_1.version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}\n`);
     }
     setupMetrics() {
         if (this.runMetrics) {
