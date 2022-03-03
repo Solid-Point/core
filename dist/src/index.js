@@ -390,13 +390,7 @@ class KYVE {
         return new Promise(async (resolve) => {
             utils_2.logger.debug("Waiting for new proposal ...");
             while (true) {
-                try {
-                    await this.getPool(false);
-                }
-                catch {
-                    await (0, helpers_1.sleep)(60 * 1000);
-                    continue;
-                }
+                await this.getPool(false);
                 if (+this.pool.bundleProposal.createdAt > +createdAt) {
                     break;
                 }
@@ -529,8 +523,8 @@ class KYVE {
                         break;
                     }
                     else {
-                        utils_2.logger.error("❌ Node is no active validator. Exiting ...");
-                        process.exit(1);
+                        utils_2.logger.info(`⚠️ Node is no active validator. Stake KYVE here to join as a validator ➡️ https://app.kyve.network/pools/${this.poolId}/validators. Idling ...`);
+                        await (0, helpers_1.sleep)(60 * 1000);
                     }
                 }
                 catch (error) {
