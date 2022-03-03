@@ -116,21 +116,8 @@ class KYVE {
   async start() {
     await this.logNodeInfo();
     this.setupMetrics();
-
-    try {
-      await this.getPool();
-    } catch {
-      process.exit(1);
-    }
-
-    // await this.setupNodeCommission();
-
-    try {
-      await this.verifyNode();
-    } catch {
-      process.exit(1);
-    }
-
+    this.getPool();
+    this.verifyNode();
     this.worker();
     this.logger();
     this.run();
@@ -144,12 +131,7 @@ class KYVE {
 
         const address = await this.client.getAddress();
 
-        try {
-          await this.getPool(false);
-        } catch {
-          await sleep(60 * 1000);
-          continue;
-        }
+        await this.getPool();
 
         const createdAt = this.pool.bundleProposal.createdAt;
 
@@ -159,13 +141,7 @@ class KYVE {
           continue;
         }
 
-        try {
-          await this.verifyNode(false);
-        } catch {
-          await sleep(60 * 1000);
-          continue;
-        }
-
+        await this.verifyNode(false);
         await this.clearFinalizedData();
 
         if (this.pool.bundleProposal.nextUploader === address) {
@@ -619,82 +595,112 @@ class KYVE {
     }
   }
 
-  private async getPool(logs: boolean = true) {
+  private async getPool(logs: boolean = true): Promise<void> {
     if (logs) {
       logger.debug("Attempting to fetch pool state.");
     }
 
-    try {
-      const {
-        data: { Pool },
-      } = await axios.get(
-        `${this.client.endpoints.rest}/kyve/registry/pool/${this.poolId}`
-      );
-      this.pool = { ...Pool };
-    } catch (error) {
-      logger.error("❌ Received an error while trying to fetch the pool state");
-      // logger.debug(error);
-      throw new Error();
-    }
+    return new Promise(async (resolve) => {
+      while (true) {
+        try {
+          const {
+            data: { Pool },
+          } = await axios.get(
+            `${this.client.endpoints.rest}/kyve/registry/pool/${this.poolId}`
+          );
+          this.pool = { ...Pool };
 
-    try {
-      this.pool.config = JSON.parse(this.pool.config);
-    } catch (error) {
-      logger.error("❌ Received an error while trying to parse the config:");
-      logger.debug(error);
-      throw new Error();
-    }
+          try {
+            this.pool.config = JSON.parse(this.pool.config);
+          } catch (error) {
+            logger.error(
+              "❌ Received an error while trying to parse the config:"
+            );
+            logger.debug(error);
+            process.exit(1);
+          }
 
-    if (this.pool.runtime === this.runtime) {
-      if (logs) {
-        logger.info(`💻 Running node on runtime ${this.runtime}.`);
-      }
-    } else {
-      logger.error("❌ Specified pool does not match the integration runtime.");
-      process.exit(1);
-    }
+          if (this.pool.runtime === this.runtime) {
+            if (logs) {
+              logger.info(`💻 Running node on runtime ${this.runtime}.`);
+            }
+          } else {
+            logger.error(
+              "❌ Specified pool does not match the integration runtime."
+            );
+            process.exit(1);
+          }
 
-    try {
-      if (satisfies(this.version, this.pool.versions || this.version)) {
-        if (logs) {
-          logger.info("⏱  Pool version requirements met.");
+          try {
+            if (satisfies(this.version, this.pool.versions || this.version)) {
+              if (logs) {
+                logger.info("⏱  Pool version requirements met.");
+              }
+            } else {
+              logger.error(
+                `❌ Running an invalid version for the specified pool. Version requirements are ${this.pool.versions}.`
+              );
+              process.exit(1);
+            }
+          } catch (error) {
+            logger.error("❌ Received an error while trying parse versions");
+            logger.debug(error);
+            process.exit(1);
+          }
+
+          break;
+        } catch (error) {
+          logger.error(
+            "❌ Received an error while trying to fetch the pool state"
+          );
+          await sleep(10 * 1000);
         }
-      } else {
-        logger.error(
-          `❌ Running an invalid version for the specified pool. Version requirements are ${this.pool.versions}.`
-        );
-        process.exit(1);
       }
-    } catch (error) {
-      logger.error("❌ Received an error while trying parse versions");
-      logger.debug(error);
-      process.exit(1);
-    }
 
-    if (logs) {
-      logger.info("✅ Fetched pool state");
-    }
+      if (logs) {
+        logger.info("✅ Fetched pool state");
+      }
+
+      resolve();
+    });
   }
 
-  private async verifyNode(logs: boolean = true) {
-    try {
-      const isStaker = this.pool.stakers.includes(
-        await this.client.getAddress()
-      );
-
-      if (isStaker) {
-        if (logs) {
-          logger.info("🔍  Node is running as a validator.");
-        }
-      } else {
-        logger.error("❌ Node is no active validator. Exiting ...");
-        process.exit(1);
-      }
-    } catch (error) {
-      logger.error("❌ Received an error while trying to fetch validator info");
-      logger.debug(error);
-      throw new Error();
+  private async verifyNode(logs: boolean = true): Promise<void> {
+    if (logs) {
+      logger.debug("Attempting to verify node.");
     }
+
+    return new Promise(async (resolve) => {
+      while (true) {
+        try {
+          const isStaker = this.pool.stakers.includes(
+            await this.client.getAddress()
+          );
+
+          if (isStaker) {
+            if (logs) {
+              logger.info("🔍  Node is running as a validator.");
+            }
+
+            break;
+          } else {
+            logger.error("❌ Node is no active validator. Exiting ...");
+            process.exit(1);
+          }
+        } catch (error) {
+          logger.error(
+            "❌ Received an error while trying to fetch validator info"
+          );
+          await sleep(10 * 1000);
+        }
+      }
+
+      if (logs) {
+        logger.info("✅ Validated node");
+      }
+
+      resolve();
+    });
   }
 
   // private async setupNodeCommission() {
