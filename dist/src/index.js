@@ -107,19 +107,8 @@ class KYVE {
     async start() {
         await this.logNodeInfo();
         this.setupMetrics();
-        try {
-            await this.getPool();
-        }
-        catch {
-            process.exit(1);
-        }
-        // await this.setupNodeCommission();
-        try {
-            await this.verifyNode();
-        }
-        catch {
-            process.exit(1);
-        }
+        this.getPool();
+        this.verifyNode();
         this.worker();
         this.logger();
         this.run();
@@ -130,26 +119,14 @@ class KYVE {
                 console.log("");
                 utils_2.logger.info("⚡️ Starting new proposal");
                 const address = await this.client.getAddress();
-                try {
-                    await this.getPool(false);
-                }
-                catch {
-                    await (0, helpers_1.sleep)(60 * 1000);
-                    continue;
-                }
+                await this.getPool();
                 const createdAt = this.pool.bundleProposal.createdAt;
                 if (this.pool.paused) {
                     utils_2.logger.info("💤  Pool is paused. Waiting ...");
                     await (0, helpers_1.sleep)(60 * 1000);
                     continue;
                 }
-                try {
-                    await this.verifyNode(false);
-                }
-                catch {
-                    await (0, helpers_1.sleep)(60 * 1000);
-                    continue;
-                }
+                await this.verifyNode(false);
                 await this.clearFinalizedData();
                 if (this.pool.bundleProposal.nextUploader === address) {
                     utils_2.logger.info("📚 Selected as UPLOADER");
@@ -486,70 +463,86 @@ class KYVE {
         if (logs) {
             utils_2.logger.debug("Attempting to fetch pool state.");
         }
-        try {
-            const { data: { Pool }, } = await axios_1.default.get(`${this.client.endpoints.rest}/kyve/registry/pool/${this.poolId}`);
-            this.pool = { ...Pool };
-        }
-        catch (error) {
-            utils_2.logger.error("❌ Received an error while trying to fetch the pool state");
-            // logger.debug(error);
-            throw new Error();
-        }
-        try {
-            this.pool.config = JSON.parse(this.pool.config);
-        }
-        catch (error) {
-            utils_2.logger.error("❌ Received an error while trying to parse the config:");
-            utils_2.logger.debug(error);
-            throw new Error();
-        }
-        if (this.pool.runtime === this.runtime) {
-            if (logs) {
-                utils_2.logger.info(`💻 Running node on runtime ${this.runtime}.`);
-            }
-        }
-        else {
-            utils_2.logger.error("❌ Specified pool does not match the integration runtime.");
-            process.exit(1);
-        }
-        try {
-            if ((0, semver_1.satisfies)(this.version, this.pool.versions || this.version)) {
-                if (logs) {
-                    utils_2.logger.info("⏱  Pool version requirements met.");
+        return new Promise(async (resolve) => {
+            while (true) {
+                try {
+                    const { data: { Pool }, } = await axios_1.default.get(`${this.client.endpoints.rest}/kyve/registry/pool/${this.poolId}`);
+                    this.pool = { ...Pool };
+                    try {
+                        this.pool.config = JSON.parse(this.pool.config);
+                    }
+                    catch (error) {
+                        utils_2.logger.error("❌ Received an error while trying to parse the config:");
+                        utils_2.logger.debug(error);
+                        process.exit(1);
+                    }
+                    if (this.pool.runtime === this.runtime) {
+                        if (logs) {
+                            utils_2.logger.info(`💻 Running node on runtime ${this.runtime}.`);
+                        }
+                    }
+                    else {
+                        utils_2.logger.error("❌ Specified pool does not match the integration runtime.");
+                        process.exit(1);
+                    }
+                    try {
+                        if ((0, semver_1.satisfies)(this.version, this.pool.versions || this.version)) {
+                            if (logs) {
+                                utils_2.logger.info("⏱  Pool version requirements met.");
+                            }
+                        }
+                        else {
+                            utils_2.logger.error(`❌ Running an invalid version for the specified pool. Version requirements are ${this.pool.versions}.`);
+                            process.exit(1);
+                        }
+                    }
+                    catch (error) {
+                        utils_2.logger.error("❌ Received an error while trying parse versions");
+                        utils_2.logger.debug(error);
+                        process.exit(1);
+                    }
+                    break;
+                }
+                catch (error) {
+                    utils_2.logger.error("❌ Received an error while trying to fetch the pool state");
+                    await (0, helpers_1.sleep)(10 * 1000);
                 }
             }
-            else {
-                utils_2.logger.error(`❌ Running an invalid version for the specified pool. Version requirements are ${this.pool.versions}.`);
-                process.exit(1);
+            if (logs) {
+                utils_2.logger.info("✅ Fetched pool state");
             }
-        }
-        catch (error) {
-            utils_2.logger.error("❌ Received an error while trying parse versions");
-            utils_2.logger.debug(error);
-            process.exit(1);
-        }
-        if (logs) {
-            utils_2.logger.info("✅ Fetched pool state");
-        }
+            resolve();
+        });
     }
     async verifyNode(logs = true) {
-        try {
-            const isStaker = this.pool.stakers.includes(await this.client.getAddress());
-            if (isStaker) {
-                if (logs) {
-                    utils_2.logger.info("🔍  Node is running as a validator.");
+        if (logs) {
+            utils_2.logger.debug("Attempting to verify node.");
+        }
+        return new Promise(async (resolve) => {
+            while (true) {
+                try {
+                    const isStaker = this.pool.stakers.includes(await this.client.getAddress());
+                    if (isStaker) {
+                        if (logs) {
+                            utils_2.logger.info("🔍  Node is running as a validator.");
+                        }
+                        break;
+                    }
+                    else {
+                        utils_2.logger.error("❌ Node is no active validator. Exiting ...");
+                        process.exit(1);
+                    }
+                }
+                catch (error) {
+                    utils_2.logger.error("❌ Received an error while trying to fetch validator info");
+                    await (0, helpers_1.sleep)(10 * 1000);
                 }
             }
-            else {
-                utils_2.logger.error("❌ Node is no active validator. Exiting ...");
-                process.exit(1);
+            if (logs) {
+                utils_2.logger.info("✅ Validated node");
             }
-        }
-        catch (error) {
-            utils_2.logger.error("❌ Received an error while trying to fetch validator info");
-            utils_2.logger.debug(error);
-            throw new Error();
-        }
+            resolve();
+        });
     }
     // private async setupNodeCommission() {
     //   let parsedCommission;
