@@ -107,8 +107,8 @@ class KYVE {
     async start() {
         await this.logNodeInfo();
         this.setupMetrics();
-        this.getPool();
-        this.verifyNode();
+        await this.getPool();
+        await this.verifyNode();
         this.worker();
         this.logger();
         this.run();
@@ -119,7 +119,7 @@ class KYVE {
                 console.log("");
                 utils_2.logger.info("⚡️ Starting new proposal");
                 const address = await this.client.getAddress();
-                await this.getPool();
+                await this.getPool(false);
                 const createdAt = this.pool.bundleProposal.createdAt;
                 if (this.pool.paused) {
                     utils_2.logger.info("💤  Pool is paused. Waiting ...");

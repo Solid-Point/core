@@ -116,8 +116,10 @@ class KYVE {
   async start() {
     await this.logNodeInfo();
     this.setupMetrics();
-    this.getPool();
-    this.verifyNode();
+
+    await this.getPool();
+    await this.verifyNode();
+
     this.worker();
     this.logger();
     this.run();
@@ -131,7 +133,7 @@ class KYVE {
 
         const address = await this.client.getAddress();
 
-        await this.getPool();
+        await this.getPool(false);
 
         const createdAt = this.pool.bundleProposal.createdAt;
 
