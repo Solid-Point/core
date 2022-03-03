@@ -681,10 +681,13 @@ class KYVE {
 
             break;
           } else {
+            logger.info(`⚠️  Node is no active validator!`);
             logger.info(
-              `⚠️ Node is no active validator. Stake KYVE here to join as a validator ➡️ https://app.kyve.network/pools/${this.poolId}/validators. Idling ...`
+              `Stake KYVE here to join as a validator: https://app.kyve.network/pools/${this.poolId}/validators`
             );
+            logger.info(`Idling ...`);
             await sleep(60 * 1000);
+            await this.getPool(false);
           }
         } catch (error) {
           logger.error(
