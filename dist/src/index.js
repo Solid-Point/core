@@ -166,6 +166,10 @@ class KYVE {
                 }
                 while (true) {
                     await this.getPool(false);
+                    // check if new proposal is available in the meantime
+                    if (+this.pool.bundleProposal.createdAt > +createdAt) {
+                        break;
+                    }
                     if (this.pool.bundleProposal.nextUploader === address) {
                         let canPropose = {
                             possible: false,
