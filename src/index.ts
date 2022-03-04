@@ -4,15 +4,9 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync } from "fs";
 import Prando from "prando";
 import { satisfies } from "semver";
 import { ILogObject } from "tslog";
-import {
-  adjectives,
-  colors,
-  animals,
-  uniqueNamesGenerator,
-} from "unique-names-generator";
 import { Bundle } from "./faces";
 import { CLI } from "./utils";
-import { sleep } from "./utils/helpers";
+import { formatBundle, sleep } from "./utils/helpers";
 import { logger } from "./utils";
 import { version } from "../package.json";
 import hash from "object-hash";
@@ -24,6 +18,12 @@ import { Client } from "./utils/client";
 import du from "du";
 import { gzipSync } from "zlib";
 import axios from "axios";
+import {
+  adjectives,
+  colors,
+  animals,
+  uniqueNamesGenerator,
+} from "unique-names-generator";
 
 export * from "./utils";
 export * from "./faces";
@@ -34,9 +34,9 @@ client.collectDefaultMetrics({
   labels: { app: "kyve-core" },
 });
 
-const metricsWorkerHeight = new client.Gauge({
-  name: "current_worker_height",
-  help: "The current height the worker has indexed to.",
+const metricsCacheHeight = new client.Gauge({
+  name: "current_cache_height",
+  help: "The current height the cache has indexed to.",
 });
 
 const metricsDbSize = new client.Gauge({
@@ -120,23 +120,25 @@ class KYVE {
     await this.getPool();
     await this.verifyNode();
 
-    this.worker();
+    this.cache();
     this.logger();
     this.run();
   }
 
   private async run() {
     try {
+      const address = await this.client.getAddress();
+
       while (true) {
         console.log("");
         logger.info("⚡️ Starting new proposal");
 
-        const address = await this.client.getAddress();
-
+        // get current pool state
         await this.getPool(false);
-
+        // save height of bundle proposal
         const createdAt = this.pool.bundleProposal.createdAt;
 
+        // TODO: maybe move to getPool()
         if (this.pool.paused) {
           logger.info("💤  Pool is paused. Waiting ...");
           await sleep(60 * 1000);
@@ -234,6 +236,8 @@ class KYVE {
             break;
           }
         }
+
+        logger.debug(`Proposal ended`);
       }
     } catch (error) {
       logger.error(`❌ Runtime error. Exiting ...`);
@@ -244,27 +248,27 @@ class KYVE {
 
   public async logger() {
     setInterval(async () => {
-      let workerHeight;
+      let height;
 
       try {
-        workerHeight = parseInt(await this.db.get("head"));
+        height = parseInt(await this.db.get("head"));
       } catch {
-        workerHeight = parseInt(this.pool.heightArchived);
+        height = parseInt(this.pool.heightArchived);
       }
 
-      logger.debug(`Cached to height = ${workerHeight}`);
+      logger.debug(`Cached to height = ${height}`);
     }, 60 * 1000);
   }
 
-  public async worker() {
+  public async cache() {
     while (true) {
-      try {
-        let workerHeight;
+      let height: number = 0;
 
+      try {
         try {
-          workerHeight = parseInt(await this.db.get("head"));
+          height = parseInt(await this.db.get("head"));
         } catch {
-          workerHeight = parseInt(this.pool.heightArchived);
+          height = parseInt(this.pool.heightArchived);
         }
 
         const usedDiskSpace = await du(`./db/${this.name}/`);
@@ -272,7 +276,7 @@ class KYVE {
           ((usedDiskSpace * 100) / this.space).toFixed(2)
         );
 
-        metricsWorkerHeight.set(workerHeight);
+        metricsCacheHeight.set(height);
         metricsDbSize.set(usedDiskSpace);
         metricsDbUsed.set(usedDiskSpacePercent);
 
@@ -281,35 +285,79 @@ class KYVE {
           await sleep(60 * 1000);
           continue;
         }
+        const dataItem = await this.getDataItem(height);
 
-        const ops = await this.requestWorkerBatch(workerHeight);
-
-        for (let op of ops) {
-          await this.db.put(op.key, op.value);
-        }
-
-        await this.db.put("head", workerHeight + ops.length);
+        await this.db.put(height, dataItem);
+        await this.db.put("head", height + 1);
       } catch (error) {
-        logger.error("❌ Error requesting data batch.");
+        logger.error(`❌ Error requesting data item at height = ${height}`);
         logger.debug(error);
         await sleep(10 * 1000);
       }
     }
   }
 
-  public async requestWorkerBatch(workerHeight: number): Promise<any[]> {
-    logger.error(`❌ "requestWorkerBatch" not implemented. Exiting ...`);
+  public async getDataItem(height: number): Promise<any> {
+    logger.error(`❌ "getDataItem" not implemented. Exiting ...`);
     process.exit(1);
   }
 
   public async createBundle(): Promise<Bundle> {
-    logger.error(`❌ "createBundle" not implemented. Exiting ...`);
-    process.exit(1);
+    const bundleDataSizeLimit = 20 * 1000 * 1000; // 20 MB
+    const bundleItemSizeLimit = 10000;
+    const bundle: any[] = [];
+
+    let currentDataSize = 0;
+    let h = +this.pool.bundleProposal.toHeight;
+
+    while (true) {
+      try {
+        const dataItem = await this.db.get(h);
+        const encodedDataItem = Buffer.from(JSON.stringify(dataItem));
+        currentDataSize += encodedDataItem.byteLength + 32;
+
+        if (
+          currentDataSize < bundleDataSizeLimit &&
+          bundle.length < bundleItemSizeLimit
+        ) {
+          bundle.push(encodedDataItem);
+          h++;
+        } else {
+          break;
+        }
+      } catch {
+        if (bundle.length) {
+          break;
+        } else {
+          await sleep(10 * 1000);
+        }
+      }
+    }
+
+    return {
+      fromHeight: this.pool.bundleProposal.toHeight,
+      toHeight: h,
+      bundle: formatBundle(bundle),
+    };
   }
 
   public async loadBundle(): Promise<Buffer> {
-    logger.error(`❌ "loadBundle" not implemented. Exiting ...`);
-    process.exit(1);
+    const bundle: any[] = [];
+    let h: number = +this.pool.bundleProposal.fromHeight;
+
+    while (h < +this.pool.bundleProposal.toHeight) {
+      try {
+        const dataItem = await this.db.get(h);
+        const encodedDataItem = Buffer.from(JSON.stringify(dataItem));
+
+        bundle.push(encodedDataItem);
+        h++;
+      } catch {
+        await sleep(10 * 1000);
+      }
+    }
+
+    return formatBundle(bundle);
   }
 
   private async clearFinalizedData() {
@@ -550,12 +598,12 @@ class KYVE {
       return input.padEnd(length, " ");
     };
 
-    let workerHeight;
+    let height: number;
 
     try {
-      workerHeight = parseInt(await this.db.get("head"));
+      height = parseInt(await this.db.get("head"));
     } catch {
-      workerHeight = 0;
+      height = 0;
     }
 
     logger.info(
@@ -567,7 +615,7 @@ class KYVE {
         "Pool Id"
       )} = ${this.poolId}\n\t${formatInfoLogs(
         "Cache height"
-      )} = ${workerHeight}\n\t${formatInfoLogs(
+      )} = ${height}\n\t${formatInfoLogs(
         "@kyve/core"
       )} = v${version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}\n`
     );

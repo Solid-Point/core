@@ -29,7 +29,6 @@ const arweave_1 = __importDefault(require("arweave"));
 const fs_1 = require("fs");
 const prando_1 = __importDefault(require("prando"));
 const semver_1 = require("semver");
-const unique_names_generator_1 = require("unique-names-generator");
 const utils_1 = require("./utils");
 const helpers_1 = require("./utils/helpers");
 const utils_2 = require("./utils");
@@ -43,6 +42,7 @@ const client_1 = require("./utils/client");
 const du_1 = __importDefault(require("du"));
 const zlib_1 = require("zlib");
 const axios_1 = __importDefault(require("axios"));
+const unique_names_generator_1 = require("unique-names-generator");
 __exportStar(require("./utils"), exports);
 __exportStar(require("./faces"), exports);
 __exportStar(require("./utils/helpers"), exports);
@@ -50,9 +50,9 @@ __exportStar(require("./utils/database"), exports);
 prom_client_1.default.collectDefaultMetrics({
     labels: { app: "kyve-core" },
 });
-const metricsWorkerHeight = new prom_client_1.default.Gauge({
-    name: "current_worker_height",
-    help: "The current height the worker has indexed to.",
+const metricsCacheHeight = new prom_client_1.default.Gauge({
+    name: "current_cache_height",
+    help: "The current height the cache has indexed to.",
 });
 const metricsDbSize = new prom_client_1.default.Gauge({
     name: "current_db_size",
@@ -109,18 +109,21 @@ class KYVE {
         this.setupMetrics();
         await this.getPool();
         await this.verifyNode();
-        this.worker();
+        this.cache();
         this.logger();
         this.run();
     }
     async run() {
         try {
+            const address = await this.client.getAddress();
             while (true) {
                 console.log("");
                 utils_2.logger.info("⚡️ Starting new proposal");
-                const address = await this.client.getAddress();
+                // get current pool state
                 await this.getPool(false);
+                // save height of bundle proposal
                 const createdAt = this.pool.bundleProposal.createdAt;
+                // TODO: maybe move to getPool()
                 if (this.pool.paused) {
                     utils_2.logger.info("💤  Pool is paused. Waiting ...");
                     await (0, helpers_1.sleep)(60 * 1000);
@@ -195,6 +198,7 @@ class KYVE {
                         break;
                     }
                 }
+                utils_2.logger.debug(`Proposal ended`);
             }
         }
         catch (error) {
@@ -205,29 +209,29 @@ class KYVE {
     }
     async logger() {
         setInterval(async () => {
-            let workerHeight;
+            let height;
             try {
-                workerHeight = parseInt(await this.db.get("head"));
+                height = parseInt(await this.db.get("head"));
             }
             catch {
-                workerHeight = parseInt(this.pool.heightArchived);
+                height = parseInt(this.pool.heightArchived);
             }
-            utils_2.logger.debug(`Cached to height = ${workerHeight}`);
+            utils_2.logger.debug(`Cached to height = ${height}`);
         }, 60 * 1000);
     }
-    async worker() {
+    async cache() {
         while (true) {
+            let height = 0;
             try {
-                let workerHeight;
                 try {
-                    workerHeight = parseInt(await this.db.get("head"));
+                    height = parseInt(await this.db.get("head"));
                 }
                 catch {
-                    workerHeight = parseInt(this.pool.heightArchived);
+                    height = parseInt(this.pool.heightArchived);
                 }
                 const usedDiskSpace = await (0, du_1.default)(`./db/${this.name}/`);
                 const usedDiskSpacePercent = parseFloat(((usedDiskSpace * 100) / this.space).toFixed(2));
-                metricsWorkerHeight.set(workerHeight);
+                metricsCacheHeight.set(height);
                 metricsDbSize.set(usedDiskSpace);
                 metricsDbUsed.set(usedDiskSpacePercent);
                 if (usedDiskSpace > this.space) {
@@ -235,30 +239,71 @@ class KYVE {
                     await (0, helpers_1.sleep)(60 * 1000);
                     continue;
                 }
-                const ops = await this.requestWorkerBatch(workerHeight);
-                for (let op of ops) {
-                    await this.db.put(op.key, op.value);
-                }
-                await this.db.put("head", workerHeight + ops.length);
+                const dataItem = await this.getDataItem(height);
+                await this.db.put(height, dataItem);
+                await this.db.put("head", height + 1);
             }
             catch (error) {
-                utils_2.logger.error("❌ Error requesting data batch.");
+                utils_2.logger.error(`❌ Error requesting data item at height = ${height}`);
                 utils_2.logger.debug(error);
                 await (0, helpers_1.sleep)(10 * 1000);
             }
         }
     }
-    async requestWorkerBatch(workerHeight) {
-        utils_2.logger.error(`❌ "requestWorkerBatch" not implemented. Exiting ...`);
+    async getDataItem(height) {
+        utils_2.logger.error(`❌ "getDataItem" not implemented. Exiting ...`);
         process.exit(1);
     }
     async createBundle() {
-        utils_2.logger.error(`❌ "createBundle" not implemented. Exiting ...`);
-        process.exit(1);
+        const bundleDataSizeLimit = 20 * 1000 * 1000; // 20 MB
+        const bundleItemSizeLimit = 10000;
+        const bundle = [];
+        let currentDataSize = 0;
+        let h = +this.pool.bundleProposal.toHeight;
+        while (true) {
+            try {
+                const dataItem = await this.db.get(h);
+                const encodedDataItem = Buffer.from(JSON.stringify(dataItem));
+                currentDataSize += encodedDataItem.byteLength + 32;
+                if (currentDataSize < bundleDataSizeLimit &&
+                    bundle.length < bundleItemSizeLimit) {
+                    bundle.push(encodedDataItem);
+                    h++;
+                }
+                else {
+                    break;
+                }
+            }
+            catch {
+                if (bundle.length) {
+                    break;
+                }
+                else {
+                    await (0, helpers_1.sleep)(10 * 1000);
+                }
+            }
+        }
+        return {
+            fromHeight: this.pool.bundleProposal.toHeight,
+            toHeight: h,
+            bundle: (0, helpers_1.formatBundle)(bundle),
+        };
     }
     async loadBundle() {
-        utils_2.logger.error(`❌ "loadBundle" not implemented. Exiting ...`);
-        process.exit(1);
+        const bundle = [];
+        let h = +this.pool.bundleProposal.fromHeight;
+        while (h < +this.pool.bundleProposal.toHeight) {
+            try {
+                const dataItem = await this.db.get(h);
+                const encodedDataItem = Buffer.from(JSON.stringify(dataItem));
+                bundle.push(encodedDataItem);
+                h++;
+            }
+            catch {
+                await (0, helpers_1.sleep)(10 * 1000);
+            }
+        }
+        return (0, helpers_1.formatBundle)(bundle);
     }
     async clearFinalizedData() {
         let tail;
@@ -429,14 +474,14 @@ class KYVE {
             const length = Math.max(13, this.runtime.length);
             return input.padEnd(length, " ");
         };
-        let workerHeight;
+        let height;
         try {
-            workerHeight = parseInt(await this.db.get("head"));
+            height = parseInt(await this.db.get("head"));
         }
         catch {
-            workerHeight = 0;
+            height = 0;
         }
-        utils_2.logger.info(`🚀 Starting node ...\n\n\t${formatInfoLogs("Node name")} = ${this.name}\n\t${formatInfoLogs("Address")} = ${await this.client.getAddress()}\n\t${formatInfoLogs("Pool Id")} = ${this.poolId}\n\t${formatInfoLogs("Cache height")} = ${workerHeight}\n\t${formatInfoLogs("@kyve/core")} = v${package_json_1.version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}\n`);
+        utils_2.logger.info(`🚀 Starting node ...\n\n\t${formatInfoLogs("Node name")} = ${this.name}\n\t${formatInfoLogs("Address")} = ${await this.client.getAddress()}\n\t${formatInfoLogs("Pool Id")} = ${this.poolId}\n\t${formatInfoLogs("Cache height")} = ${height}\n\t${formatInfoLogs("@kyve/core")} = v${package_json_1.version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}\n`);
     }
     setupMetrics() {
         if (this.runMetrics) {

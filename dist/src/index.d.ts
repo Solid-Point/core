@@ -29,8 +29,8 @@ declare class KYVE {
     start(): Promise<void>;
     private run;
     logger(): Promise<void>;
-    worker(): Promise<void>;
-    requestWorkerBatch(workerHeight: number): Promise<any[]>;
+    cache(): Promise<void>;
+    getDataItem(height: number): Promise<any>;
     createBundle(): Promise<Bundle>;
     loadBundle(): Promise<Buffer>;
     private clearFinalizedData;
