@@ -241,10 +241,12 @@ class KYVE {
                     continue;
                 }
                 const batch = [];
-                for (let h = height; h < height + batchSize; h++) {
+                const targetHeight = height + batchSize;
+                for (let h = height; h < targetHeight; h++) {
                     batch.push(this.getDataItem(h));
                 }
                 await Promise.all(batch);
+                await this.db.put("head", targetHeight);
             }
             catch (error) {
                 utils_2.logger.error(`❌ Error requesting data item at height = ${height}`);
