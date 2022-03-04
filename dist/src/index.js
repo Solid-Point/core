@@ -222,6 +222,7 @@ class KYVE {
     async cache() {
         while (true) {
             let height = 0;
+            let batchSize = 10;
             try {
                 try {
                     height = parseInt(await this.db.get("head"));
@@ -239,9 +240,11 @@ class KYVE {
                     await (0, helpers_1.sleep)(60 * 1000);
                     continue;
                 }
-                const dataItem = await this.getDataItem(height);
-                await this.db.put(height, dataItem);
-                await this.db.put("head", height + 1);
+                const batch = [];
+                for (let h = height; h < height + batchSize; h++) {
+                    batch.push(this.getDataItem(h));
+                }
+                await Promise.all(batch);
             }
             catch (error) {
                 utils_2.logger.error(`❌ Error requesting data item at height = ${height}`);
