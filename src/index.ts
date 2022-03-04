@@ -263,7 +263,6 @@ class KYVE {
   public async cache() {
     while (true) {
       let height: number = 0;
-      let batchSize: number = 10;
 
       try {
         try {
@@ -288,6 +287,7 @@ class KYVE {
         }
 
         const batch: Promise<void>[] = [];
+        const batchSize: number = 10;
         const targetHeight: number = height + batchSize;
 
         for (let h = height; h < targetHeight; h++) {
@@ -333,10 +333,10 @@ class KYVE {
           break;
         }
       } catch {
-        if (bundle.length) {
-          break;
-        } else {
+        if (bundle.length < +this.pool.minBundleSize) {
           await sleep(10 * 1000);
+        } else {
+          break;
         }
       }
     }

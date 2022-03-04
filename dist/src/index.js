@@ -222,7 +222,6 @@ class KYVE {
     async cache() {
         while (true) {
             let height = 0;
-            let batchSize = 10;
             try {
                 try {
                     height = parseInt(await this.db.get("head"));
@@ -241,6 +240,7 @@ class KYVE {
                     continue;
                 }
                 const batch = [];
+                const batchSize = 10;
                 const targetHeight = height + batchSize;
                 for (let h = height; h < targetHeight; h++) {
                     batch.push(this.getDataItem(h));
@@ -280,11 +280,11 @@ class KYVE {
                 }
             }
             catch {
-                if (bundle.length) {
-                    break;
+                if (bundle.length < +this.pool.minBundleSize) {
+                    await (0, helpers_1.sleep)(10 * 1000);
                 }
                 else {
-                    await (0, helpers_1.sleep)(10 * 1000);
+                    break;
                 }
             }
         }
