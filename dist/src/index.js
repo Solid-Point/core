@@ -242,10 +242,11 @@ class KYVE {
                     continue;
                 }
                 const batch = [];
-                const batchSize = 10;
+                const batchSize = 100;
                 const targetHeight = height + batchSize;
                 for (let h = height; h < targetHeight; h++) {
                     batch.push(this.getDataItemAndSave(h));
+                    await (0, helpers_1.sleep)(500);
                 }
                 await Promise.all(batch);
                 await this.db.put("head", targetHeight);
