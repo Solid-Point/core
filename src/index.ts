@@ -327,7 +327,7 @@ class KYVE {
     while (true) {
       try {
         const entry = {
-          key: h,
+          key: +h,
           value: await this.db.get(h),
         };
         currentDataSize += sizeof(entry);
@@ -364,7 +364,7 @@ class KYVE {
     while (h < +this.pool.bundle_proposal.to_height) {
       try {
         const entry = {
-          key: h,
+          key: +h,
           value: await this.db.get(h),
         };
 
@@ -450,6 +450,9 @@ class KYVE {
     downloadBundle: Buffer,
     downloadBytes: number
   ): Promise<boolean> {
+    console.log(uploadBytes, downloadBytes);
+    console.log(hash(uploadBundle), hash(downloadBundle));
+
     if (uploadBytes !== downloadBytes) {
       return false;
     }

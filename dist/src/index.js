@@ -280,7 +280,7 @@ class KYVE {
         while (true) {
             try {
                 const entry = {
-                    key: h,
+                    key: +h,
                     value: await this.db.get(h),
                 };
                 currentDataSize += (0, object_sizeof_1.default)(entry);
@@ -314,7 +314,7 @@ class KYVE {
         while (h < +this.pool.bundle_proposal.to_height) {
             try {
                 const entry = {
-                    key: h,
+                    key: +h,
                     value: await this.db.get(h),
                 };
                 bundle.push(entry);
@@ -375,6 +375,8 @@ class KYVE {
         }
     }
     async validate(uploadBundle, uploadBytes, downloadBundle, downloadBytes) {
+        console.log(uploadBytes, downloadBytes);
+        console.log((0, object_hash_1.default)(uploadBundle), (0, object_hash_1.default)(downloadBundle));
         if (uploadBytes !== downloadBytes) {
             return false;
         }
