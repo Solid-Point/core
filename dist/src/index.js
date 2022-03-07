@@ -42,6 +42,7 @@ const client_1 = require("./utils/client");
 const du_1 = __importDefault(require("du"));
 const zlib_1 = require("zlib");
 const axios_1 = __importDefault(require("axios"));
+const object_sizeof_1 = __importDefault(require("object-sizeof"));
 const unique_names_generator_1 = require("unique-names-generator");
 __exportStar(require("./utils"), exports);
 __exportStar(require("./faces"), exports);
@@ -278,11 +279,14 @@ class KYVE {
         while (true) {
             try {
                 const dataItem = await this.db.get(h);
-                const encodedDataItem = Buffer.from(JSON.stringify(dataItem));
-                currentDataSize += encodedDataItem.byteLength + 32;
+                const entry = {
+                    key: h,
+                    value: dataItem,
+                };
+                currentDataSize += (0, object_sizeof_1.default)(entry);
                 if (currentDataSize < bundleDataSizeLimit &&
                     bundle.length < bundleItemSizeLimit) {
-                    bundle.push(encodedDataItem);
+                    bundle.push(entry);
                     h++;
                 }
                 else {
@@ -301,7 +305,7 @@ class KYVE {
         return {
             fromHeight: this.pool.bundleProposal.toHeight,
             toHeight: h,
-            bundle: (0, helpers_1.formatBundle)(bundle),
+            bundle,
         };
     }
     async loadBundle() {
@@ -397,7 +401,7 @@ class KYVE {
             const uploadBundle = await this.createBundle();
             utils_2.logger.debug("Uploading bundle to Arweave ...");
             const transaction = await this.arweave.createTransaction({
-                data: (0, zlib_1.gzipSync)(uploadBundle.bundle),
+                data: (0, zlib_1.gzipSync)(JSON.stringify(uploadBundle.bundle)),
             });
             utils_2.logger.debug(`Bundle details = bytes: ${transaction.data_size}, items: ${uploadBundle.toHeight - uploadBundle.fromHeight}`);
             transaction.addTag("Application", "KYVE - Testnet");

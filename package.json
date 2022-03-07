@@ -39,6 +39,7 @@
     "du": "^1.0.0",
     "jsonfile": "^6.1.0",
     "object-hash": "^2.2.0",
+    "object-sizeof": "^1.6.3",
     "prando": "^6.0.1",
     "prom-client": "^14.0.1",
     "protobufjs": "^6.11.2",

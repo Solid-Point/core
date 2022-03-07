@@ -18,6 +18,7 @@ import { Client } from "./utils/client";
 import du from "du";
 import { gzipSync } from "zlib";
 import axios from "axios";
+import sizeof from "object-sizeof";
 import {
   adjectives,
   colors,
@@ -329,15 +330,17 @@ class KYVE {
 
     while (true) {
       try {
-        const dataItem = await this.db.get(h);
-        const encodedDataItem = Buffer.from(JSON.stringify(dataItem));
-        currentDataSize += encodedDataItem.byteLength + 32;
+        const entry = {
+          key: h,
+          value: await this.db.get(h),
+        };
+        currentDataSize += sizeof(entry);
 
         if (
           currentDataSize < bundleDataSizeLimit &&
           bundle.length < bundleItemSizeLimit
         ) {
-          bundle.push(encodedDataItem);
+          bundle.push(entry);
           h++;
         } else {
           break;
@@ -354,7 +357,7 @@ class KYVE {
     return {
       fromHeight: this.pool.bundleProposal.toHeight,
       toHeight: h,
-      bundle: formatBundle(bundle),
+      bundle: Buffer.from(JSON.stringify(bundle)),
     };
   }
 
@@ -364,17 +367,19 @@ class KYVE {
 
     while (h < +this.pool.bundleProposal.toHeight) {
       try {
-        const dataItem = await this.db.get(h);
-        const encodedDataItem = Buffer.from(JSON.stringify(dataItem));
+        const entry = {
+          key: h,
+          value: await this.db.get(h),
+        };
 
-        bundle.push(encodedDataItem);
+        bundle.push(entry);
         h++;
       } catch {
         await sleep(10 * 1000);
       }
     }
 
-    return formatBundle(bundle);
+    return Buffer.from(JSON.stringify(bundle));
   }
 
   private async clearFinalizedData() {
