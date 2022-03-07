@@ -278,10 +278,9 @@ class KYVE {
         let h = +this.pool.bundleProposal.toHeight;
         while (true) {
             try {
-                const dataItem = await this.db.get(h);
                 const entry = {
                     key: h,
-                    value: dataItem,
+                    value: await this.db.get(h),
                 };
                 currentDataSize += (0, object_sizeof_1.default)(entry);
                 if (currentDataSize < bundleDataSizeLimit &&
@@ -305,7 +304,7 @@ class KYVE {
         return {
             fromHeight: this.pool.bundleProposal.toHeight,
             toHeight: h,
-            bundle,
+            bundle: Buffer.from(JSON.stringify(bundle)),
         };
     }
     async loadBundle() {
@@ -313,16 +312,18 @@ class KYVE {
         let h = +this.pool.bundleProposal.fromHeight;
         while (h < +this.pool.bundleProposal.toHeight) {
             try {
-                const dataItem = await this.db.get(h);
-                const encodedDataItem = Buffer.from(JSON.stringify(dataItem));
-                bundle.push(encodedDataItem);
+                const entry = {
+                    key: h,
+                    value: await this.db.get(h),
+                };
+                bundle.push(entry);
                 h++;
             }
             catch {
                 await (0, helpers_1.sleep)(10 * 1000);
             }
         }
-        return (0, helpers_1.formatBundle)(bundle);
+        return Buffer.from(JSON.stringify(bundle));
     }
     async clearFinalizedData() {
         let tail;
@@ -401,7 +402,7 @@ class KYVE {
             const uploadBundle = await this.createBundle();
             utils_2.logger.debug("Uploading bundle to Arweave ...");
             const transaction = await this.arweave.createTransaction({
-                data: (0, zlib_1.gzipSync)(JSON.stringify(uploadBundle.bundle)),
+                data: (0, zlib_1.gzipSync)(uploadBundle.bundle),
             });
             utils_2.logger.debug(`Bundle details = bytes: ${transaction.data_size}, items: ${uploadBundle.toHeight - uploadBundle.fromHeight}`);
             transaction.addTag("Application", "KYVE - Testnet");
