@@ -530,8 +530,8 @@ class KYVE {
         return new Promise(async (resolve) => {
             while (true) {
                 try {
-                    const { data: { Pool }, } = await axios_1.default.get(`${this.client.endpoints.rest}/kyve/registry/${this.chainVersion}/pool/${this.poolId}`);
-                    this.pool = { ...Pool };
+                    const { data: { pool }, } = await axios_1.default.get(`${this.client.endpoints.rest}/kyve/registry/${this.chainVersion}/pool/${this.poolId}`);
+                    this.pool = { ...pool };
                     try {
                         this.pool.config = JSON.parse(this.pool.config);
                     }

@@ -672,11 +672,11 @@ class KYVE {
       while (true) {
         try {
           const {
-            data: { Pool },
+            data: { pool },
           } = await axios.get(
             `${this.client.endpoints.rest}/kyve/registry/${this.chainVersion}/pool/${this.poolId}`
           );
-          this.pool = { ...Pool };
+          this.pool = { ...pool };
 
           try {
             this.pool.config = JSON.parse(this.pool.config);
