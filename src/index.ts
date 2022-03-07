@@ -429,7 +429,7 @@ class KYVE {
           transaction: this.pool.bundle_proposal.bundle_id,
           valid: await this.validate(
             uploadBundle,
-            +this.pool.bundle_proposal.byteSize,
+            +this.pool.bundle_proposal.byte_size,
             downloadBundle,
             +downloadBundle.byteLength
           ),
@@ -450,9 +450,6 @@ class KYVE {
     downloadBundle: Buffer,
     downloadBytes: number
   ): Promise<boolean> {
-    console.log(uploadBytes, downloadBytes);
-    console.log(hash(uploadBundle), hash(downloadBundle));
-
     if (uploadBytes !== downloadBytes) {
       return false;
     }

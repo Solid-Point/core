@@ -364,7 +364,7 @@ class KYVE {
                 uploadBundle = (0, zlib_1.gzipSync)(await this.loadBundle());
                 await this.vote({
                     transaction: this.pool.bundle_proposal.bundle_id,
-                    valid: await this.validate(uploadBundle, +this.pool.bundle_proposal.byteSize, downloadBundle, +downloadBundle.byteLength),
+                    valid: await this.validate(uploadBundle, +this.pool.bundle_proposal.byte_size, downloadBundle, +downloadBundle.byteLength),
                 });
                 break;
             }
@@ -375,8 +375,6 @@ class KYVE {
         }
     }
     async validate(uploadBundle, uploadBytes, downloadBundle, downloadBytes) {
-        console.log(uploadBytes, downloadBytes);
-        console.log((0, object_hash_1.default)(uploadBundle), (0, object_hash_1.default)(downloadBundle));
         if (uploadBytes !== downloadBytes) {
             return false;
         }
