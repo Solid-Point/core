@@ -146,7 +146,7 @@ class KYVE {
                         reason: "Failed to execute canVote query",
                     };
                     try {
-                        const { data } = await axios_1.default.get(`${this.client.endpoints.rest}/kyve/registry/${this.chainVersion}/can_vote/${this.poolId}/${await this.client.getAddress()}?bundleId=${this.pool.bundle_proposal.bundle_id}`);
+                        const { data } = await axios_1.default.get(`${this.client.endpoints.rest}/kyve/registry/${this.chainVersion}/can_vote/${this.poolId}/${address}?bundleId=${this.pool.bundle_proposal.bundle_id}`);
                         canVote = data;
                     }
                     catch { }
@@ -181,7 +181,7 @@ class KYVE {
                             reason: "Failed to execute canPropose query",
                         };
                         try {
-                            const { data } = await axios_1.default.get(`${this.client.endpoints.rest}/kyve/registry/${this.chainVersion}/can_propose/${this.poolId}/${await this.client.getAddress()}`);
+                            const { data } = await axios_1.default.get(`${this.client.endpoints.rest}/kyve/registry/${this.chainVersion}/can_propose/${this.poolId}/${address}`);
                             canPropose = data;
                         }
                         catch { }
@@ -585,7 +585,8 @@ class KYVE {
         return new Promise(async (resolve) => {
             while (true) {
                 try {
-                    const isStaker = this.pool.stakers.includes(await this.client.getAddress());
+                    const address = await this.client.getAddress();
+                    const isStaker = this.pool.stakers.includes(address);
                     if (isStaker) {
                         if (logs) {
                             utils_2.logger.info("🔍  Node is running as a validator.");
