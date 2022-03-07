@@ -11,7 +11,7 @@ const axios_1 = __importDefault(require("axios"));
 const protobufjs_1 = require("protobufjs");
 const registry = new proto_signing_1.Registry(Array.from([
     [
-        `/KYVENetwork.kyve.registry.v1beta1.MsgSubmitBundleProposal`,
+        `/kyve.registry.v1beta1.MsgSubmitBundleProposal`,
         new protobufjs_1.Type("MsgSubmitBundleProposal")
             .add(new protobufjs_1.Field("creator", 1, "string"))
             .add(new protobufjs_1.Field("id", 2, "uint64"))
@@ -20,7 +20,7 @@ const registry = new proto_signing_1.Registry(Array.from([
             .add(new protobufjs_1.Field("bundleSize", 5, "uint64")),
     ],
     [
-        `/KYVENetwork.kyve.registry.v1beta1.MsgVoteProposal`,
+        `/kyve.registry.v1beta1.MsgVoteProposal`,
         new protobufjs_1.Type("MsgVoteProposal")
             .add(new protobufjs_1.Field("creator", 1, "string"))
             .add(new protobufjs_1.Field("id", 2, "uint64"))
@@ -28,7 +28,7 @@ const registry = new proto_signing_1.Registry(Array.from([
             .add(new protobufjs_1.Field("support", 4, "bool")),
     ],
     [
-        `/KYVENetwork.kyve.registry.v1beta1.MsgClaimUploaderRole`,
+        `/kyve.registry.v1beta1.MsgClaimUploaderRole`,
         new protobufjs_1.Type("MsgClaimUploaderRole")
             .add(new protobufjs_1.Field("creator", 1, "string"))
             .add(new protobufjs_1.Field("id", 2, "uint64")),

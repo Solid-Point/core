@@ -422,7 +422,7 @@ class KYVE {
             }
             await this.arweave.transactions.post(transaction);
             const tx = await this.client.sendMessage({
-                typeUrl: "/KYVENetwork.kyve.registry.v1beta1.MsgSubmitBundleProposal",
+                typeUrl: "/kyve.registry.v1beta1.MsgSubmitBundleProposal",
                 value: {
                     creator: await this.client.getAddress(),
                     id: this.poolId,
@@ -443,7 +443,7 @@ class KYVE {
         try {
             utils_2.logger.info("🔍 Claiming uploader role ...");
             const tx = await this.client.sendMessage({
-                typeUrl: "/KYVENetwork.kyve.registry.v1beta1.MsgClaimUploaderRole",
+                typeUrl: "/kyve.registry.v1beta1.MsgClaimUploaderRole",
                 value: {
                     creator: await this.client.getAddress(),
                     id: this.poolId,
@@ -475,7 +475,7 @@ class KYVE {
         utils_2.logger.info(`🖋  Voting ${vote.valid ? "valid" : "invalid"} on bundle ${vote.transaction} ...`);
         try {
             const tx = await this.client.sendMessage({
-                typeUrl: "/KYVENetwork.kyve.registry.v1beta1.MsgVoteProposal",
+                typeUrl: "/kyve.registry.v1beta1.MsgVoteProposal",
                 value: {
                     creator: await this.client.getAddress(),
                     id: this.poolId,
