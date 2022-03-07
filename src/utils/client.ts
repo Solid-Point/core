@@ -28,7 +28,7 @@ type Signer = DirectSecp256k1HdWallet | OfflineDirectSigner;
 const registry = new Registry(
   Array.from([
     [
-      `/KYVENetwork.kyve.registry.MsgSubmitBundleProposal`,
+      `/KYVENetwork.kyve.registry.v1beta1.MsgSubmitBundleProposal`,
       new Type("MsgSubmitBundleProposal")
         .add(new Field("creator", 1, "string"))
         .add(new Field("id", 2, "uint64"))
@@ -37,7 +37,7 @@ const registry = new Registry(
         .add(new Field("bundleSize", 5, "uint64")),
     ],
     [
-      `/KYVENetwork.kyve.registry.MsgVoteProposal`,
+      `/KYVENetwork.kyve.registry.v1beta1.MsgVoteProposal`,
       new Type("MsgVoteProposal")
         .add(new Field("creator", 1, "string"))
         .add(new Field("id", 2, "uint64"))
@@ -45,7 +45,7 @@ const registry = new Registry(
         .add(new Field("support", 4, "bool")),
     ],
     [
-      `/KYVENetwork.kyve.registry.MsgClaimUploaderRole`,
+      `/KYVENetwork.kyve.registry.v1beta1.MsgClaimUploaderRole`,
       new Type("MsgClaimUploaderRole")
         .add(new Field("creator", 1, "string"))
         .add(new Field("id", 2, "uint64")),
