@@ -243,7 +243,7 @@ class KYVE {
                 const batchSize = 10;
                 const targetHeight = height + batchSize;
                 for (let h = height; h < targetHeight; h++) {
-                    batch.push(this.getDataItem(h));
+                    batch.push(this.getDataItemAndSave(h));
                 }
                 await Promise.all(batch);
                 await this.db.put("head", targetHeight);
@@ -258,6 +258,16 @@ class KYVE {
     async getDataItem(height) {
         utils_2.logger.error(`❌ "getDataItem" not implemented. Exiting ...`);
         process.exit(1);
+    }
+    async getDataItemAndSave(height) {
+        try {
+            const dataItem = await this.getDataItem(height);
+            await this.db.put(height, dataItem);
+        }
+        catch (error) {
+            utils_2.logger.error(`❌ Error requesting data item ...`);
+            utils_2.logger.debug(error);
+        }
     }
     async createBundle() {
         const bundleDataSizeLimit = 20 * 1000 * 1000; // 20 MB
