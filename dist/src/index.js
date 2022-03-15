@@ -204,7 +204,7 @@ class KYVE {
             }
         }
         catch (error) {
-            utils_2.logger.error(`❌ Runtime error. Exiting ...`);
+            utils_2.logger.error(`❌ INTERNAL ERROR: Runtime error. Exiting ...`);
             utils_2.logger.debug(error);
             process.exit(1);
         }
@@ -252,14 +252,14 @@ class KYVE {
                 await this.db.put("head", targetHeight);
             }
             catch (error) {
-                utils_2.logger.error(`❌ Error requesting data item at height = ${height}`);
+                utils_2.logger.error(`❌ INTERNAL ERROR: Failed to request data item from local DB at height = ${height}`);
                 utils_2.logger.debug(error);
                 await (0, helpers_1.sleep)(10 * 1000);
             }
         }
     }
     async getDataItem(height) {
-        utils_2.logger.error(`❌ "getDataItem" not implemented. Exiting ...`);
+        utils_2.logger.error(`❌ INTERNAL ERROR: "getDataItem" not implemented. Exiting ...`);
         process.exit(1);
     }
     async getDataItemAndSave(height) {
@@ -268,7 +268,7 @@ class KYVE {
             await this.db.put(height, dataItem);
         }
         catch (error) {
-            utils_2.logger.error(`❌ Error requesting data item ...`);
+            utils_2.logger.error(`❌ EXTERNAL ERROR: Failed to request data item from source ...`);
             utils_2.logger.debug(error);
         }
     }
@@ -340,7 +340,7 @@ class KYVE {
                 await this.db.del(key);
             }
             catch (error) {
-                utils_2.logger.error(`❌ Error clearing old bundle data with key ${key}:`);
+                utils_2.logger.error(`❌ INTERNAL ERROR: Failed deleting data item from local DB with key ${key}:`);
                 utils_2.logger.debug(error);
             }
         }
@@ -370,7 +370,7 @@ class KYVE {
                 break;
             }
             else {
-                utils_2.logger.error(`❌ Error fetching bundle from Arweave. Retrying in 30s ...`);
+                utils_2.logger.error(`❌ EXTERNAL ERROR: Failed to fetch bundle from Arweave. Retrying in 30s ...`);
                 await (0, helpers_1.sleep)(30 * 1000);
             }
         }
@@ -418,7 +418,7 @@ class KYVE {
             await this.arweave.transactions.sign(transaction, this.keyfile);
             const balance = await this.arweave.wallets.getBalance(await this.arweave.wallets.getAddress(this.keyfile));
             if (+transaction.reward > +balance) {
-                utils_2.logger.error("❌ You do not have enough funds in your Arweave wallet.");
+                utils_2.logger.error("❌ EXTERNAL ERROR: Not enough funds in Arweave wallet");
                 process.exit(1);
             }
             await this.arweave.transactions.post(transaction);
@@ -436,7 +436,7 @@ class KYVE {
             utils_2.logger.debug(`Transaction = ${tx.transactionHash}`);
         }
         catch (error) {
-            utils_2.logger.error("❌ Received an error while trying to upload bundle to Arweave. Skipping upload ...");
+            utils_2.logger.error("❌ EXTERNAL ERROR: Failed to upload bundle to Arweave. Skipping upload ...");
             utils_2.logger.debug(error);
         }
     }
@@ -453,7 +453,7 @@ class KYVE {
             utils_2.logger.debug(`Transaction = ${tx.transactionHash}`);
         }
         catch (error) {
-            utils_2.logger.error("❌ Received an error while to claim uploader role. Skipping ...");
+            utils_2.logger.error("❌ INTERNAL ERROR: Failed to claim uploader role. Skipping ...");
             utils_2.logger.debug(error);
         }
     }
@@ -487,7 +487,7 @@ class KYVE {
             utils_2.logger.debug(`Transaction = ${tx.transactionHash}`);
         }
         catch (error) {
-            utils_2.logger.error("❌ Received an error while trying to vote. Skipping ...");
+            utils_2.logger.error("❌ INTERNAL ERROR: Failed to vote. Skipping ...");
             utils_2.logger.debug(error);
         }
     }
@@ -529,6 +529,7 @@ class KYVE {
             utils_2.logger.debug("Attempting to fetch pool state.");
         }
         return new Promise(async (resolve) => {
+            var _a, _b;
             while (true) {
                 try {
                     const { data: { pool }, } = await axios_1.default.get(`${this.client.endpoints.rest}/kyve/registry/${this.chainVersion}/pool/${this.poolId}`);
@@ -537,7 +538,7 @@ class KYVE {
                         this.pool.config = JSON.parse(this.pool.config);
                     }
                     catch (error) {
-                        utils_2.logger.error("❌ Received an error while trying to parse the config:");
+                        utils_2.logger.error(`❌ INTERNAL ERROR: Failed to parse the pool config: ${(_a = this.pool) === null || _a === void 0 ? void 0 : _a.config}`);
                         utils_2.logger.debug(error);
                         process.exit(1);
                     }
@@ -547,29 +548,29 @@ class KYVE {
                         }
                     }
                     else {
-                        utils_2.logger.error("❌ Specified pool does not match the integration runtime.");
+                        utils_2.logger.error("❌ INTERNAL ERROR: Specified pool does not match the integration runtime");
                         process.exit(1);
                     }
                     try {
                         if ((0, semver_1.satisfies)(this.version, this.pool.versions || this.version)) {
                             if (logs) {
-                                utils_2.logger.info("⏱  Pool version requirements met.");
+                                utils_2.logger.info("⏱  Pool version requirements met");
                             }
                         }
                         else {
-                            utils_2.logger.error(`❌ Running an invalid version for the specified pool. Version requirements are ${this.pool.versions}.`);
+                            utils_2.logger.error(`❌ INTERNAL ERROR: Running an invalid version for the specified pool. Version requirements are ${this.pool.versions}`);
                             process.exit(1);
                         }
                     }
                     catch (error) {
-                        utils_2.logger.error("❌ Received an error while trying parse versions");
+                        utils_2.logger.error(`❌ INTERNAL ERROR: Failed to parse the node version: ${(_b = this.pool) === null || _b === void 0 ? void 0 : _b.versions}`);
                         utils_2.logger.debug(error);
                         process.exit(1);
                     }
                     break;
                 }
                 catch (error) {
-                    utils_2.logger.error("❌ Received an error while trying to fetch the pool state");
+                    utils_2.logger.error("❌ INTERNAL ERROR: Failed to fetch pool state. Retrying in 10s ...");
                     await (0, helpers_1.sleep)(10 * 1000);
                 }
             }
@@ -602,7 +603,7 @@ class KYVE {
                     }
                 }
                 catch (error) {
-                    utils_2.logger.error("❌ Received an error while trying to fetch validator info");
+                    utils_2.logger.error("❌ INTERNAL ERROR: Failed to fetch validator info");
                     await (0, helpers_1.sleep)(10 * 1000);
                 }
             }
@@ -612,50 +613,6 @@ class KYVE {
             resolve();
         });
     }
-    // private async setupNodeCommission() {
-    //   let parsedCommission;
-    //   logger.info("👥 Setting node commission ...");
-    //   let nodeCommission = toBN(
-    //     (await this.pool.nodeState(this.wallet.address)).commission
-    //   );
-    //   try {
-    //     parsedCommission = new BigNumber(this.commission).multipliedBy(
-    //       new BigNumber(10).exponentiatedBy(18)
-    //     );
-    //     if (parsedCommission.lt(0) && parsedCommission.gt(100)) {
-    //       logger.error("❌ Desired commission must be between 0 and 100.");
-    //       process.exit(1);
-    //     }
-    //   } catch (error) {
-    //     logger.error("❌ Provided invalid commission amount:", error);
-    //     process.exit(1);
-    //   }
-    //   if (!parsedCommission.eq(nodeCommission)) {
-    //     try {
-    //       const tx = await this.pool.updateCommission(
-    //         toEthersBN(parsedCommission),
-    //         {
-    //           gasLimit: await this.pool.estimateGas.updateCommission(
-    //             toEthersBN(parsedCommission)
-    //           ),
-    //           gasPrice: await getGasPrice(this.pool, this.gasMultiplier),
-    //         }
-    //       );
-    //       logger.debug(`Updating commission. Transaction = ${tx.hash}`);
-    //       await tx.wait();
-    //       logger.info("💼 Successfully updated commission.");
-    //     } catch (error) {
-    //       logger.error(
-    //         "❌ Received an error while trying to update commission:",
-    //         error
-    //       );
-    //       process.exit(1);
-    //     }
-    //   } else {
-    //     logger.info("👌 Already set correct commission.");
-    //   }
-    // }
-    // TODO: move to separate file
     generateRandomName(mnemonic) {
         const r = new prando_1.default(mnemonic + this.poolId);
         return (0, unique_names_generator_1.uniqueNamesGenerator)({
