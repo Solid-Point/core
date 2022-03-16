@@ -523,13 +523,20 @@ class KYVE {
 
       await this.arweave.transactions.sign(transaction, this.keyfile);
 
-      const balance = await this.arweave.wallets.getBalance(
-        await this.arweave.wallets.getAddress(this.keyfile)
-      );
+      try {
+        const balance = await this.arweave.wallets.getBalance(
+          await this.arweave.wallets.getAddress(this.keyfile)
+        );
 
-      if (+transaction.reward > +balance) {
-        logger.error("❌ EXTERNAL ERROR: Not enough funds in Arweave wallet");
-        process.exit(1);
+        if (+transaction.reward > +balance) {
+          logger.error("❌ EXTERNAL ERROR: Not enough funds in Arweave wallet");
+          process.exit(1);
+        }
+      } catch {
+        logger.error(
+          "❌ EXTERNAL ERROR: Failed to load Arweave account balance. Skipping upload ..."
+        );
+        return;
       }
 
       await this.arweave.transactions.post(transaction);
