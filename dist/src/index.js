@@ -268,7 +268,7 @@ class KYVE {
             await this.db.put(height, dataItem);
         }
         catch (error) {
-            utils_2.logger.error(`❌ EXTERNAL ERROR: Failed to request data item from source ...`);
+            utils_2.logger.warn(`⚠️  EXTERNAL ERROR: Failed to request data item from source ...`);
             utils_2.logger.debug(error);
         }
     }
@@ -370,7 +370,7 @@ class KYVE {
                 break;
             }
             else {
-                utils_2.logger.error(`❌ EXTERNAL ERROR: Failed to fetch bundle from Arweave. Retrying in 30s ...`);
+                utils_2.logger.warn(`⚠️  EXTERNAL ERROR: Failed to fetch bundle from Arweave. Retrying in 30s ...`);
                 await (0, helpers_1.sleep)(30 * 1000);
             }
         }
@@ -419,12 +419,12 @@ class KYVE {
             try {
                 const balance = await this.arweave.wallets.getBalance(await this.arweave.wallets.getAddress(this.keyfile));
                 if (+transaction.reward > +balance) {
-                    utils_2.logger.error("❌ EXTERNAL ERROR: Not enough funds in Arweave wallet");
+                    utils_2.logger.warn("⚠️  EXTERNAL ERROR: Not enough funds in Arweave wallet");
                     process.exit(1);
                 }
             }
             catch {
-                utils_2.logger.error("❌ EXTERNAL ERROR: Failed to load Arweave account balance. Skipping upload ...");
+                utils_2.logger.warn("⚠️  EXTERNAL ERROR: Failed to load Arweave account balance. Skipping upload ...");
                 return;
             }
             await this.arweave.transactions.post(transaction);
@@ -442,7 +442,7 @@ class KYVE {
             utils_2.logger.debug(`Transaction = ${tx.transactionHash}`);
         }
         catch (error) {
-            utils_2.logger.error("❌ EXTERNAL ERROR: Failed to upload bundle to Arweave. Skipping upload ...");
+            utils_2.logger.warn("⚠️  EXTERNAL ERROR: Failed to upload bundle to Arweave. Skipping upload ...");
             utils_2.logger.debug(error);
         }
     }
@@ -576,7 +576,7 @@ class KYVE {
                     break;
                 }
                 catch (error) {
-                    utils_2.logger.error("❌ INTERNAL ERROR: Failed to fetch pool state. Retrying in 10s ...");
+                    utils_2.logger.warn("❌ INTERNAL ERROR: Failed to fetch pool state. Retrying in 10s ...");
                     await (0, helpers_1.sleep)(10 * 1000);
                 }
             }
@@ -602,8 +602,8 @@ class KYVE {
                         break;
                     }
                     else {
-                        utils_2.logger.info(`⚠️  Node is no active validator!`);
-                        utils_2.logger.info(`⚠️  Stake KYVE here to join as a validator: https://app.kyve.network/pools/${this.poolId}/validators - Idling ...`);
+                        utils_2.logger.warn(`⚠️  Node is not an active validator!`);
+                        utils_2.logger.warn(`⚠️  Stake $KYVE here to join as a validator: https://app.kyve.network/#/pools/${this.poolId}/validators - Idling ...`);
                         await (0, helpers_1.sleep)(60 * 1000);
                         await this.getPool(false);
                     }

@@ -17,10 +17,10 @@ export class CLI extends Command {
       "-p, --poolId <number>",
       "The id of the pool you want to run on."
     );
-    this.requiredOption(
-      "-c, --commission <number>",
-      "The commission rate of your node."
-    );
+    // this.requiredOption(
+    //   "-c, --commission <number>",
+    //   "The commission rate of your node."
+    // );
     this.requiredOption(
       "-mn, --mnemonic <string>",
       "Your mnemonic of your account."
@@ -38,16 +38,20 @@ export class CLI extends Command {
       "The size of disk space in bytes the node is allowed to use. [optional, default = 1000000000 (1 GB)]",
       "1000000000"
     );
+    // this.option(
+    //   "-g, --gas-multiplier <string>",
+    //   "The amount that you want to multiply the default gas price by. [optional]",
+    //   "1"
+    // );
+    // this.option("-st, --send-statistics", "Send statistics.");
     this.option(
-      "-g, --gas-multiplier <string>",
-      "The amount that you want to multiply the default gas price by. [optional]",
-      "1"
+      "-m, --metrics",
+      "Run Prometheus metrics server. [optional, default = false]",
+      false
     );
-    this.option("-st, --send-statistics", "Send statistics.");
-    this.option("-m, --metrics", "Run Prometheus metrics server.");
     this.option(
       "-v, --verbose",
-      "Include if you want logs to be verbose.",
+      "Run node in verbose mode. [optional, default = false]",
       false
     );
     this.version(packageVersion, "--version");
