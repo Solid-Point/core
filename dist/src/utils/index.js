@@ -18,7 +18,7 @@ class CLI extends commander_1.Command {
         //   "The commission rate of your node."
         // );
         this.requiredOption("-mn, --mnemonic <string>", "Your mnemonic of your account.");
-        this.option("-k, --keyfile <string>", "The path to your Arweave keyfile. [optional]");
+        this.option("-k, --keyfile <string>", "The path to your Arweave keyfile.");
         this.option("-n, --name <string>", "The identifier name of the node. [optional, default = random]");
         this.option("-sp, --space <number>", "The size of disk space in bytes the node is allowed to use. [optional, default = 1000000000 (1 GB)]", "1000000000");
         // this.option(
