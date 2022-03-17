@@ -576,7 +576,7 @@ class KYVE {
                     break;
                 }
                 catch (error) {
-                    utils_2.logger.warn("❌ INTERNAL ERROR: Failed to fetch pool state. Retrying in 10s ...");
+                    utils_2.logger.error("❌ INTERNAL ERROR: Failed to fetch pool state. Retrying in 10s ...");
                     await (0, helpers_1.sleep)(10 * 1000);
                 }
             }
