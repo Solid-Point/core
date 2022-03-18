@@ -305,11 +305,12 @@ class KYVE {
 
         for (let h = height; h < targetHeight; h++) {
           batch.push(this.getDataItemAndSave(h));
-          await sleep(500);
+          await sleep(10);
         }
 
         await Promise.all(batch);
         await this.db.put("head", targetHeight);
+        await sleep(500);
       } catch (error) {
         this.logger.error(
           `❌ INTERNAL ERROR: Failed to write data items from height = ${height} to ${targetHeight} to local DB`
