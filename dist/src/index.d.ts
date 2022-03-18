@@ -5,7 +5,7 @@ import { Logger } from "tslog";
 import { CLI } from "./utils";
 import client from "prom-client";
 import { Database } from "./utils/database";
-import { Client } from "./utils/client";
+import { KyveSDK, KyveWallet } from "@kyve/sdk";
 export * from "./utils";
 export * from "./faces";
 export * from "./utils/helpers";
@@ -17,7 +17,8 @@ declare class KYVE {
     protected version: string;
     protected chainVersion: string;
     protected commission: string;
-    protected client: Client;
+    protected wallet: KyveWallet;
+    protected sdk: KyveSDK;
     protected keyfile: JWKInterface;
     protected name: string;
     protected gasMultiplier: string;

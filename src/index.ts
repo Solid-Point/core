@@ -13,7 +13,6 @@ import http from "http";
 import url from "url";
 import client, { register } from "prom-client";
 import { Database } from "./utils/database";
-import { Client } from "./utils/client";
 import du from "du";
 import { gzipSync } from "zlib";
 import axios from "axios";
@@ -24,6 +23,7 @@ import {
   animals,
   uniqueNamesGenerator,
 } from "unique-names-generator";
+import { KyveSDK, KyveWallet } from "@kyve/sdk";
 
 export * from "./utils";
 export * from "./faces";
@@ -56,7 +56,8 @@ class KYVE {
   protected version: string;
   protected chainVersion: string;
   protected commission: string;
-  protected client: Client;
+  protected wallet: KyveWallet;
+  protected sdk: KyveSDK;
   protected keyfile: JWKInterface;
   protected name: string;
   protected gasMultiplier: string;
@@ -83,7 +84,6 @@ class KYVE {
     this.runtime = cli.runtime;
     this.version = cli.packageVersion;
     this.commission = options.commission;
-    this.client = new Client(options.mnemonic);
     this.keyfile = JSON.parse(readFileSync(options.keyfile, "utf-8"));
     this.gasMultiplier = options.gasMultiplier;
     this.runMetrics = options.metrics;
@@ -91,6 +91,8 @@ class KYVE {
     this.name = options?.name ?? this.generateRandomName(options.mnemonic);
     this.chainVersion = "v1beta1";
 
+    this.wallet = new KyveWallet(options.network, options.mnemonic);
+    this.sdk = new KyveSDK(this.wallet);
     this.db = new Database(this.name);
 
     if (!existsSync("./logs")) {
@@ -135,7 +137,7 @@ class KYVE {
 
   private async run() {
     try {
-      const address = await this.client.getAddress();
+      const address = await this.wallet.getAddress();
 
       while (true) {
         console.log("");
@@ -173,7 +175,11 @@ class KYVE {
 
           try {
             const { data } = await axios.get(
-              `${this.client.endpoints.rest}/kyve/registry/${this.chainVersion}/can_vote/${this.poolId}/${address}?bundleId=${this.pool.bundle_proposal.bundle_id}`
+              `${this.wallet.getRestEndpoint()}/kyve/registry/${
+                this.chainVersion
+              }/can_vote/${this.poolId}/${address}?bundleId=${
+                this.pool.bundle_proposal.bundle_id
+              }`
             );
 
             canVote = data;
@@ -219,7 +225,9 @@ class KYVE {
 
             try {
               const { data } = await axios.get(
-                `${this.client.endpoints.rest}/kyve/registry/${this.chainVersion}/can_propose/${this.poolId}/${address}`
+                `${this.wallet.getRestEndpoint()}/kyve/registry/${
+                  this.chainVersion
+                }/can_propose/${this.poolId}/${address}`
               );
 
               canPropose = data;
@@ -550,19 +558,28 @@ class KYVE {
 
       await this.arweave.transactions.post(transaction);
 
-      const tx = await this.client.sendMessage({
-        typeUrl: "/kyve.registry.v1beta1.MsgSubmitBundleProposal",
-        value: {
-          creator: await this.client.getAddress(),
-          id: this.poolId,
-          bundleId: transaction.id,
-          byteSize: +transaction.data_size,
-          bundleSize: uploadBundle.toHeight - uploadBundle.fromHeight,
-        },
-      });
+      this.logger.debug(`Uploaded bundle with tx id: ${transaction.id}`);
+      this.logger.debug(`Submitting bundle proposal ...`);
 
-      this.logger.debug(`Arweave Transaction ${transaction.id} ...`);
-      this.logger.debug(`Transaction = ${tx.transactionHash}`);
+      const { transactionHash, transactionBroadcast } =
+        await this.sdk.submitBundleProposal(
+          this.poolId,
+          transaction.id,
+          +transaction.data_size,
+          uploadBundle.toHeight - uploadBundle.fromHeight
+        );
+
+      this.logger.debug(`Transaction = ${transactionHash}`);
+
+      const res = await transactionBroadcast;
+
+      if (res.code === 0) {
+        this.logger.info(
+          `📤 Successfully submitted bundle proposal ${transaction.id}`
+        );
+      } else {
+        this.logger.warn(`⚠️  Could not submit bundle proposal. Skipping ...`);
+      }
     } catch (error) {
       this.logger.warn(
         "⚠️  EXTERNAL ERROR: Failed to upload bundle to Arweave. Skipping upload ..."
@@ -573,17 +590,20 @@ class KYVE {
 
   private async claimUploaderRole() {
     try {
-      this.logger.info("🔍 Claiming uploader role ...");
+      this.logger.debug("Claiming uploader role ...");
 
-      const tx = await this.client.sendMessage({
-        typeUrl: "/kyve.registry.v1beta1.MsgClaimUploaderRole",
-        value: {
-          creator: await this.client.getAddress(),
-          id: this.poolId,
-        },
-      });
+      const { transactionHash, transactionBroadcast } =
+        await this.sdk.claimUploaderRole(this.poolId);
 
-      this.logger.debug(`Transaction = ${tx.transactionHash}`);
+      this.logger.debug(`Transaction = ${transactionHash}`);
+
+      const res = await transactionBroadcast;
+
+      if (res.code === 0) {
+        this.logger.info(`🔍 Successfully claimed uploader role`);
+      } else {
+        this.logger.warn(`⚠️  Could not claim uploader role. Skipping ...`);
+      }
     } catch (error) {
       this.logger.error(
         "❌ INTERNAL ERROR: Failed to claim uploader role. Skipping ..."
@@ -611,24 +631,29 @@ class KYVE {
   }
 
   private async vote(vote: { transaction: string; valid: boolean }) {
-    this.logger.info(
-      `🖋  Voting ${vote.valid ? "valid" : "invalid"} on bundle ${
-        vote.transaction
-      } ...`
-    );
-
     try {
-      const tx = await this.client.sendMessage({
-        typeUrl: "/kyve.registry.v1beta1.MsgVoteProposal",
-        value: {
-          creator: await this.client.getAddress(),
-          id: this.poolId,
-          bundleId: vote.transaction,
-          support: vote.valid,
-        },
-      });
+      this.logger.debug(
+        `🖋  Voting ${vote.valid ? "valid" : "invalid"} on bundle ${
+          vote.transaction
+        } ...`
+      );
 
-      this.logger.debug(`Transaction = ${tx.transactionHash}`);
+      const { transactionHash, transactionBroadcast } =
+        await this.sdk.voteProposal(this.poolId, vote.transaction, vote.valid);
+
+      this.logger.debug(`Transaction = ${transactionHash}`);
+
+      const res = await transactionBroadcast;
+
+      if (res.code === 0) {
+        this.logger.info(
+          `🖋  Voted ${vote.valid ? "valid" : "invalid"} on bundle ${
+            vote.transaction
+          }`
+        );
+      } else {
+        this.logger.warn(`⚠️  Could not vote on proposal. Skipping ...`);
+      }
     } catch (error) {
       this.logger.error("❌ INTERNAL ERROR: Failed to vote. Skipping ...");
       this.logger.debug(error);
@@ -656,7 +681,7 @@ class KYVE {
         this.name
       }\n\t${formatInfoLogs(
         "Address"
-      )} = ${await this.client.getAddress()}\n\t${formatInfoLogs(
+      )} = ${await this.wallet.getAddress()}\n\t${formatInfoLogs(
         "Pool Id"
       )} = ${this.poolId}\n\t${formatInfoLogs(
         "Cache height"
@@ -701,7 +726,9 @@ class KYVE {
           const {
             data: { pool },
           } = await axios.get(
-            `${this.client.endpoints.rest}/kyve/registry/${this.chainVersion}/pool/${this.poolId}`
+            `${this.wallet.getRestEndpoint()}/kyve/registry/${
+              this.chainVersion
+            }/pool/${this.poolId}`
           );
           this.pool = { ...pool };
 
@@ -770,7 +797,7 @@ class KYVE {
     return new Promise(async (resolve) => {
       while (true) {
         try {
-          const address = await this.client.getAddress();
+          const address = await this.wallet.getAddress();
           const isStaker = this.pool.stakers.includes(address);
 
           if (isStaker) {

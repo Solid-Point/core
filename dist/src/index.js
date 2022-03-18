@@ -38,12 +38,12 @@ const http_1 = __importDefault(require("http"));
 const url_1 = __importDefault(require("url"));
 const prom_client_1 = __importStar(require("prom-client"));
 const database_1 = require("./utils/database");
-const client_1 = require("./utils/client");
 const du_1 = __importDefault(require("du"));
 const zlib_1 = require("zlib");
 const axios_1 = __importDefault(require("axios"));
 const object_sizeof_1 = __importDefault(require("object-sizeof"));
 const unique_names_generator_1 = require("unique-names-generator");
+const sdk_1 = require("@kyve/sdk");
 __exportStar(require("./utils"), exports);
 __exportStar(require("./faces"), exports);
 __exportStar(require("./utils/helpers"), exports);
@@ -79,13 +79,14 @@ class KYVE {
         this.runtime = cli.runtime;
         this.version = cli.packageVersion;
         this.commission = options.commission;
-        this.client = new client_1.Client(options.mnemonic);
         this.keyfile = JSON.parse((0, fs_1.readFileSync)(options.keyfile, "utf-8"));
         this.gasMultiplier = options.gasMultiplier;
         this.runMetrics = options.metrics;
         this.space = +options.space;
         this.name = (_a = options === null || options === void 0 ? void 0 : options.name) !== null && _a !== void 0 ? _a : this.generateRandomName(options.mnemonic);
         this.chainVersion = "v1beta1";
+        this.wallet = new sdk_1.KyveWallet(options.network, options.mnemonic);
+        this.sdk = new sdk_1.KyveSDK(this.wallet);
         this.db = new database_1.Database(this.name);
         if (!(0, fs_1.existsSync)("./logs")) {
             (0, fs_1.mkdirSync)("./logs");
@@ -121,7 +122,7 @@ class KYVE {
     }
     async run() {
         try {
-            const address = await this.client.getAddress();
+            const address = await this.wallet.getAddress();
             while (true) {
                 console.log("");
                 this.logger.info("⚡️ Starting new proposal");
@@ -150,7 +151,7 @@ class KYVE {
                         reason: "Failed to execute canVote query",
                     };
                     try {
-                        const { data } = await axios_1.default.get(`${this.client.endpoints.rest}/kyve/registry/${this.chainVersion}/can_vote/${this.poolId}/${address}?bundleId=${this.pool.bundle_proposal.bundle_id}`);
+                        const { data } = await axios_1.default.get(`${this.wallet.getRestEndpoint()}/kyve/registry/${this.chainVersion}/can_vote/${this.poolId}/${address}?bundleId=${this.pool.bundle_proposal.bundle_id}`);
                         canVote = data;
                     }
                     catch { }
@@ -185,7 +186,7 @@ class KYVE {
                             reason: "Failed to execute canPropose query",
                         };
                         try {
-                            const { data } = await axios_1.default.get(`${this.client.endpoints.rest}/kyve/registry/${this.chainVersion}/can_propose/${this.poolId}/${address}`);
+                            const { data } = await axios_1.default.get(`${this.wallet.getRestEndpoint()}/kyve/registry/${this.chainVersion}/can_propose/${this.poolId}/${address}`);
                             canPropose = data;
                         }
                         catch { }
@@ -426,18 +427,17 @@ class KYVE {
                 return;
             }
             await this.arweave.transactions.post(transaction);
-            const tx = await this.client.sendMessage({
-                typeUrl: "/kyve.registry.v1beta1.MsgSubmitBundleProposal",
-                value: {
-                    creator: await this.client.getAddress(),
-                    id: this.poolId,
-                    bundleId: transaction.id,
-                    byteSize: +transaction.data_size,
-                    bundleSize: uploadBundle.toHeight - uploadBundle.fromHeight,
-                },
-            });
-            this.logger.debug(`Arweave Transaction ${transaction.id} ...`);
-            this.logger.debug(`Transaction = ${tx.transactionHash}`);
+            this.logger.debug(`Uploaded bundle with tx id: ${transaction.id}`);
+            this.logger.debug(`Submitting bundle proposal ...`);
+            const { transactionHash, transactionBroadcast } = await this.sdk.submitBundleProposal(this.poolId, transaction.id, +transaction.data_size, uploadBundle.toHeight - uploadBundle.fromHeight);
+            this.logger.debug(`Transaction = ${transactionHash}`);
+            const res = await transactionBroadcast;
+            if (res.code === 0) {
+                this.logger.info(`📤 Successfully submitted bundle proposal ${transaction.id}`);
+            }
+            else {
+                this.logger.warn(`⚠️  Could not submit bundle proposal. Skipping ...`);
+            }
         }
         catch (error) {
             this.logger.warn("⚠️  EXTERNAL ERROR: Failed to upload bundle to Arweave. Skipping upload ...");
@@ -446,15 +446,16 @@ class KYVE {
     }
     async claimUploaderRole() {
         try {
-            this.logger.info("🔍 Claiming uploader role ...");
-            const tx = await this.client.sendMessage({
-                typeUrl: "/kyve.registry.v1beta1.MsgClaimUploaderRole",
-                value: {
-                    creator: await this.client.getAddress(),
-                    id: this.poolId,
-                },
-            });
-            this.logger.debug(`Transaction = ${tx.transactionHash}`);
+            this.logger.debug("Claiming uploader role ...");
+            const { transactionHash, transactionBroadcast } = await this.sdk.claimUploaderRole(this.poolId);
+            this.logger.debug(`Transaction = ${transactionHash}`);
+            const res = await transactionBroadcast;
+            if (res.code === 0) {
+                this.logger.info(`🔍 Successfully claimed uploader role`);
+            }
+            else {
+                this.logger.warn(`⚠️  Could not claim uploader role. Skipping ...`);
+            }
         }
         catch (error) {
             this.logger.error("❌ INTERNAL ERROR: Failed to claim uploader role. Skipping ...");
@@ -477,18 +478,17 @@ class KYVE {
         });
     }
     async vote(vote) {
-        this.logger.info(`🖋  Voting ${vote.valid ? "valid" : "invalid"} on bundle ${vote.transaction} ...`);
         try {
-            const tx = await this.client.sendMessage({
-                typeUrl: "/kyve.registry.v1beta1.MsgVoteProposal",
-                value: {
-                    creator: await this.client.getAddress(),
-                    id: this.poolId,
-                    bundleId: vote.transaction,
-                    support: vote.valid,
-                },
-            });
-            this.logger.debug(`Transaction = ${tx.transactionHash}`);
+            this.logger.debug(`🖋  Voting ${vote.valid ? "valid" : "invalid"} on bundle ${vote.transaction} ...`);
+            const { transactionHash, transactionBroadcast } = await this.sdk.voteProposal(this.poolId, vote.transaction, vote.valid);
+            this.logger.debug(`Transaction = ${transactionHash}`);
+            const res = await transactionBroadcast;
+            if (res.code === 0) {
+                this.logger.info(`🖋  Voted ${vote.valid ? "valid" : "invalid"} on bundle ${vote.transaction}`);
+            }
+            else {
+                this.logger.warn(`⚠️  Could not vote on proposal. Skipping ...`);
+            }
         }
         catch (error) {
             this.logger.error("❌ INTERNAL ERROR: Failed to vote. Skipping ...");
@@ -508,7 +508,7 @@ class KYVE {
         catch {
             height = 0;
         }
-        this.logger.info(`🚀 Starting node ...\n\n\t${formatInfoLogs("Node name")} = ${this.name}\n\t${formatInfoLogs("Address")} = ${await this.client.getAddress()}\n\t${formatInfoLogs("Pool Id")} = ${this.poolId}\n\t${formatInfoLogs("Cache height")} = ${height}\n\t${formatInfoLogs("@kyve/core")} = v${package_json_1.version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}\n`);
+        this.logger.info(`🚀 Starting node ...\n\n\t${formatInfoLogs("Node name")} = ${this.name}\n\t${formatInfoLogs("Address")} = ${await this.wallet.getAddress()}\n\t${formatInfoLogs("Pool Id")} = ${this.poolId}\n\t${formatInfoLogs("Cache height")} = ${height}\n\t${formatInfoLogs("@kyve/core")} = v${package_json_1.version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}\n`);
     }
     setupMetrics() {
         if (this.runMetrics) {
@@ -537,7 +537,7 @@ class KYVE {
             var _a, _b;
             while (true) {
                 try {
-                    const { data: { pool }, } = await axios_1.default.get(`${this.client.endpoints.rest}/kyve/registry/${this.chainVersion}/pool/${this.poolId}`);
+                    const { data: { pool }, } = await axios_1.default.get(`${this.wallet.getRestEndpoint()}/kyve/registry/${this.chainVersion}/pool/${this.poolId}`);
                     this.pool = { ...pool };
                     try {
                         this.pool.config = JSON.parse(this.pool.config);
@@ -592,7 +592,7 @@ class KYVE {
         return new Promise(async (resolve) => {
             while (true) {
                 try {
-                    const address = await this.client.getAddress();
+                    const address = await this.wallet.getAddress();
                     const isStaker = this.pool.stakers.includes(address);
                     if (isStaker) {
                         if (logs) {

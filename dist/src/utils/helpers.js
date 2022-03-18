@@ -34,7 +34,7 @@ const dataSizeOfBinary = (binary) => {
     return new Uint8Array(binary).byteLength || 0;
 };
 exports.dataSizeOfBinary = dataSizeOfBinary;
-const callWithExponentialBackoff = async (depth = 0, fn, args) => {
+const callWithExponentialBackoff = async (depth = 0, fn, args = []) => {
     try {
         return await fn(...args);
     }
@@ -46,7 +46,7 @@ const callWithExponentialBackoff = async (depth = 0, fn, args) => {
     }
 };
 exports.callWithExponentialBackoff = callWithExponentialBackoff;
-const callWithLinearBackoff = async (duration = 1000, fn, args) => {
+const callWithLinearBackoff = async (duration = 1000, fn, args = []) => {
     try {
         return await fn(...args);
     }
