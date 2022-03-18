@@ -39,8 +39,8 @@ export const callWithExponentialBackoff = async (
   } catch {
     await sleep(2 ** depth * 10);
     return depth > 12
-      ? callWithExponentialBackoff(depth, fn, args)
-      : callWithExponentialBackoff(depth + 1, fn, args);
+      ? await callWithExponentialBackoff(depth, fn, args)
+      : await callWithExponentialBackoff(depth + 1, fn, args);
   }
 };
 
@@ -53,7 +53,7 @@ export const callWithLinearBackoff = async (
     return await fn(...args);
   } catch {
     await sleep(duration);
-    return callWithLinearBackoff(duration, fn, args);
+    return await callWithLinearBackoff(duration, fn, args);
   }
 };
 
