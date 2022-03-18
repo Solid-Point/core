@@ -92,9 +92,10 @@ class KYVE {
     this.chainVersion = "v1beta1";
 
     console.log(options);
-    console.log("core: ", options.mnemonic);
+    console.log("core: ", options.network, options.mnemonic);
 
     this.wallet = new KyveWallet(options.network, options.mnemonic);
+    console.log("core: ", options.network, options.mnemonic);
     this.sdk = new KyveSDK(this.wallet);
     this.db = new Database(this.name);
 

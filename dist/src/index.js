@@ -90,8 +90,9 @@ class KYVE {
         this.name = (_a = options === null || options === void 0 ? void 0 : options.name) !== null && _a !== void 0 ? _a : this.generateRandomName(options.mnemonic);
         this.chainVersion = "v1beta1";
         console.log(options);
-        console.log("core: ", options.mnemonic);
+        console.log("core: ", options.network, options.mnemonic);
         this.wallet = new sdk_1.KyveWallet(options.network, options.mnemonic);
+        console.log("core: ", options.network, options.mnemonic);
         this.sdk = new sdk_1.KyveSDK(this.wallet);
         this.db = new database_1.Database(this.name);
         if (!(0, fs_1.existsSync)("./logs")) {
