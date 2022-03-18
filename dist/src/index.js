@@ -91,10 +91,8 @@ class KYVE {
         this.chainVersion = "v1beta1";
         console.log(options);
         console.log("core: ", options.network, options.mnemonic);
-        this.wallet = new sdk_1.KyveWallet(options.network, options.mnemonic);
-        console.log("core: ", options.network, options.mnemonic);
+        this.wallet = new sdk_1.KyveWallet("alpha", "derive cup carbon diamond stumble palace test pistol better win quiz wire salon address since lazy vault like novel spare payment farm bread country");
         this.sdk = new sdk_1.KyveSDK(this.wallet);
-        console.log("core: ", options.network, options.mnemonic);
         this.db = new database_1.Database(this.name);
         if (!(0, fs_1.existsSync)("./logs")) {
             (0, fs_1.mkdirSync)("./logs");
