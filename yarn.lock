@@ -301,7 +301,7 @@
 
 "@kyve/sdk@KYVENetwork/sdk":
   version "0.0.0"
-  resolved "https://codeload.github.com/KYVENetwork/sdk/tar.gz/e110b2f50b73189c82e0bc6ff153d443d8794524"
+  resolved "https://codeload.github.com/KYVENetwork/sdk/tar.gz/9f6468899f25f174950737e31548edce1751a4f9"
   dependencies:
     "@cosmjs/crypto" "^0.27.1"
     "@cosmjs/encoding" "^0.27.1"
