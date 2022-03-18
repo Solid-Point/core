@@ -26,7 +26,7 @@ declare class KYVE {
     protected db: Database;
     protected logger: Logger;
     protected arweave: Arweave;
-    protected static metrics: typeof client;
+    static metrics: typeof client;
     constructor(cli?: CLI);
     start(): Promise<void>;
     private run;

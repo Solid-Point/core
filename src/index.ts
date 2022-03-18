@@ -69,7 +69,7 @@ class KYVE {
     protocol: "https",
   });
 
-  protected static metrics = client;
+  public static metrics = client;
 
   constructor(cli?: CLI) {
     if (!cli) {
