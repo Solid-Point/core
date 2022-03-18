@@ -60,6 +60,7 @@ class KYVE {
   protected sdk: KyveSDK;
   protected keyfile: JWKInterface;
   protected name: string;
+  protected network: string;
   protected gasMultiplier: string;
   protected runMetrics: boolean;
   protected space: number;
@@ -88,6 +89,7 @@ class KYVE {
     this.gasMultiplier = options.gasMultiplier;
     this.runMetrics = options.metrics;
     this.space = +options.space;
+    this.network = options.network;
     this.name = options?.name ?? this.generateRandomName(options.mnemonic);
     this.chainVersion = "v1beta1";
 
@@ -812,7 +814,7 @@ class KYVE {
           } else {
             this.logger.warn(`⚠️  Node is not an active validator!`);
             this.logger.warn(
-              `⚠️  Stake $KYVE here to join as a validator: https://app.kyve.network/#/pools/${this.poolId}/validators - Idling ...`
+              `⚠️  Stake $KYVE here to join as a validator: https://app.${this.network}.kyve.network/#/pools/${this.poolId}/validators - Idling ...`
             );
             await sleep(60 * 1000);
             await this.getPool(false);

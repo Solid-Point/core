@@ -87,6 +87,7 @@ class KYVE {
         this.gasMultiplier = options.gasMultiplier;
         this.runMetrics = options.metrics;
         this.space = +options.space;
+        this.network = options.network;
         this.name = (_a = options === null || options === void 0 ? void 0 : options.name) !== null && _a !== void 0 ? _a : this.generateRandomName(options.mnemonic);
         this.chainVersion = "v1beta1";
         this.wallet = new sdk_test_1.KyveWallet(options.network, options.mnemonic);
@@ -614,7 +615,7 @@ class KYVE {
                     }
                     else {
                         this.logger.warn(`⚠️  Node is not an active validator!`);
-                        this.logger.warn(`⚠️  Stake $KYVE here to join as a validator: https://app.kyve.network/#/pools/${this.poolId}/validators - Idling ...`);
+                        this.logger.warn(`⚠️  Stake $KYVE here to join as a validator: https://app.${this.network}.kyve.network/#/pools/${this.poolId}/validators - Idling ...`);
                         await (0, helpers_1.sleep)(60 * 1000);
                         await this.getPool(false);
                     }

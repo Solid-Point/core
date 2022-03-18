@@ -21,6 +21,7 @@ declare class KYVE {
     protected sdk: KyveSDK;
     protected keyfile: JWKInterface;
     protected name: string;
+    protected network: string;
     protected gasMultiplier: string;
     protected runMetrics: boolean;
     protected space: number;
