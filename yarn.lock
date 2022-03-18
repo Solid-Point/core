@@ -250,7 +250,7 @@
   resolved "https://registry.yarnpkg.com/@iov/utils/-/utils-2.0.2.tgz#3527f376d26100e07ac823bf87bebd0f24680d1c"
   integrity sha512-4D8MEvTcFc/DVy5q25vHxRItmgJyeX85dixMH+MxdKr+yy71h3sYk+sVBEIn70uqGP7VqAJkGOPNFs08/XYELw==
 
-"@keplr-wallet/cosmos@^0.9.16":
+"@keplr-wallet/cosmos@^0.9.12", "@keplr-wallet/cosmos@^0.9.16":
   version "0.9.16"
   resolved "https://registry.yarnpkg.com/@keplr-wallet/cosmos/-/cosmos-0.9.16.tgz#bfd1968e32bf7108b213c82c7c36e650f9963ce9"
   integrity sha512-pTbqgZdxMY/O4w37YVDTNFdfbueQUXGiYlMAVsrdtFWBQSz+s1j2UpAgtJoIoEoawYVPmlHSWXviafXr7Y7B7w==
@@ -297,9 +297,35 @@
     big-integer "^1.6.48"
     utility-types "^3.10.0"
 
+"@kyve/core@KYVENetwork/core#starport":
+  version "0.2.2"
+  resolved "https://codeload.github.com/KYVENetwork/core/tar.gz/a90a30cac5ad1876f02beb22f6e2289f495f7bc1"
+  dependencies:
+    "@cosmjs/proto-signing" "^0.27.1"
+    "@cosmjs/stargate" "^0.27.1"
+    "@kyve/sdk" KYVENetwork/sdk
+    "@types/cli-progress" "^3.9.2"
+    "@types/du" "^1.0.1"
+    "@types/jsonfile" "^6.0.1"
+    arweave "^1.10.17"
+    axios "^0.24.0"
+    base64url "^3.0.1"
+    bignumber.js "^9.0.1"
+    commander "^8.3.0"
+    du "^1.0.0"
+    jsonfile "^6.1.0"
+    object-hash "^2.2.0"
+    object-sizeof "^1.6.3"
+    prando "^6.0.1"
+    prom-client "^14.0.1"
+    protobufjs "^6.11.2"
+    semver "^7.3.5"
+    tslog "^3.2.2"
+    unique-names-generator "^4.6.0"
+
 "@kyve/sdk@KYVENetwork/sdk":
   version "0.0.0"
-  resolved "https://codeload.github.com/KYVENetwork/sdk/tar.gz/c399f713a3c7953fb01973f27c600861260ef5f5"
+  resolved "https://codeload.github.com/KYVENetwork/sdk/tar.gz/d3f837a3ff9eacec3867df79366765234ea29369"
   dependencies:
     "@cosmjs/crypto" "^0.27.1"
     "@cosmjs/encoding" "^0.27.1"
