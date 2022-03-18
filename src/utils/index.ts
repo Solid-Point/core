@@ -23,7 +23,10 @@ export class CLI extends Command {
       "-mn, --mnemonic <string>",
       "Your mnemonic of your account."
     );
-    this.option("-k, --keyfile <string>", "The path to your Arweave keyfile.");
+    this.requiredOption(
+      "-k, --keyfile <string>",
+      "The path to your Arweave keyfile."
+    );
     this.option(
       "-network, --network <'alpha' | 'beta' | 'local'>",
       "The chain id of the network. [optional, default = alpha]",
