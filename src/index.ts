@@ -91,6 +91,7 @@ class KYVE {
     this.name = options?.name ?? this.generateRandomName(options.mnemonic);
     this.chainVersion = "v1beta1";
 
+    console.log(options);
     console.log("core: ", options.mnemonic);
 
     this.wallet = new KyveWallet(options.network, options.mnemonic);
