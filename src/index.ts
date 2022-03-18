@@ -3,11 +3,10 @@ import { JWKInterface } from "arweave/node/lib/wallet";
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from "fs";
 import Prando from "prando";
 import { satisfies } from "semver";
-import { ILogObject } from "tslog";
+import { ILogObject, Logger } from "tslog";
 import { Bundle } from "./faces";
 import { CLI } from "./utils";
 import { sleep } from "./utils/helpers";
-import { logger } from "./utils";
 import { version } from "../package.json";
 import hash from "object-hash";
 import http from "http";
@@ -64,6 +63,7 @@ class KYVE {
   protected runMetrics: boolean;
   protected space: number;
   protected db: Database;
+  protected logger: Logger;
   protected arweave = new Arweave({
     host: "arweave.net",
     protocol: "https",
@@ -101,11 +101,16 @@ class KYVE {
       appendFileSync(`./logs/${this.name}.txt`, JSON.stringify(log) + "\n");
     };
 
-    logger.setSettings({
+    this.logger = new Logger({
+      displayFilePath: "hidden",
+      displayFunctionName: false,
+    });
+
+    this.logger.setSettings({
       minLevel: options.verbose ? undefined : "info",
     });
 
-    logger.attachTransport({
+    this.logger.attachTransport({
       silly: logToTransport,
       debug: logToTransport,
       trace: logToTransport,
@@ -124,7 +129,7 @@ class KYVE {
     await this.verifyNode();
 
     this.cache();
-    this.logger();
+    this.logCacheHeight();
     this.run();
   }
 
@@ -134,7 +139,7 @@ class KYVE {
 
       while (true) {
         console.log("");
-        logger.info("⚡️ Starting new proposal");
+        this.logger.info("⚡️ Starting new proposal");
 
         // get current pool state
         await this.getPool(false);
@@ -143,7 +148,7 @@ class KYVE {
 
         // TODO: maybe move to getPool()
         if (this.pool.paused) {
-          logger.info("💤  Pool is paused. Idling ...");
+          this.logger.info("💤  Pool is paused. Idling ...");
           await sleep(60 * 1000);
           continue;
         }
@@ -152,9 +157,9 @@ class KYVE {
         await this.clearFinalizedData();
 
         if (this.pool.bundle_proposal.next_uploader === address) {
-          logger.info("📚 Selected as UPLOADER");
+          this.logger.info("📚 Selected as UPLOADER");
         } else {
-          logger.info("🧐 Selected as VALIDATOR");
+          this.logger.info("🧐 Selected as VALIDATOR");
         }
 
         if (
@@ -178,7 +183,9 @@ class KYVE {
             await this.validateProposal(created_at);
             await this.getPool(false);
           } else {
-            logger.debug(`Can not vote this round: Reason: ${canVote.reason}`);
+            this.logger.debug(
+              `Can not vote this round: Reason: ${canVote.reason}`
+            );
           }
         }
 
@@ -193,7 +200,7 @@ class KYVE {
         }
 
         if (this.pool.bundle_proposal.next_uploader === address) {
-          logger.debug("Waiting for proposal quorum ...");
+          this.logger.debug("Waiting for proposal quorum ...");
         }
 
         while (true) {
@@ -223,7 +230,7 @@ class KYVE {
               await this.uploadBundleToArweave();
               break;
             } else {
-              logger.debug(
+              this.logger.debug(
                 `Can not propose: ${canPropose.reason}. Retrying in 10s ...`
               );
               await sleep(10 * 1000);
@@ -234,16 +241,16 @@ class KYVE {
           }
         }
 
-        logger.debug(`Proposal ended`);
+        this.logger.debug(`Proposal ended`);
       }
     } catch (error) {
-      logger.error(`❌ INTERNAL ERROR: Runtime error. Exiting ...`);
-      logger.debug(error);
+      this.logger.error(`❌ INTERNAL ERROR: Runtime error. Exiting ...`);
+      this.logger.debug(error);
       process.exit(1);
     }
   }
 
-  public async logger() {
+  public async logCacheHeight() {
     setInterval(async () => {
       let height;
 
@@ -253,7 +260,7 @@ class KYVE {
         height = parseInt(this.pool.height_archived);
       }
 
-      logger.debug(`Cached to height = ${height}`);
+      this.logger.debug(`Cached to height = ${height}`);
     }, 60 * 1000);
   }
 
@@ -278,7 +285,7 @@ class KYVE {
         metricsDbUsed.set(usedDiskSpacePercent);
 
         if (usedDiskSpace > this.space) {
-          logger.debug(`Used disk space: ${usedDiskSpacePercent}%`);
+          this.logger.debug(`Used disk space: ${usedDiskSpacePercent}%`);
           await sleep(60 * 1000);
           continue;
         }
@@ -295,17 +302,17 @@ class KYVE {
         await Promise.all(batch);
         await this.db.put("head", targetHeight);
       } catch (error) {
-        logger.error(
+        this.logger.error(
           `❌ INTERNAL ERROR: Failed to request data item from local DB at height = ${height}`
         );
-        logger.debug(error);
+        this.logger.debug(error);
         await sleep(10 * 1000);
       }
     }
   }
 
   public async getDataItem(height: number): Promise<any> {
-    logger.error(
+    this.logger.error(
       `❌ INTERNAL ERROR: "getDataItem" not implemented. Exiting ...`
     );
     process.exit(1);
@@ -316,10 +323,10 @@ class KYVE {
       const dataItem = await this.getDataItem(height);
       await this.db.put(height, dataItem);
     } catch (error) {
-      logger.warn(
+      this.logger.warn(
         `⚠️  EXTERNAL ERROR: Failed to request data item from source ...`
       );
-      logger.debug(error);
+      this.logger.debug(error);
     }
   }
 
@@ -398,10 +405,10 @@ class KYVE {
       try {
         await this.db.del(key);
       } catch (error) {
-        logger.error(
+        this.logger.error(
           `❌ INTERNAL ERROR: Failed deleting data item from local DB with key ${key}:`
         );
-        logger.debug(error);
+        this.logger.debug(error);
       }
     }
 
@@ -409,8 +416,10 @@ class KYVE {
   }
 
   private async validateProposal(created_at: string) {
-    logger.info(`🔬 Validating bundle ${this.pool.bundle_proposal.bundle_id}`);
-    logger.debug(`Downloading bundle from Arweave ...`);
+    this.logger.info(
+      `🔬 Validating bundle ${this.pool.bundle_proposal.bundle_id}`
+    );
+    this.logger.debug(`Downloading bundle from Arweave ...`);
 
     let uploadBundle;
     let downloadBundle;
@@ -427,8 +436,8 @@ class KYVE {
       downloadBundle = await this.downloadBundleFromArweave();
 
       if (downloadBundle) {
-        logger.debug(`Successfully downloaded bundle from Arweave`);
-        logger.debug(
+        this.logger.debug(`Successfully downloaded bundle from Arweave`);
+        this.logger.debug(
           `Loading local bundle from ${this.pool.bundle_proposal.from_height} to ${this.pool.bundle_proposal.to_height} ...`
         );
 
@@ -445,7 +454,7 @@ class KYVE {
         });
         break;
       } else {
-        logger.warn(
+        this.logger.warn(
           `⚠️  EXTERNAL ERROR: Failed to fetch bundle from Arweave. Retrying in 30s ...`
         );
         await sleep(30 * 1000);
@@ -492,21 +501,21 @@ class KYVE {
 
   private async uploadBundleToArweave(): Promise<void> {
     try {
-      logger.info("📦 Creating new bundle proposal");
+      this.logger.info("📦 Creating new bundle proposal");
 
-      logger.debug(
+      this.logger.debug(
         `Creating bundle from height = ${this.pool.bundle_proposal.to_height} ...`
       );
 
       const uploadBundle = await this.createBundle();
 
-      logger.debug("Uploading bundle to Arweave ...");
+      this.logger.debug("Uploading bundle to Arweave ...");
 
       const transaction = await this.arweave.createTransaction({
         data: gzipSync(uploadBundle.bundle),
       });
 
-      logger.debug(
+      this.logger.debug(
         `Bundle details = bytes: ${transaction.data_size}, items: ${
           uploadBundle.toHeight - uploadBundle.fromHeight
         }`
@@ -529,11 +538,13 @@ class KYVE {
         );
 
         if (+transaction.reward > +balance) {
-          logger.warn("⚠️  EXTERNAL ERROR: Not enough funds in Arweave wallet");
+          this.logger.warn(
+            "⚠️  EXTERNAL ERROR: Not enough funds in Arweave wallet"
+          );
           process.exit(1);
         }
       } catch {
-        logger.warn(
+        this.logger.warn(
           "⚠️  EXTERNAL ERROR: Failed to load Arweave account balance. Skipping upload ..."
         );
         return;
@@ -552,19 +563,19 @@ class KYVE {
         },
       });
 
-      logger.debug(`Arweave Transaction ${transaction.id} ...`);
-      logger.debug(`Transaction = ${tx.transactionHash}`);
+      this.logger.debug(`Arweave Transaction ${transaction.id} ...`);
+      this.logger.debug(`Transaction = ${tx.transactionHash}`);
     } catch (error) {
-      logger.warn(
+      this.logger.warn(
         "⚠️  EXTERNAL ERROR: Failed to upload bundle to Arweave. Skipping upload ..."
       );
-      logger.debug(error);
+      this.logger.debug(error);
     }
   }
 
   private async claimUploaderRole() {
     try {
-      logger.info("🔍 Claiming uploader role ...");
+      this.logger.info("🔍 Claiming uploader role ...");
 
       const tx = await this.client.sendMessage({
         typeUrl: "/kyve.registry.v1beta1.MsgClaimUploaderRole",
@@ -574,18 +585,18 @@ class KYVE {
         },
       });
 
-      logger.debug(`Transaction = ${tx.transactionHash}`);
+      this.logger.debug(`Transaction = ${tx.transactionHash}`);
     } catch (error) {
-      logger.error(
+      this.logger.error(
         "❌ INTERNAL ERROR: Failed to claim uploader role. Skipping ..."
       );
-      logger.debug(error);
+      this.logger.debug(error);
     }
   }
 
   private async nextBundleProposal(created_at: string): Promise<void> {
     return new Promise(async (resolve) => {
-      logger.debug("Waiting for new proposal ...");
+      this.logger.debug("Waiting for new proposal ...");
 
       while (true) {
         await this.getPool(false);
@@ -602,7 +613,7 @@ class KYVE {
   }
 
   private async vote(vote: { transaction: string; valid: boolean }) {
-    logger.info(
+    this.logger.info(
       `🖋  Voting ${vote.valid ? "valid" : "invalid"} on bundle ${
         vote.transaction
       } ...`
@@ -619,12 +630,14 @@ class KYVE {
         },
       });
 
-      logger.debug(`Transaction = ${tx.transactionHash}`);
+      this.logger.debug(`Transaction = ${tx.transactionHash}`);
     } catch (error) {
-      logger.error("❌ INTERNAL ERROR: Failed to vote. Skipping ...");
-      logger.debug(error);
+      this.logger.error("❌ INTERNAL ERROR: Failed to vote. Skipping ...");
+      this.logger.debug(error);
     }
   }
+
+  private setupLogger() {}
 
   private async logNodeInfo() {
     const formatInfoLogs = (input: string) => {
@@ -640,7 +653,7 @@ class KYVE {
       height = 0;
     }
 
-    logger.info(
+    this.logger.info(
       `🚀 Starting node ...\n\n\t${formatInfoLogs("Node name")} = ${
         this.name
       }\n\t${formatInfoLogs(
@@ -657,7 +670,7 @@ class KYVE {
 
   private setupMetrics() {
     if (this.runMetrics) {
-      logger.info(
+      this.logger.info(
         "🔬 Starting metric server on: http://localhost:8080/metrics"
       );
 
@@ -681,7 +694,7 @@ class KYVE {
 
   private async getPool(logs: boolean = true): Promise<void> {
     if (logs) {
-      logger.debug("Attempting to fetch pool state.");
+      this.logger.debug("Attempting to fetch pool state.");
     }
 
     return new Promise(async (resolve) => {
@@ -697,19 +710,19 @@ class KYVE {
           try {
             this.pool.config = JSON.parse(this.pool.config);
           } catch (error) {
-            logger.error(
+            this.logger.error(
               `❌ INTERNAL ERROR: Failed to parse the pool config: ${this.pool?.config}`
             );
-            logger.debug(error);
+            this.logger.debug(error);
             process.exit(1);
           }
 
           if (this.pool.runtime === this.runtime) {
             if (logs) {
-              logger.info(`💻 Running node on runtime ${this.runtime}.`);
+              this.logger.info(`💻 Running node on runtime ${this.runtime}.`);
             }
           } else {
-            logger.error(
+            this.logger.error(
               "❌ INTERNAL ERROR: Specified pool does not match the integration runtime"
             );
             process.exit(1);
@@ -718,25 +731,25 @@ class KYVE {
           try {
             if (satisfies(this.version, this.pool.versions || this.version)) {
               if (logs) {
-                logger.info("⏱  Pool version requirements met");
+                this.logger.info("⏱  Pool version requirements met");
               }
             } else {
-              logger.error(
+              this.logger.error(
                 `❌ INTERNAL ERROR: Running an invalid version for the specified pool. Version requirements are ${this.pool.versions}`
               );
               process.exit(1);
             }
           } catch (error) {
-            logger.error(
+            this.logger.error(
               `❌ INTERNAL ERROR: Failed to parse the node version: ${this.pool?.versions}`
             );
-            logger.debug(error);
+            this.logger.debug(error);
             process.exit(1);
           }
 
           break;
         } catch (error) {
-          logger.error(
+          this.logger.error(
             "❌ INTERNAL ERROR: Failed to fetch pool state. Retrying in 10s ..."
           );
           await sleep(10 * 1000);
@@ -744,7 +757,7 @@ class KYVE {
       }
 
       if (logs) {
-        logger.info("✅ Fetched pool state");
+        this.logger.info("✅ Fetched pool state");
       }
 
       resolve();
@@ -753,7 +766,7 @@ class KYVE {
 
   private async verifyNode(logs: boolean = true): Promise<void> {
     if (logs) {
-      logger.debug("Attempting to verify node.");
+      this.logger.debug("Attempting to verify node.");
     }
 
     return new Promise(async (resolve) => {
@@ -764,26 +777,28 @@ class KYVE {
 
           if (isStaker) {
             if (logs) {
-              logger.info("🔍  Node is running as a validator.");
+              this.logger.info("🔍  Node is running as a validator.");
             }
 
             break;
           } else {
-            logger.warn(`⚠️  Node is not an active validator!`);
-            logger.warn(
+            this.logger.warn(`⚠️  Node is not an active validator!`);
+            this.logger.warn(
               `⚠️  Stake $KYVE here to join as a validator: https://app.kyve.network/#/pools/${this.poolId}/validators - Idling ...`
             );
             await sleep(60 * 1000);
             await this.getPool(false);
           }
         } catch (error) {
-          logger.error("❌ INTERNAL ERROR: Failed to fetch validator info");
+          this.logger.error(
+            "❌ INTERNAL ERROR: Failed to fetch validator info"
+          );
           await sleep(10 * 1000);
         }
       }
 
       if (logs) {
-        logger.info("✅ Validated node");
+        this.logger.info("✅ Validated node");
       }
 
       resolve();

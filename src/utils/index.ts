@@ -1,10 +1,4 @@
 import { Command } from "commander";
-import { Logger } from "tslog";
-
-export const logger = new Logger({
-  displayFilePath: "hidden",
-  displayFunctionName: false,
-});
 
 export class CLI extends Command {
   constructor(
