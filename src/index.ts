@@ -69,7 +69,7 @@ class KYVE {
     protocol: "https",
   });
 
-  public static metrics = client;
+  protected static metrics = client;
 
   constructor(cli?: CLI) {
     if (!cli) {
@@ -250,7 +250,7 @@ class KYVE {
     }
   }
 
-  public async logCacheHeight() {
+  private async logCacheHeight() {
     setInterval(async () => {
       let height;
 
@@ -264,7 +264,7 @@ class KYVE {
     }, 60 * 1000);
   }
 
-  public async cache() {
+  private async cache() {
     while (true) {
       let height: number = 0;
 
@@ -319,7 +319,7 @@ class KYVE {
     process.exit(1);
   }
 
-  public async getDataItemAndSave(height: number): Promise<void> {
+  private async getDataItemAndSave(height: number): Promise<void> {
     const { key, value } = await callWithExponentialBackoff(
       0,
       this.getDataItem,
@@ -328,7 +328,7 @@ class KYVE {
     await this.db.put(key, value);
   }
 
-  public async createBundle(): Promise<Bundle> {
+  private async createBundle(): Promise<Bundle> {
     const bundleDataSizeLimit = 20 * 1000 * 1000; // 20 MB
     const bundleItemSizeLimit = 10000;
     const bundle: any[] = [];
@@ -369,7 +369,7 @@ class KYVE {
     };
   }
 
-  public async loadBundle(): Promise<Buffer> {
+  private async loadBundle(): Promise<Buffer> {
     const bundle: any[] = [];
     let h: number = +this.pool.bundle_proposal.from_height;
 
