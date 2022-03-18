@@ -636,7 +636,7 @@ class KYVE {
   private async vote(vote: { transaction: string; valid: boolean }) {
     try {
       this.logger.debug(
-        `🖋  Voting ${vote.valid ? "valid" : "invalid"} on bundle ${
+        `Voting ${vote.valid ? "valid" : "invalid"} on bundle ${
           vote.transaction
         } ...`
       );
@@ -777,8 +777,8 @@ class KYVE {
 
           break;
         } catch (error) {
-          this.logger.error(
-            "❌ INTERNAL ERROR: Failed to fetch pool state. Retrying in 10s ..."
+          this.logger.warn(
+            "⚠️  EXTERNAL ERROR: Failed to fetch pool state. Retrying in 10s ..."
           );
           await sleep(10 * 1000);
         }
@@ -823,10 +823,6 @@ class KYVE {
           );
           await sleep(10 * 1000);
         }
-      }
-
-      if (logs) {
-        this.logger.info("✅ Validated node");
       }
 
       resolve();

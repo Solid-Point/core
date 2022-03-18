@@ -491,7 +491,7 @@ class KYVE {
     }
     async vote(vote) {
         try {
-            this.logger.debug(`🖋  Voting ${vote.valid ? "valid" : "invalid"} on bundle ${vote.transaction} ...`);
+            this.logger.debug(`Voting ${vote.valid ? "valid" : "invalid"} on bundle ${vote.transaction} ...`);
             const { transactionHash, transactionBroadcast } = await this.sdk.voteProposal(this.poolId, vote.transaction, vote.valid);
             this.logger.debug(`Transaction = ${transactionHash}`);
             const res = await transactionBroadcast;
@@ -587,7 +587,7 @@ class KYVE {
                     break;
                 }
                 catch (error) {
-                    this.logger.error("❌ INTERNAL ERROR: Failed to fetch pool state. Retrying in 10s ...");
+                    this.logger.warn("⚠️  EXTERNAL ERROR: Failed to fetch pool state. Retrying in 10s ...");
                     await (0, helpers_1.sleep)(10 * 1000);
                 }
             }
@@ -623,9 +623,6 @@ class KYVE {
                     this.logger.error("❌ INTERNAL ERROR: Failed to fetch validator info");
                     await (0, helpers_1.sleep)(10 * 1000);
                 }
-            }
-            if (logs) {
-                this.logger.info("✅ Validated node");
             }
             resolve();
         });
