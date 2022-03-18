@@ -38,7 +38,8 @@ const callWithExponentialBackoff = async (depth = 0, fn, args = []) => {
     try {
         return await fn(...args);
     }
-    catch {
+    catch (err) {
+        console.log(err);
         await (0, exports.sleep)(2 ** depth * 10);
         return depth > 12
             ? await (0, exports.callWithExponentialBackoff)(depth, fn, args)
