@@ -34,25 +34,25 @@ const dataSizeOfBinary = (binary) => {
     return new Uint8Array(binary).byteLength || 0;
 };
 exports.dataSizeOfBinary = dataSizeOfBinary;
-const callWithExponentialBackoff = async (fn, depth = 0) => {
+const callWithExponentialBackoff = async (depth = 0, fn, args) => {
     try {
-        return await fn();
+        return await fn(...args);
     }
     catch {
         await (0, exports.sleep)(2 ** depth * 10);
         return depth > 12
-            ? (0, exports.callWithExponentialBackoff)(fn, depth)
-            : (0, exports.callWithExponentialBackoff)(fn, depth + 1);
+            ? (0, exports.callWithExponentialBackoff)(depth, fn, args)
+            : (0, exports.callWithExponentialBackoff)(depth + 1, fn, args);
     }
 };
 exports.callWithExponentialBackoff = callWithExponentialBackoff;
-const callWithLinearBackoff = async (fn, duration = 1000) => {
+const callWithLinearBackoff = async (duration = 1000, fn, args) => {
     try {
-        return await fn();
+        return await fn(...args);
     }
     catch {
         await (0, exports.sleep)(duration);
-        return (0, exports.callWithLinearBackoff)(fn, duration);
+        return (0, exports.callWithLinearBackoff)(duration, fn, args);
     }
 };
 exports.callWithLinearBackoff = callWithLinearBackoff;

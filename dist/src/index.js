@@ -229,12 +229,14 @@ class KYVE {
         while (true) {
             let height = 0;
             try {
-                try {
-                    height = parseInt(await this.db.get("head"));
-                }
-                catch {
-                    height = parseInt(this.pool.height_archived);
-                }
+                height = parseInt(await this.db.get("head"));
+            }
+            catch {
+                height = parseInt(this.pool.height_archived);
+            }
+            const batchSize = 100;
+            const targetHeight = height + batchSize;
+            try {
                 const usedDiskSpace = await (0, du_1.default)(`./db/${this.name}/`);
                 const usedDiskSpacePercent = parseFloat(((usedDiskSpace * 100) / this.space).toFixed(2));
                 metricsCacheHeight.set(height);
@@ -246,8 +248,6 @@ class KYVE {
                     continue;
                 }
                 const batch = [];
-                const batchSize = 100;
-                const targetHeight = height + batchSize;
                 for (let h = height; h < targetHeight; h++) {
                     batch.push(this.getDataItemAndSave(h));
                     await (0, helpers_1.sleep)(500);
@@ -256,25 +256,19 @@ class KYVE {
                 await this.db.put("head", targetHeight);
             }
             catch (error) {
-                this.logger.error(`❌ INTERNAL ERROR: Failed to request data item from local DB at height = ${height}`);
+                this.logger.error(`❌ INTERNAL ERROR: Failed to write data items from height = ${height} to ${targetHeight} to local DB`);
                 this.logger.debug(error);
                 await (0, helpers_1.sleep)(10 * 1000);
             }
         }
     }
-    async getDataItem(height) {
-        this.logger.error(`❌ INTERNAL ERROR: "getDataItem" not implemented. Exiting ...`);
+    async getDataItem(key) {
+        this.logger.error(`❌ INTERNAL ERROR: mandatory "getDataItem" method not implemented. Exiting ...`);
         process.exit(1);
     }
     async getDataItemAndSave(height) {
-        try {
-            const dataItem = await this.getDataItem(height);
-            await this.db.put(height, dataItem);
-        }
-        catch (error) {
-            this.logger.warn(`⚠️  EXTERNAL ERROR: Failed to request data item from source ...`);
-            this.logger.debug(error);
-        }
+        const { key, value } = await (0, helpers_1.callWithExponentialBackoff)(0, this.getDataItem, [height]);
+        await this.db.put(key, value);
     }
     async createBundle() {
         const bundleDataSizeLimit = 20 * 1000 * 1000; // 20 MB

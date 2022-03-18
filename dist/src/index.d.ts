@@ -33,7 +33,10 @@ declare class KYVE {
     private run;
     logCacheHeight(): Promise<void>;
     cache(): Promise<void>;
-    getDataItem(height: number): Promise<any>;
+    getDataItem(key: number): Promise<{
+        key: number;
+        value: any;
+    }>;
     getDataItemAndSave(height: number): Promise<void>;
     createBundle(): Promise<Bundle>;
     loadBundle(): Promise<Buffer>;

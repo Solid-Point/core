@@ -6,7 +6,7 @@ import { satisfies } from "semver";
 import { ILogObject, Logger } from "tslog";
 import { Bundle } from "./faces";
 import { CLI } from "./utils";
-import { sleep } from "./utils/helpers";
+import { callWithExponentialBackoff, sleep } from "./utils/helpers";
 import { version } from "../package.json";
 import hash from "object-hash";
 import http from "http";
@@ -269,12 +269,15 @@ class KYVE {
       let height: number = 0;
 
       try {
-        try {
-          height = parseInt(await this.db.get("head"));
-        } catch {
-          height = parseInt(this.pool.height_archived);
-        }
+        height = parseInt(await this.db.get("head"));
+      } catch {
+        height = parseInt(this.pool.height_archived);
+      }
 
+      const batchSize: number = 100;
+      const targetHeight: number = height + batchSize;
+
+      try {
         const usedDiskSpace = await du(`./db/${this.name}/`);
         const usedDiskSpacePercent = parseFloat(
           ((usedDiskSpace * 100) / this.space).toFixed(2)
@@ -291,8 +294,6 @@ class KYVE {
         }
 
         const batch: Promise<void>[] = [];
-        const batchSize: number = 100;
-        const targetHeight: number = height + batchSize;
 
         for (let h = height; h < targetHeight; h++) {
           batch.push(this.getDataItemAndSave(h));
@@ -303,7 +304,7 @@ class KYVE {
         await this.db.put("head", targetHeight);
       } catch (error) {
         this.logger.error(
-          `❌ INTERNAL ERROR: Failed to request data item from local DB at height = ${height}`
+          `❌ INTERNAL ERROR: Failed to write data items from height = ${height} to ${targetHeight} to local DB`
         );
         this.logger.debug(error);
         await sleep(10 * 1000);
@@ -311,23 +312,20 @@ class KYVE {
     }
   }
 
-  public async getDataItem(height: number): Promise<any> {
+  public async getDataItem(key: number): Promise<{ key: number; value: any }> {
     this.logger.error(
-      `❌ INTERNAL ERROR: "getDataItem" not implemented. Exiting ...`
+      `❌ INTERNAL ERROR: mandatory "getDataItem" method not implemented. Exiting ...`
     );
     process.exit(1);
   }
 
   public async getDataItemAndSave(height: number): Promise<void> {
-    try {
-      const dataItem = await this.getDataItem(height);
-      await this.db.put(height, dataItem);
-    } catch (error) {
-      this.logger.warn(
-        `⚠️  EXTERNAL ERROR: Failed to request data item from source ...`
-      );
-      this.logger.debug(error);
-    }
+    const { key, value } = await callWithExponentialBackoff(
+      0,
+      this.getDataItem,
+      [height]
+    );
+    await this.db.put(key, value);
   }
 
   public async createBundle(): Promise<Bundle> {

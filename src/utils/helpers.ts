@@ -30,28 +30,30 @@ export const dataSizeOfBinary = (binary: ArrayBuffer): number => {
 };
 
 export const callWithExponentialBackoff = async (
+  depth = 0,
   fn: Function,
-  depth = 0
+  args: any[]
 ): Promise<any> => {
   try {
-    return await fn();
+    return await fn(...args);
   } catch {
     await sleep(2 ** depth * 10);
     return depth > 12
-      ? callWithExponentialBackoff(fn, depth)
-      : callWithExponentialBackoff(fn, depth + 1);
+      ? callWithExponentialBackoff(depth, fn, args)
+      : callWithExponentialBackoff(depth + 1, fn, args);
   }
 };
 
 export const callWithLinearBackoff = async (
+  duration = 1000,
   fn: Function,
-  duration = 1000
+  args: any[]
 ): Promise<any> => {
   try {
-    return await fn();
+    return await fn(...args);
   } catch {
     await sleep(duration);
-    return callWithLinearBackoff(fn, duration);
+    return callWithLinearBackoff(duration, fn, args);
   }
 };
 
