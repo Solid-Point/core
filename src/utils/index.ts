@@ -20,7 +20,7 @@ export class CLI extends Command {
     //   "The commission rate of your node."
     // );
     this.requiredOption(
-      "-mn, --mnemonic <string>",
+      "-m, --mnemonic <string>",
       "Your mnemonic of your account."
     );
     this.requiredOption(
@@ -38,7 +38,7 @@ export class CLI extends Command {
       "1000000000"
     );
     this.option(
-      "-m, --metrics",
+      "--metrics",
       "Run Prometheus metrics server. [optional, default = false]",
       false
     );
