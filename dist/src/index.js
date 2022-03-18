@@ -272,8 +272,16 @@ class KYVE {
         process.exit(1);
     }
     async getDataItemAndSave(height) {
-        const { key, value } = await (0, helpers_1.callWithExponentialBackoff)(0, this.getDataItem, [height]);
-        await this.db.put(key, value);
+        while (true) {
+            try {
+                const { key, value } = await this.getDataItem(height);
+                await this.db.put(key, value);
+                break;
+            }
+            catch {
+                await (0, helpers_1.sleep)(10 * 1000);
+            }
+        }
     }
     async createBundle() {
         const bundleDataSizeLimit = 20 * 1000 * 1000; // 20 MB

@@ -328,12 +328,15 @@ class KYVE {
   }
 
   private async getDataItemAndSave(height: number): Promise<void> {
-    const { key, value } = await callWithExponentialBackoff(
-      0,
-      this.getDataItem,
-      [height]
-    );
-    await this.db.put(key, value);
+    while (true) {
+      try {
+        const { key, value } = await this.getDataItem(height);
+        await this.db.put(key, value);
+        break;
+      } catch {
+        await sleep(10 * 1000);
+      }
+    }
   }
 
   private async createBundle(): Promise<Bundle> {
