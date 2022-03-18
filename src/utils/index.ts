@@ -28,7 +28,7 @@ export class CLI extends Command {
       "The path to your Arweave keyfile."
     );
     this.option(
-      "-network, --network <'alpha' | 'beta' | 'local'>",
+      "-n, --network <string>",
       "The chain id of the network. [optional, default = alpha]",
       "alpha"
     );
