@@ -12,7 +12,7 @@ export class CLI extends Command {
       "The identifier name of the node. [optional, default = auto generated]"
     );
     this.requiredOption(
-      "-p, --pool-id <number>",
+      "-p, --poolId <number>",
       "The id of the pool you want to run on."
     );
     // this.requiredOption(

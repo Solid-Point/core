@@ -8,7 +8,7 @@ class CLI extends commander_1.Command {
         this.runtime = runtime;
         this.packageVersion = packageVersion;
         this.option("-n, --name <string>", "The identifier name of the node. [optional, default = auto generated]");
-        this.requiredOption("-p, --pool-id <number>", "The id of the pool you want to run on.");
+        this.requiredOption("-p, --poolId <number>", "The id of the pool you want to run on.");
         // this.requiredOption(
         //   "-c, --commission <number>",
         //   "The commission rate of your node."
