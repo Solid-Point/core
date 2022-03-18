@@ -259,7 +259,6 @@ class KYVE {
                 }
                 await Promise.all(batch);
                 await this.db.put("head", targetHeight);
-                await (0, helpers_1.sleep)(500);
             }
             catch (error) {
                 this.logger.error(`❌ INTERNAL ERROR: Failed to write data items from height = ${height} to ${targetHeight} to local DB`);
@@ -280,7 +279,7 @@ class KYVE {
                 break;
             }
             catch {
-                await (0, helpers_1.sleep)(10 * 1000);
+                await (0, helpers_1.sleep)(1000);
             }
         }
     }
