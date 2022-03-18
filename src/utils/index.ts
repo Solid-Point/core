@@ -8,7 +8,7 @@ export class CLI extends Command {
     super(runtime);
 
     this.option(
-      "-n, --name <string>",
+      "--name <string>",
       "The identifier name of the node. [optional, default = auto generated]"
     );
     this.requiredOption(
