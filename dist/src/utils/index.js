@@ -1,12 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CLI = exports.logger = void 0;
+exports.CLI = void 0;
 const commander_1 = require("commander");
-const tslog_1 = require("tslog");
-exports.logger = new tslog_1.Logger({
-    displayFilePath: "hidden",
-    displayFunctionName: false,
-});
 class CLI extends commander_1.Command {
     constructor(runtime = process.env.KYVE_RUNTIME, packageVersion = process.env.KYVE_VERSION) {
         super(runtime);
