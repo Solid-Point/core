@@ -143,7 +143,7 @@ class KYVE {
 
         // TODO: maybe move to getPool()
         if (this.pool.paused) {
-          logger.info("💤  Pool is paused. Waiting ...");
+          logger.info("💤  Pool is paused. Idling ...");
           await sleep(60 * 1000);
           continue;
         }

@@ -29,6 +29,32 @@ export const dataSizeOfBinary = (binary: ArrayBuffer): number => {
   return new Uint8Array(binary).byteLength || 0;
 };
 
+export const callWithExponentialBackoff = async (
+  fn: Function,
+  depth = 0
+): Promise<any> => {
+  try {
+    return await fn();
+  } catch {
+    await sleep(2 ** depth * 10);
+    return depth > 12
+      ? callWithExponentialBackoff(fn, depth)
+      : callWithExponentialBackoff(fn, depth + 1);
+  }
+};
+
+export const callWithLinearBackoff = async (
+  fn: Function,
+  duration = 1000
+): Promise<any> => {
+  try {
+    return await fn();
+  } catch {
+    await sleep(duration);
+    return callWithLinearBackoff(fn, duration);
+  }
+};
+
 // Inspired by https://github.com/Bundlr-Network/arbundles/blob/f3e8e1df09e68e33f3a51af33127999566ab3e37/src/utils.ts#L41-L85.
 const longTo32ByteArray = (long: number): Uint8Array => {
   const byteArray = Buffer.alloc(32, 0);

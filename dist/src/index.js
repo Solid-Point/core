@@ -127,7 +127,7 @@ class KYVE {
                 const created_at = this.pool.bundle_proposal.created_at;
                 // TODO: maybe move to getPool()
                 if (this.pool.paused) {
-                    utils_2.logger.info("💤  Pool is paused. Waiting ...");
+                    utils_2.logger.info("💤  Pool is paused. Idling ...");
                     await (0, helpers_1.sleep)(60 * 1000);
                     continue;
                 }
