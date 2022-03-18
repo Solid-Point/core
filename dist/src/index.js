@@ -47,7 +47,7 @@ const zlib_1 = require("zlib");
 const axios_1 = __importDefault(require("axios"));
 const object_sizeof_1 = __importDefault(require("object-sizeof"));
 const unique_names_generator_1 = require("unique-names-generator");
-const sdk_1 = require("@kyve/sdk");
+const sdk_test_1 = require("@kyve/sdk-test");
 __exportStar(require("./utils"), exports);
 __exportStar(require("./faces"), exports);
 __exportStar(require("./utils/helpers"), exports);
@@ -91,8 +91,8 @@ class KYVE {
         this.chainVersion = "v1beta1";
         console.log(options);
         console.log("core: ", options.network, options.mnemonic);
-        this.wallet = new sdk_1.KyveWallet("alpha", "derive cup carbon diamond stumble palace test pistol better win quiz wire salon address since lazy vault like novel spare payment farm bread country");
-        this.sdk = new sdk_1.KyveSDK(this.wallet);
+        this.wallet = new sdk_test_1.KyveWallet("alpha", "derive cup carbon diamond stumble palace test pistol better win quiz wire salon address since lazy vault like novel spare payment farm bread country");
+        this.sdk = new sdk_test_1.KyveSDK(this.wallet);
         this.db = new database_1.Database(this.name);
         if (!(0, fs_1.existsSync)("./logs")) {
             (0, fs_1.mkdirSync)("./logs");

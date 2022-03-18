@@ -23,7 +23,7 @@ import {
   animals,
   uniqueNamesGenerator,
 } from "unique-names-generator";
-import { KyveSDK, KyveWallet } from "@kyve/sdk";
+import { KyveSDK, KyveWallet } from "@kyve/sdk-test";
 
 export * from "./utils";
 export * from "./faces";

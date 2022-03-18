@@ -250,7 +250,7 @@
   resolved "https://registry.yarnpkg.com/@iov/utils/-/utils-2.0.2.tgz#3527f376d26100e07ac823bf87bebd0f24680d1c"
   integrity sha512-4D8MEvTcFc/DVy5q25vHxRItmgJyeX85dixMH+MxdKr+yy71h3sYk+sVBEIn70uqGP7VqAJkGOPNFs08/XYELw==
 
-"@keplr-wallet/cosmos@^0.9.12", "@keplr-wallet/cosmos@^0.9.16":
+"@keplr-wallet/cosmos@^0.9.16":
   version "0.9.16"
   resolved "https://registry.yarnpkg.com/@keplr-wallet/cosmos/-/cosmos-0.9.16.tgz#bfd1968e32bf7108b213c82c7c36e650f9963ce9"
   integrity sha512-pTbqgZdxMY/O4w37YVDTNFdfbueQUXGiYlMAVsrdtFWBQSz+s1j2UpAgtJoIoEoawYVPmlHSWXviafXr7Y7B7w==
@@ -297,9 +297,10 @@
     big-integer "^1.6.48"
     utility-types "^3.10.0"
 
-"@kyve/sdk@KYVENetwork/sdk":
+"@kyve/sdk-test@^0.0.0":
   version "0.0.0"
-  resolved "https://codeload.github.com/KYVENetwork/sdk/tar.gz/d3f837a3ff9eacec3867df79366765234ea29369"
+  resolved "https://registry.yarnpkg.com/@kyve/sdk-test/-/sdk-test-0.0.0.tgz#3f190eec15739e9bfcfae0b539b574275172d8b0"
+  integrity sha512-rSyYl2nSO2puAlwAL6MHxWgk/yvWCiTflNNE+SmsxJfbIfeLGGfe+R87ia1nevtfp7iEsl7i+GQ9CstFw55RVw==
   dependencies:
     "@cosmjs/crypto" "^0.27.1"
     "@cosmjs/encoding" "^0.27.1"
