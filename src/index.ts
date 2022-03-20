@@ -376,8 +376,8 @@ class KYVE {
     }
 
     return {
-      fromHeight: this.pool.bundle_proposal.to_height,
-      toHeight: h,
+      fromHeight: +this.pool.bundle_proposal.to_height,
+      toHeight: +this.pool.bundle_proposal.to_height + bundle.length,
       bundle: Buffer.from(JSON.stringify(bundle)),
     };
   }
