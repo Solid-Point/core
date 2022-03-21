@@ -15,7 +15,7 @@ class CLI extends commander_1.Command {
         // );
         this.requiredOption("-m, --mnemonic <string>", "Your mnemonic of your account.");
         this.requiredOption("-k, --keyfile <string>", "The path to your Arweave keyfile.");
-        this.option("-n, --network <string>", "The chain id of the network. [optional, default = alpha]", "alpha");
+        this.option("-n, --network <string>", "The chain id of the network. [optional, default = beta]", "beta");
         this.option("-sp, --space <number>", "The size of disk space in bytes the node is allowed to use. [optional, default = 1000000000 (1 GB)]", "1000000000");
         this.option("--metrics", "Run Prometheus metrics server. [optional, default = false]", false);
         this.option("-v, --verbose", "Run node in verbose mode. [optional, default = false]", false);

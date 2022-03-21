@@ -29,8 +29,8 @@ export class CLI extends Command {
     );
     this.option(
       "-n, --network <string>",
-      "The chain id of the network. [optional, default = alpha]",
-      "alpha"
+      "The chain id of the network. [optional, default = beta]",
+      "beta"
     );
     this.option(
       "-sp, --space <number>",

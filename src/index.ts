@@ -355,17 +355,24 @@ class KYVE {
           key: +h,
           value: await this.db.get(h),
         };
+
         currentDataSize += sizeof(entry);
 
+        // break if min_bundle_size is reached and is over data size limit
         if (
-          currentDataSize < bundleDataSizeLimit &&
-          bundle.length < bundleItemSizeLimit
+          bundle.length >= +this.pool.min_bundle_size &&
+          currentDataSize > bundleDataSizeLimit
         ) {
-          bundle.push(entry);
-          h++;
-        } else {
           break;
         }
+
+        // break if bundle item size limit is reached
+        if (bundle.length >= bundleItemSizeLimit + this.pool.min_bundle_size) {
+          break;
+        }
+
+        bundle.push(entry);
+        h++;
       } catch {
         if (bundle.length < +this.pool.min_bundle_size) {
           await sleep(10 * 1000);
