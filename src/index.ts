@@ -301,9 +301,13 @@ class KYVE {
       let height: number = 0;
 
       try {
-        height = parseInt(await this.db.get("head"));
-      } catch {
         height = parseInt(this.pool.height_archived);
+        const head = parseInt(await this.db.get("head"));
+
+        height = head > height ? head : height;
+      } catch (error) {
+        this.logger.error(`❌ INTERNAL ERROR: Failed to load DB head height`);
+        this.logger.debug(error);
       }
 
       const batchSize: number = 100;
@@ -450,9 +454,8 @@ class KYVE {
         await this.db.del(key);
       } catch (error) {
         this.logger.error(
-          `❌ INTERNAL ERROR: Failed deleting data item from local DB with key ${key}:`
+          `❌ INTERNAL ERROR: Failed deleting data item from DB with key ${key}:`
         );
-        this.logger.debug(error);
       }
     }
 
@@ -707,8 +710,6 @@ class KYVE {
       this.logger.debug(error);
     }
   }
-
-  private setupLogger() {}
 
   private async logNodeInfo() {
     const formatInfoLogs = (input: string) => {
