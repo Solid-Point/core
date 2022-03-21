@@ -238,13 +238,24 @@ class KYVE {
     }
     async logCacheHeight() {
         setInterval(async () => {
-            let height;
+            let height = 0;
+            let head = 0;
+            let tail = 0;
             try {
-                height = parseInt(await this.db.get("head"));
-            }
-            catch {
                 height = parseInt(this.pool.height_archived);
+                head = parseInt(await this.db.get("head"));
+                tail = parseInt(await this.db.get("tail"));
+                // reset cache and continue with pool height
+                if (height < tail) {
+                    this.logger.debug(`Resetting cache ...`);
+                    await this.db.drop();
+                }
+                // continue from current cache height
+                if (height < head) {
+                    height = head;
+                }
             }
+            catch { }
             this.logger.debug(`Cached to height = ${height}`);
         }, 60 * 1000);
     }
