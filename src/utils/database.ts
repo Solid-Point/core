@@ -30,6 +30,6 @@ export class Database {
   }
 
   public async drop(): Promise<void> {
-    await fse.emptyDir(`./db/`);
+    await fse.emptyDir(`./db/${this.path}/`);
   }
 }

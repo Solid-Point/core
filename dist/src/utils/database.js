@@ -27,7 +27,7 @@ class Database {
         await fs_1.promises.unlink(`./db/${this.path}/${key}.json`);
     }
     async drop() {
-        await fs_extra_1.default.emptyDir(`./db/`);
+        await fs_extra_1.default.emptyDir(`./db/${this.path}/`);
     }
 }
 exports.Database = Database;
