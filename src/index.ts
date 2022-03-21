@@ -6,7 +6,7 @@ import { satisfies } from "semver";
 import { ILogObject, Logger } from "tslog";
 import { Bundle } from "./faces";
 import { CLI } from "./utils";
-import { callWithExponentialBackoff, sleep } from "./utils/helpers";
+import { sleep } from "./utils/helpers";
 import { version } from "../package.json";
 import hash from "object-hash";
 import http from "http";
@@ -24,6 +24,7 @@ import {
   uniqueNamesGenerator,
 } from "unique-names-generator";
 import { KyveSDK, KyveWallet } from "@kyve/sdk-test";
+import Transaction from "arweave/node/lib/transaction";
 
 export * from "./utils";
 export * from "./faces";
@@ -89,7 +90,6 @@ class KYVE {
     this.gasMultiplier = options.gasMultiplier;
     this.runMetrics = options.metrics;
     this.space = +options.space;
-    this.network = options.network;
     this.name = options?.name ?? this.generateRandomName(options.mnemonic);
     this.chainVersion = "v1beta1";
 
@@ -123,6 +123,16 @@ class KYVE {
       error: logToTransport,
       fatal: logToTransport,
     });
+
+    // check if network is valid
+    if (options.network === "alpha" || options.network === "beta") {
+      this.network = options.network;
+    } else {
+      this.logger.error(
+        `❌ INTERNAL ERROR: Unknown network "${options.network}". Exiting ...`
+      );
+      process.exit(1);
+    }
   }
 
   async start() {
@@ -150,7 +160,7 @@ class KYVE {
         // save height of bundle proposal
         const created_at = this.pool.bundle_proposal.created_at;
 
-        // TODO: maybe move to getPool()
+        // check if pool is paused
         if (this.pool.paused) {
           this.logger.info("💤  Pool is paused. Idling ...");
           await sleep(60 * 1000);
@@ -211,6 +221,8 @@ class KYVE {
           this.logger.debug("Waiting for proposal quorum ...");
         }
 
+        let transaction: Transaction | null = null;
+
         while (true) {
           await this.getPool(false);
 
@@ -236,9 +248,19 @@ class KYVE {
             } catch {}
 
             if (canPropose.possible) {
-              // if upload fails try again & refetch bundle_proposal
-              await this.uploadBundleToArweave();
-              break;
+              this.logger.info("📦 Creating new bundle proposal");
+
+              // create bundle for upload
+              const uploadBundle = await this.createBundle();
+              // upload bundle to arweave if not yet done
+              if (!transaction) {
+                transaction = await this.uploadBundleToArweave(uploadBundle);
+              }
+              // submit bundle proposal
+              if (transaction) {
+                await this.submitBundleProposal(transaction, uploadBundle);
+                break;
+              }
             } else {
               this.logger.debug(
                 `Can not propose: ${canPropose.reason}. Retrying in 10s ...`
@@ -348,6 +370,10 @@ class KYVE {
 
     let currentDataSize = 0;
     let h = +this.pool.bundle_proposal.to_height;
+
+    this.logger.debug(
+      `Creating bundle from height = ${this.pool.bundle_proposal.to_height} ...`
+    );
 
     while (true) {
       try {
@@ -517,16 +543,10 @@ class KYVE {
     }
   }
 
-  private async uploadBundleToArweave(): Promise<void> {
+  private async uploadBundleToArweave(
+    uploadBundle: Bundle
+  ): Promise<Transaction | null> {
     try {
-      this.logger.info("📦 Creating new bundle proposal");
-
-      this.logger.debug(
-        `Creating bundle from height = ${this.pool.bundle_proposal.to_height} ...`
-      );
-
-      const uploadBundle = await this.createBundle();
-
       this.logger.debug("Uploading bundle to Arweave ...");
 
       const transaction = await this.arweave.createTransaction({
@@ -565,12 +585,28 @@ class KYVE {
         this.logger.warn(
           "⚠️  EXTERNAL ERROR: Failed to load Arweave account balance. Skipping upload ..."
         );
-        return;
+        return null;
       }
 
       await this.arweave.transactions.post(transaction);
 
       this.logger.debug(`Uploaded bundle with tx id: ${transaction.id}`);
+
+      return transaction;
+    } catch (error) {
+      this.logger.warn(
+        "⚠️  EXTERNAL ERROR: Failed to upload bundle to Arweave. Retrying in 30s ..."
+      );
+      await sleep(30 * 1000);
+      return null;
+    }
+  }
+
+  private async submitBundleProposal(
+    transaction: Transaction,
+    uploadBundle: Bundle
+  ) {
+    try {
       this.logger.debug(`Submitting bundle proposal ...`);
 
       const { transactionHash, transactionBroadcast } =
@@ -592,11 +628,11 @@ class KYVE {
       } else {
         this.logger.warn(`⚠️  Could not submit bundle proposal. Skipping ...`);
       }
-    } catch (error) {
-      this.logger.warn(
-        "⚠️  EXTERNAL ERROR: Failed to upload bundle to Arweave. Skipping upload ..."
+    } catch {
+      this.logger.error(
+        "❌ INTERNAL ERROR: Failed to submit bundle proposal. Retrying in 30s ..."
       );
-      this.logger.debug(error);
+      await sleep(30 * 1000);
     }
   }
 
