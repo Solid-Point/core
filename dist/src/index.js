@@ -259,6 +259,7 @@ class KYVE {
                 tail = parseInt(await this.db.get("tail"));
                 // reset cache and continue with pool height
                 if (height < tail) {
+                    this.logger.debug(`Resetting cache ...`);
                     await this.db.drop();
                 }
                 // continue from current cache height
