@@ -56,13 +56,12 @@ class KYVE {
   protected runtime: string;
   protected version: string;
   protected chainVersion: string;
-  protected commission: string;
   protected wallet: KyveWallet;
   protected sdk: KyveSDK;
   protected keyfile: JWKInterface;
   protected name: string;
   protected network: string;
-  protected gasMultiplier: string;
+  protected batchSize: number;
   protected runMetrics: boolean;
   protected space: number;
   protected db: Database;
@@ -85,11 +84,8 @@ class KYVE {
     this.poolId = options.poolId;
     this.runtime = cli.runtime;
     this.version = cli.packageVersion;
-    this.commission = options.commission;
     this.keyfile = JSON.parse(readFileSync(options.keyfile, "utf-8"));
-    this.gasMultiplier = options.gasMultiplier;
     this.runMetrics = options.metrics;
-    this.space = +options.space;
     this.name = options?.name ?? this.generateRandomName(options.mnemonic);
     this.chainVersion = "v1beta1";
 
@@ -123,6 +119,26 @@ class KYVE {
       error: logToTransport,
       fatal: logToTransport,
     });
+
+    // check if disk space is greater than 0
+    if (+options.batchSize > 0) {
+      this.space = +options.space;
+    } else {
+      this.logger.error(
+        `❌ INTERNAL ERROR: Disk space has to be greater than 0 bytes. Exiting ...`
+      );
+      process.exit(1);
+    }
+
+    // check if batch size is greater than 0
+    if (+options.batchSize > 0) {
+      this.batchSize = +options.batchSize;
+    } else {
+      this.logger.error(
+        `❌ INTERNAL ERROR: Batch size has to be greater than 0. Exiting ...`
+      );
+      process.exit(1);
+    }
 
     // check if network is valid
     if (options.network === "alpha" || options.network === "beta") {
@@ -332,8 +348,7 @@ class KYVE {
         }
       } catch {}
 
-      const batchSize: number = 100;
-      const targetHeight: number = height + batchSize;
+      const targetHeight: number = height + this.batchSize;
 
       try {
         const usedDiskSpace = await du(`./db/${this.name}/`);
@@ -474,11 +489,7 @@ class KYVE {
     for (let key = tail; key < parseInt(this.pool.height_archived); key++) {
       try {
         await this.db.del(key);
-      } catch (error) {
-        this.logger.error(
-          `❌ INTERNAL ERROR: Failed deleting data item from DB with key ${key}:`
-        );
-      }
+      } catch {}
     }
 
     await this.db.put("tail", parseInt(this.pool.height_archived));

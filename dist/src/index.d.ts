@@ -16,13 +16,12 @@ declare class KYVE {
     protected runtime: string;
     protected version: string;
     protected chainVersion: string;
-    protected commission: string;
     protected wallet: KyveWallet;
     protected sdk: KyveSDK;
     protected keyfile: JWKInterface;
     protected name: string;
     protected network: string;
-    protected gasMultiplier: string;
+    protected batchSize: number;
     protected runMetrics: boolean;
     protected space: number;
     protected db: Database;
