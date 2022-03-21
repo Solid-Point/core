@@ -4,4 +4,5 @@ export declare class Database {
     put(key: string | number, value: any): Promise<void>;
     get(key: string | number): Promise<any>;
     del(key: string | number): Promise<void>;
+    drop(): Promise<void>;
 }

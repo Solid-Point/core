@@ -38,6 +38,7 @@
         "bignumber.js": "^9.0.1",
         "commander": "^8.3.0",
         "du": "^1.0.0",
+        "fs-extra": "^10.0.1",
         "jsonfile": "^6.1.0",
         "object-hash": "^2.2.0",
         "object-sizeof": "^1.6.3",
@@ -49,6 +50,7 @@
         "unique-names-generator": "^4.6.0"
     },
     "devDependencies": {
+        "@types/fs-extra": "^9.0.13",
         "@types/node": "^16.10.3",
         "@types/object-hash": "^2.2.1",
         "@types/semver": "^7.3.9",

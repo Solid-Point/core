@@ -251,15 +251,22 @@ class KYVE {
     async cache() {
         while (true) {
             let height = 0;
+            let head = 0;
+            let tail = 0;
             try {
                 height = parseInt(this.pool.height_archived);
-                const head = parseInt(await this.db.get("head"));
-                height = head > height ? head : height;
+                head = parseInt(await this.db.get("head"));
+                tail = parseInt(await this.db.get("tail"));
+                // reset cache and continue with pool height
+                if (height < tail) {
+                    await this.db.drop();
+                }
+                // continue from current cache height
+                if (height < head) {
+                    height = head;
+                }
             }
-            catch (error) {
-                this.logger.error(`❌ INTERNAL ERROR: Failed to load DB head height`);
-                this.logger.debug(error);
-            }
+            catch { }
             const batchSize = 100;
             const targetHeight = height + batchSize;
             try {

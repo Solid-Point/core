@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, promises as fs } from "fs";
 import { readFile, writeFile } from "jsonfile";
+import fse from "fs-extra";
 
 export class Database {
   public path: string;
@@ -26,5 +27,9 @@ export class Database {
 
   public async del(key: string | number): Promise<void> {
     await fs.unlink(`./db/${this.path}/${key}.json`);
+  }
+
+  public async drop(): Promise<void> {
+    await fse.emptyDir(`./db/`);
   }
 }
