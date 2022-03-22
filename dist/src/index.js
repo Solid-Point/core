@@ -146,6 +146,7 @@ class KYVE {
         this.run();
     }
     async run() {
+        var _a;
         try {
             const address = await this.wallet.getAddress();
             while (true) {
@@ -158,6 +159,12 @@ class KYVE {
                 // check if pool is paused
                 if (this.pool.paused) {
                     this.logger.info("💤  Pool is paused. Idling ...");
+                    await (0, helpers_1.sleep)(60 * 1000);
+                    continue;
+                }
+                // check if node is the only one
+                if (((_a = this.pool.stakers) === null || _a === void 0 ? void 0 : _a.length) < 2) {
+                    this.logger.info("💤  Your node is the only one in this pool. Waiting for at least one other node to join ...");
                     await (0, helpers_1.sleep)(60 * 1000);
                     continue;
                 }
