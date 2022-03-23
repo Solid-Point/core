@@ -185,8 +185,8 @@ class KYVE {
 
         // check if node is the only one
         if (this.pool.stakers?.length < 2) {
-          this.logger.info(
-            "💤  Your node is the only one in this pool. Waiting for at least one other node to join ..."
+          this.logger.warn(
+            "⚠️  Your node is the only one in this pool. Waiting for at least one other node to join ..."
           );
           await sleep(60 * 1000);
           continue;
