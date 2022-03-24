@@ -483,8 +483,6 @@ class KYVE {
       }
     }
 
-    this.db.put(this.pool.bundle_proposal.bundle_id, bundle);
-
     return Buffer.from(JSON.stringify(bundle));
   }
 
@@ -532,7 +530,7 @@ class KYVE {
           `Loading local bundle from ${this.pool.bundle_proposal.from_height} to ${this.pool.bundle_proposal.to_height} ...`
         );
 
-        uploadBundle = gzipSync(await this.loadBundle());
+        uploadBundle = await this.loadBundle();
 
         await this.vote({
           transaction: this.pool.bundle_proposal.bundle_id,
@@ -599,7 +597,7 @@ class KYVE {
       this.logger.debug("Uploading bundle to Arweave ...");
 
       const transaction = await this.arweave.createTransaction({
-        data: gzipSync(uploadBundle.bundle),
+        data: uploadBundle.bundle,
       });
 
       this.logger.debug(

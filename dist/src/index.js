@@ -43,7 +43,6 @@ const url_1 = __importDefault(require("url"));
 const prom_client_1 = __importStar(require("prom-client"));
 const database_1 = require("./utils/database");
 const du_1 = __importDefault(require("du"));
-const zlib_1 = require("zlib");
 const axios_1 = __importDefault(require("axios"));
 const object_sizeof_1 = __importDefault(require("object-sizeof"));
 const unique_names_generator_1 = require("unique-names-generator");
@@ -399,7 +398,6 @@ class KYVE {
                 await (0, helpers_1.sleep)(10 * 1000);
             }
         }
-        this.db.put(this.pool.bundle_proposal.bundle_id, bundle);
         return Buffer.from(JSON.stringify(bundle));
     }
     async clearFinalizedData() {
@@ -434,7 +432,7 @@ class KYVE {
             if (downloadBundle) {
                 this.logger.debug(`Successfully downloaded bundle from Arweave`);
                 this.logger.debug(`Loading local bundle from ${this.pool.bundle_proposal.from_height} to ${this.pool.bundle_proposal.to_height} ...`);
-                uploadBundle = (0, zlib_1.gzipSync)(await this.loadBundle());
+                uploadBundle = await this.loadBundle();
                 await this.vote({
                     transaction: this.pool.bundle_proposal.bundle_id,
                     valid: await this.validate(uploadBundle, +this.pool.bundle_proposal.byte_size, downloadBundle, +downloadBundle.byteLength),
@@ -475,7 +473,7 @@ class KYVE {
         try {
             this.logger.debug("Uploading bundle to Arweave ...");
             const transaction = await this.arweave.createTransaction({
-                data: (0, zlib_1.gzipSync)(uploadBundle.bundle),
+                data: uploadBundle.bundle,
             });
             this.logger.debug(`Bundle details = bytes: ${transaction.data_size}, items: ${uploadBundle.toHeight - uploadBundle.fromHeight}`);
             transaction.addTag("Application", "KYVE - Testnet");
