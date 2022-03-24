@@ -14,7 +14,7 @@ import url from "url";
 import client, { register } from "prom-client";
 import { Database } from "./utils/database";
 import du from "du";
-import { gzipSync } from "zlib";
+import { gzipSync, gunzipSync } from "zlib";
 import axios from "axios";
 import sizeof from "object-sizeof";
 import {
@@ -483,7 +483,7 @@ class KYVE {
       }
     }
 
-    return Buffer.from(JSON.stringify(bundle));
+    return gzipSync(Buffer.from(JSON.stringify(bundle)));
   }
 
   private async clearFinalizedData() {
@@ -535,9 +535,9 @@ class KYVE {
         await this.vote({
           transaction: this.pool.bundle_proposal.bundle_id,
           valid: await this.validate(
-            uploadBundle,
+            gunzipSync(uploadBundle),
             +this.pool.bundle_proposal.byte_size,
-            downloadBundle,
+            gunzipSync(downloadBundle),
             +downloadBundle.byteLength
           ),
         });
@@ -603,7 +603,7 @@ class KYVE {
       this.logger.debug("Uploading bundle to Arweave ...");
 
       const transaction = await this.arweave.createTransaction({
-        data: uploadBundle.bundle,
+        data: gzipSync(uploadBundle.bundle),
       });
 
       this.logger.debug(
