@@ -379,7 +379,7 @@ class KYVE {
         return {
             fromHeight: +this.pool.bundle_proposal.to_height,
             toHeight: +this.pool.bundle_proposal.to_height + bundle.length,
-            bundle: Buffer.from(JSON.stringify(bundle)),
+            bundle: new TextEncoder().encode(JSON.stringify(bundle)),
         };
     }
     async loadBundle() {
@@ -398,7 +398,7 @@ class KYVE {
                 await (0, helpers_1.sleep)(10 * 1000);
             }
         }
-        return Buffer.from(JSON.stringify(bundle));
+        return new TextEncoder().encode(JSON.stringify(bundle));
     }
     async clearFinalizedData() {
         let tail;

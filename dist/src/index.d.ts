@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import Arweave from "arweave";
 import { JWKInterface } from "arweave/node/lib/wallet";
 import { Logger } from "tslog";
@@ -42,7 +41,7 @@ declare class KYVE {
     private loadBundle;
     private clearFinalizedData;
     private validateProposal;
-    validate(uploadBundle: Buffer, uploadBytes: number, downloadBundle: Buffer, downloadBytes: number): Promise<boolean>;
+    validate(uploadBundle: Uint8Array, uploadBytes: number, downloadBundle: Uint8Array, downloadBytes: number): Promise<boolean>;
     private downloadBundleFromArweave;
     private uploadBundleToArweave;
     private submitBundleProposal;
