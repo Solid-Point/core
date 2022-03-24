@@ -379,7 +379,7 @@ class KYVE {
         return {
             fromHeight: +this.pool.bundle_proposal.to_height,
             toHeight: +this.pool.bundle_proposal.to_height + bundle.length,
-            bundle: new TextEncoder().encode(JSON.stringify(bundle)),
+            bundle: Buffer.from(JSON.stringify(bundle)),
         };
     }
     async loadBundle() {
@@ -398,7 +398,7 @@ class KYVE {
                 await (0, helpers_1.sleep)(10 * 1000);
             }
         }
-        return new TextEncoder().encode(JSON.stringify(bundle));
+        return Buffer.from(JSON.stringify(bundle));
     }
     async clearFinalizedData() {
         let tail;
@@ -450,8 +450,9 @@ class KYVE {
         if (uploadBytes !== downloadBytes) {
             return false;
         }
-        console.log((0, object_hash_1.default)(uploadBundle), (0, object_hash_1.default)(downloadBundle));
-        if ((0, object_hash_1.default)(uploadBundle) !== (0, object_hash_1.default)(downloadBundle)) {
+        console.log((0, object_hash_1.default)(JSON.parse(uploadBundle.toString())), (0, object_hash_1.default)(JSON.parse(downloadBundle.toString())));
+        if ((0, object_hash_1.default)(JSON.parse(uploadBundle.toString())) !==
+            (0, object_hash_1.default)(JSON.parse(downloadBundle.toString()))) {
             return false;
         }
         return true;

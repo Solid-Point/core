@@ -461,11 +461,11 @@ class KYVE {
     return {
       fromHeight: +this.pool.bundle_proposal.to_height,
       toHeight: +this.pool.bundle_proposal.to_height + bundle.length,
-      bundle: new TextEncoder().encode(JSON.stringify(bundle)),
+      bundle: Buffer.from(JSON.stringify(bundle)),
     };
   }
 
-  private async loadBundle(): Promise<Uint8Array> {
+  private async loadBundle(): Promise<Buffer> {
     const bundle: any[] = [];
     let h: number = +this.pool.bundle_proposal.from_height;
 
@@ -483,7 +483,7 @@ class KYVE {
       }
     }
 
-    return new TextEncoder().encode(JSON.stringify(bundle));
+    return Buffer.from(JSON.stringify(bundle));
   }
 
   private async clearFinalizedData() {
@@ -552,9 +552,9 @@ class KYVE {
   }
 
   public async validate(
-    uploadBundle: Uint8Array,
+    uploadBundle: Buffer,
     uploadBytes: number,
-    downloadBundle: Uint8Array,
+    downloadBundle: Buffer,
     downloadBytes: number
   ): Promise<boolean> {
     console.log(uploadBytes, downloadBytes);
@@ -562,8 +562,14 @@ class KYVE {
       return false;
     }
 
-    console.log(hash(uploadBundle), hash(downloadBundle));
-    if (hash(uploadBundle) !== hash(downloadBundle)) {
+    console.log(
+      hash(JSON.parse(uploadBundle.toString())),
+      hash(JSON.parse(downloadBundle.toString()))
+    );
+    if (
+      hash(JSON.parse(uploadBundle.toString())) !==
+      hash(JSON.parse(downloadBundle.toString()))
+    ) {
       return false;
     }
 
