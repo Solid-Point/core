@@ -447,11 +447,9 @@ class KYVE {
         }
     }
     async validate(uploadBundle, uploadBytes, downloadBundle, downloadBytes) {
-        console.log(uploadBytes, downloadBytes);
         if (uploadBytes !== downloadBytes) {
             return false;
         }
-        console.log((0, object_hash_1.default)(JSON.parse(uploadBundle.toString())), (0, object_hash_1.default)(JSON.parse(downloadBundle.toString())));
         if ((0, object_hash_1.default)(JSON.parse(uploadBundle.toString())) !==
             (0, object_hash_1.default)(JSON.parse(downloadBundle.toString()))) {
             return false;
@@ -502,7 +500,7 @@ class KYVE {
             this.logger.debug(`Uploaded bundle with tx id: ${transaction.id}`);
             return transaction;
         }
-        catch (error) {
+        catch {
             this.logger.warn("⚠️  EXTERNAL ERROR: Failed to upload bundle to Arweave. Retrying in 30s ...");
             await (0, helpers_1.sleep)(30 * 1000);
             return null;
