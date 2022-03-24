@@ -557,10 +557,12 @@ class KYVE {
     downloadBundle: Buffer,
     downloadBytes: number
   ): Promise<boolean> {
+    console.log(uploadBytes, downloadBytes);
     if (uploadBytes !== downloadBytes) {
       return false;
     }
 
+    console.log(hash(uploadBundle), hash(downloadBundle));
     if (hash(uploadBundle) !== hash(downloadBundle)) {
       return false;
     }

@@ -447,9 +447,11 @@ class KYVE {
         }
     }
     async validate(uploadBundle, uploadBytes, downloadBundle, downloadBytes) {
+        console.log(uploadBytes, downloadBytes);
         if (uploadBytes !== downloadBytes) {
             return false;
         }
+        console.log((0, object_hash_1.default)(uploadBundle), (0, object_hash_1.default)(downloadBundle));
         if ((0, object_hash_1.default)(uploadBundle) !== (0, object_hash_1.default)(downloadBundle)) {
             return false;
         }
