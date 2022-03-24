@@ -399,7 +399,7 @@ class KYVE {
                 await (0, helpers_1.sleep)(10 * 1000);
             }
         }
-        this.db.put(this.pool.bundle_proposal.bundle_id, JSON.stringify(bundle));
+        this.db.put(this.pool.bundle_proposal.bundle_id, bundle);
         return Buffer.from(JSON.stringify(bundle));
     }
     async clearFinalizedData() {
