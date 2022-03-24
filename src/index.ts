@@ -483,6 +483,8 @@ class KYVE {
       }
     }
 
+    this.db.put(this.pool.bundle_proposal.bundle_id, JSON.stringify(bundle));
+
     return Buffer.from(JSON.stringify(bundle));
   }
 
