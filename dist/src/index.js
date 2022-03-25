@@ -434,10 +434,15 @@ class KYVE {
                 this.logger.debug(`Successfully downloaded bundle from Arweave`);
                 this.logger.debug(`Loading local bundle from ${this.pool.bundle_proposal.from_height} to ${this.pool.bundle_proposal.to_height} ...`);
                 uploadBundle = await this.loadBundle();
-                await this.vote({
-                    transaction: this.pool.bundle_proposal.bundle_id,
-                    valid: await this.validate((0, zlib_1.gunzipSync)(uploadBundle), +this.pool.bundle_proposal.byte_size, (0, zlib_1.gunzipSync)(downloadBundle), +downloadBundle.byteLength),
-                });
+                try {
+                    await this.vote({
+                        transaction: this.pool.bundle_proposal.bundle_id,
+                        valid: await this.validate((0, zlib_1.gunzipSync)(uploadBundle), +this.pool.bundle_proposal.byte_size, (0, zlib_1.gunzipSync)(downloadBundle), +downloadBundle.byteLength),
+                    });
+                }
+                catch {
+                    this.logger.warn(`⚠️  Could not vote on proposal. Skipping ...`);
+                }
                 break;
             }
             else {

@@ -532,15 +532,19 @@ class KYVE {
 
         uploadBundle = await this.loadBundle();
 
-        await this.vote({
-          transaction: this.pool.bundle_proposal.bundle_id,
-          valid: await this.validate(
-            gunzipSync(uploadBundle),
-            +this.pool.bundle_proposal.byte_size,
-            gunzipSync(downloadBundle),
-            +downloadBundle.byteLength
-          ),
-        });
+        try {
+          await this.vote({
+            transaction: this.pool.bundle_proposal.bundle_id,
+            valid: await this.validate(
+              gunzipSync(uploadBundle),
+              +this.pool.bundle_proposal.byte_size,
+              gunzipSync(downloadBundle),
+              +downloadBundle.byteLength
+            ),
+          });
+        } catch {
+          this.logger.warn(`⚠️  Could not vote on proposal. Skipping ...`);
+        }
         break;
       } else {
         this.logger.warn(
