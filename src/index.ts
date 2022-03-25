@@ -465,7 +465,7 @@ class KYVE {
     };
   }
 
-  private async loadBundle(): Promise<Buffer> {
+  private async loadBundle(): Promise<any[]> {
     const bundle: any[] = [];
     let h: number = +this.pool.bundle_proposal.from_height;
 
@@ -483,7 +483,7 @@ class KYVE {
       }
     }
 
-    return gzipSync(Buffer.from(JSON.stringify(bundle)));
+    return bundle;
   }
 
   private async clearFinalizedData() {
@@ -510,9 +510,6 @@ class KYVE {
     );
     this.logger.debug(`Downloading bundle from Arweave ...`);
 
-    let uploadBundle;
-    let downloadBundle;
-
     // try to fetch bundle
     while (true) {
       await this.getPool(false);
@@ -522,30 +519,37 @@ class KYVE {
         break;
       }
 
-      downloadBundle = await this.downloadBundleFromArweave();
+      const arweaveBundle = await this.downloadBundleFromArweave();
 
-      if (downloadBundle) {
+      if (arweaveBundle) {
         this.logger.debug(`Successfully downloaded bundle from Arweave`);
         this.logger.debug(
           `Loading local bundle from ${this.pool.bundle_proposal.from_height} to ${this.pool.bundle_proposal.to_height} ...`
         );
 
-        uploadBundle = await this.loadBundle();
+        const localBundle = await this.loadBundle();
 
         try {
+          const uploadBundle = JSON.parse(gunzipSync(arweaveBundle).toString());
+
           await this.vote({
             transaction: this.pool.bundle_proposal.bundle_id,
             valid: await this.validate(
-              gunzipSync(uploadBundle),
+              localBundle,
               +this.pool.bundle_proposal.byte_size,
-              gunzipSync(downloadBundle),
-              +downloadBundle.byteLength
+              uploadBundle,
+              +arweaveBundle.byteLength
             ),
           });
         } catch {
-          this.logger.warn(`⚠️  Could not vote on proposal. Skipping ...`);
+          this.logger.warn(`⚠️  Could not gunzip bundle ...`);
+          await this.vote({
+            transaction: this.pool.bundle_proposal.bundle_id,
+            valid: false,
+          });
+        } finally {
+          break;
         }
-        break;
       } else {
         this.logger.warn(
           `⚠️  EXTERNAL ERROR: Failed to fetch bundle from Arweave. Retrying in 30s ...`
@@ -556,19 +560,16 @@ class KYVE {
   }
 
   public async validate(
-    uploadBundle: Buffer,
-    uploadBytes: number,
-    downloadBundle: Buffer,
-    downloadBytes: number
+    localBundle: any[],
+    localBytes: number,
+    uploadBundle: any[],
+    uploadBytes: number
   ): Promise<boolean> {
-    if (uploadBytes !== downloadBytes) {
+    if (localBytes !== uploadBytes) {
       return false;
     }
 
-    if (
-      hash(JSON.parse(uploadBundle.toString())) !==
-      hash(JSON.parse(downloadBundle.toString()))
-    ) {
+    if (hash(localBundle) !== hash(uploadBundle)) {
       return false;
     }
 
