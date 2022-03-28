@@ -183,7 +183,7 @@ class KYVE {
                         reason: "Failed to execute canVote query",
                     };
                     try {
-                        const { data } = await axios_1.default.get(`${this.wallet.getRestEndpoint()}/kyve/registry/${this.chainVersion}/can_vote/${this.poolId}/${address}?bundleId=${this.pool.bundle_proposal.bundle_id}`);
+                        const { data } = await axios_1.default.get(`${this.wallet.getRestEndpoint()}/kyve/registry/${this.chainVersion}/can_vote/${this.poolId}/${address}/${this.pool.bundle_proposal.bundle_id}`);
                         canVote = data;
                     }
                     catch { }
