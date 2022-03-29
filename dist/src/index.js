@@ -598,6 +598,9 @@ class KYVE {
                 if (+this.pool.bundle_proposal.created_at > +created_at) {
                     break;
                 }
+                else if (this.pool.paused) {
+                    break;
+                }
                 else {
                     await (0, helpers_1.sleep)(2 * 1000); // sleep 2 secs
                 }
