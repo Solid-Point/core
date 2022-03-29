@@ -276,14 +276,19 @@ class KYVE {
               this.logger.info("📦 Creating new bundle proposal");
 
               // create bundle for upload
-              const uploadBundle = await this.createBundle();
-              // upload bundle to arweave if not yet done
-              if (!transaction) {
-                transaction = await this.uploadBundleToArweave(uploadBundle);
-              }
-              // submit bundle proposal
-              if (transaction) {
-                await this.submitBundleProposal(transaction, uploadBundle);
+              const uploadBundle = await this.createBundle(created_at);
+
+              if (uploadBundle) {
+                // upload bundle to arweave if not yet done
+                if (!transaction) {
+                  transaction = await this.uploadBundleToArweave(uploadBundle);
+                }
+                // submit bundle proposal
+                if (transaction) {
+                  await this.submitBundleProposal(transaction, uploadBundle);
+                  break;
+                }
+              } else {
                 break;
               }
             } else {
@@ -413,7 +418,7 @@ class KYVE {
     }
   }
 
-  private async createBundle(): Promise<Bundle> {
+  private async createBundle(created_at: string): Promise<Bundle | null> {
     const bundleDataSizeLimit = 20 * 1000 * 1000; // 20 MB
     const bundleItemSizeLimit = 10000;
     const bundle: any[] = [];
@@ -427,6 +432,8 @@ class KYVE {
 
     while (true) {
       try {
+        await this.getPool(false);
+
         const entry = {
           key: +h,
           value: await this.db.get(h),
@@ -452,6 +459,12 @@ class KYVE {
       } catch {
         if (bundle.length < +this.pool.min_bundle_size) {
           await sleep(10 * 1000);
+          await this.getPool(false);
+
+          // check if new proposal is available in the meantime
+          if (+this.pool.bundle_proposal.created_at > +created_at) {
+            return null;
+          }
         } else {
           break;
         }
@@ -465,7 +478,7 @@ class KYVE {
     };
   }
 
-  private async loadBundle(): Promise<any[]> {
+  private async loadBundle(created_at: string): Promise<any[] | null> {
     const bundle: any[] = [];
     let h: number = +this.pool.bundle_proposal.from_height;
 
@@ -480,6 +493,12 @@ class KYVE {
         h++;
       } catch {
         await sleep(10 * 1000);
+        await this.getPool(false);
+
+        // check if new proposal is available in the meantime
+        if (+this.pool.bundle_proposal.created_at > +created_at) {
+          return null;
+        }
       }
     }
 
@@ -550,27 +569,33 @@ class KYVE {
           `Loading local bundle from ${this.pool.bundle_proposal.from_height} to ${this.pool.bundle_proposal.to_height} ...`
         );
 
-        const localBundle = await this.loadBundle();
+        const localBundle = await this.loadBundle(created_at);
 
-        try {
-          const uploadBundle = JSON.parse(gunzipSync(arweaveBundle).toString());
+        if (localBundle) {
+          try {
+            const uploadBundle = JSON.parse(
+              gunzipSync(arweaveBundle).toString()
+            );
 
-          await this.vote({
-            transaction: this.pool.bundle_proposal.bundle_id,
-            valid: await this.validate(
-              localBundle,
-              +this.pool.bundle_proposal.byte_size,
-              uploadBundle,
-              +arweaveBundle.byteLength
-            ),
-          });
-        } catch {
-          this.logger.warn(`⚠️  Could not gunzip bundle ...`);
-          await this.vote({
-            transaction: this.pool.bundle_proposal.bundle_id,
-            valid: false,
-          });
-        } finally {
+            await this.vote({
+              transaction: this.pool.bundle_proposal.bundle_id,
+              valid: await this.validate(
+                localBundle,
+                +this.pool.bundle_proposal.byte_size,
+                uploadBundle,
+                +arweaveBundle.byteLength
+              ),
+            });
+          } catch {
+            this.logger.warn(`⚠️  Could not gunzip bundle ...`);
+            await this.vote({
+              transaction: this.pool.bundle_proposal.bundle_id,
+              valid: false,
+            });
+          } finally {
+            break;
+          }
+        } else {
           break;
         }
       } else {
