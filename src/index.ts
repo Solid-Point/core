@@ -525,7 +525,7 @@ class KYVE {
         );
 
         // load pool height and cache height
-        let poolHeight = +this.pool.height_archived;
+        let fromHeight = +this.pool.bundle_proposal.to_height;
         let cacheHeight = +this.pool.height_archived;
 
         try {
@@ -534,15 +534,16 @@ class KYVE {
 
         console.log(
           cacheHeight,
-          poolHeight,
+          fromHeight,
           this.pool.min_bundle_size,
-          poolHeight + this.pool.min_bundle_size
+          fromHeight + this.pool.min_bundle_size,
+          cacheHeight < fromHeight + this.pool.min_bundle_size
         );
 
         // vote valid if cache height is not enough to create a full bundle
         this.vote({
           transaction: this.pool.bundle_proposal.bundle_id,
-          valid: cacheHeight < poolHeight + this.pool.min_bundle_size,
+          valid: cacheHeight < fromHeight + this.pool.min_bundle_size,
         });
 
         break;
