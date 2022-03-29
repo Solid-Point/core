@@ -437,8 +437,6 @@ class KYVE {
 
     while (true) {
       try {
-        await this.getPool(false);
-
         const entry = {
           key: +h,
           value: await this.db.get(h),
