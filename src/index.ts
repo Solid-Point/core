@@ -289,6 +289,9 @@ class KYVE {
                   break;
                 }
               } else {
+                this.logger.debug(
+                  `New bundle proposal available. Skipping ...`
+                );
                 break;
               }
             } else {
@@ -596,6 +599,7 @@ class KYVE {
             break;
           }
         } else {
+          this.logger.debug(`New bundle proposal available. Skipping ...`);
           break;
         }
       } else {
