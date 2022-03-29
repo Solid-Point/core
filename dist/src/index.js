@@ -199,6 +199,9 @@ class KYVE {
                 if (+this.pool.bundle_proposal.created_at > +created_at) {
                     continue;
                 }
+                else if (this.pool.paused) {
+                    continue;
+                }
                 if (!this.pool.bundle_proposal.next_uploader) {
                     await this.claimUploaderRole();
                     await this.getPool(false);
@@ -211,6 +214,9 @@ class KYVE {
                     await this.getPool(false);
                     // check if new proposal is available in the meantime
                     if (+this.pool.bundle_proposal.created_at > +created_at) {
+                        break;
+                    }
+                    else if (this.pool.paused) {
                         break;
                     }
                     if (this.pool.bundle_proposal.next_uploader === address) {
@@ -382,6 +388,9 @@ class KYVE {
                     if (+this.pool.bundle_proposal.created_at > +created_at) {
                         return null;
                     }
+                    else if (this.pool.paused) {
+                        return null;
+                    }
                 }
                 else {
                     break;
@@ -413,6 +422,9 @@ class KYVE {
                 if (+this.pool.bundle_proposal.created_at > +created_at) {
                     return null;
                 }
+                else if (this.pool.paused) {
+                    return null;
+                }
             }
         }
         return bundle;
@@ -440,6 +452,9 @@ class KYVE {
             await this.getPool(false);
             // check if new proposal is available in the meantime
             if (+this.pool.bundle_proposal.created_at > +created_at) {
+                break;
+            }
+            else if (this.pool.paused) {
                 break;
             }
             // check if empty bundle
@@ -595,6 +610,7 @@ class KYVE {
             this.logger.debug("Waiting for new proposal ...");
             while (true) {
                 await this.getPool(false);
+                // check if new proposal is available in the meantime
                 if (+this.pool.bundle_proposal.created_at > +created_at) {
                     break;
                 }

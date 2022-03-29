@@ -235,6 +235,8 @@ class KYVE {
         // check if new proposal is available in the meantime
         if (+this.pool.bundle_proposal.created_at > +created_at) {
           continue;
+        } else if (this.pool.paused) {
+          continue;
         }
 
         if (!this.pool.bundle_proposal.next_uploader) {
@@ -253,6 +255,8 @@ class KYVE {
 
           // check if new proposal is available in the meantime
           if (+this.pool.bundle_proposal.created_at > +created_at) {
+            break;
+          } else if (this.pool.paused) {
             break;
           }
 
@@ -465,6 +469,8 @@ class KYVE {
           // check if new proposal is available in the meantime
           if (+this.pool.bundle_proposal.created_at > +created_at) {
             return null;
+          } else if (this.pool.paused) {
+            return null;
           }
         } else {
           break;
@@ -498,6 +504,8 @@ class KYVE {
 
         // check if new proposal is available in the meantime
         if (+this.pool.bundle_proposal.created_at > +created_at) {
+          return null;
+        } else if (this.pool.paused) {
           return null;
         }
       }
@@ -535,6 +543,8 @@ class KYVE {
 
       // check if new proposal is available in the meantime
       if (+this.pool.bundle_proposal.created_at > +created_at) {
+        break;
+      } else if (this.pool.paused) {
         break;
       }
 
@@ -770,6 +780,7 @@ class KYVE {
       while (true) {
         await this.getPool(false);
 
+        // check if new proposal is available in the meantime
         if (+this.pool.bundle_proposal.created_at > +created_at) {
           break;
         } else if (this.pool.paused) {
