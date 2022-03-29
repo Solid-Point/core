@@ -532,14 +532,6 @@ class KYVE {
           cacheHeight = parseInt(await this.db.get("head"));
         } catch {}
 
-        console.log(
-          cacheHeight,
-          fromHeight,
-          this.pool.min_bundle_size,
-          fromHeight + parseInt(this.pool.min_bundle_size),
-          cacheHeight < fromHeight + parseInt(this.pool.min_bundle_size)
-        );
-
         // vote valid if cache height is not enough to create a full bundle
         this.vote({
           transaction: this.pool.bundle_proposal.bundle_id,
