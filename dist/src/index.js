@@ -419,7 +419,6 @@ class KYVE {
     }
     async validateProposal(created_at) {
         this.logger.info(`🔬 Validating bundle ${this.pool.bundle_proposal.bundle_id}`);
-        this.logger.debug(`Downloading bundle from Arweave ...`);
         // try to fetch bundle
         while (true) {
             await this.getPool(false);
@@ -427,6 +426,24 @@ class KYVE {
             if (+this.pool.bundle_proposal.created_at > +created_at) {
                 break;
             }
+            // check if empty bundle
+            if (this.pool.bundle_proposal.bundle_id === "KYVE_EMPTY_BUNDLE") {
+                this.logger.debug(`Found empty bundle. Validating if data is available ...`);
+                // load pool height and cache height
+                let poolHeight = +this.pool.height_archived;
+                let cacheHeight = +this.pool.height_archived;
+                try {
+                    cacheHeight = parseInt(await this.db.get("head"));
+                }
+                catch { }
+                // vote valid if cache height is not enough to create a full bundle
+                this.vote({
+                    transaction: this.pool.bundle_proposal.bundle_id,
+                    valid: cacheHeight < poolHeight + this.pool.min_bundle_size,
+                });
+                break;
+            }
+            this.logger.debug(`Downloading bundle from Arweave ...`);
             const arweaveBundle = await this.downloadBundleFromArweave();
             if (arweaveBundle) {
                 this.logger.debug(`Successfully downloaded bundle from Arweave`);
