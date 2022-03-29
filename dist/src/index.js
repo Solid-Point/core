@@ -227,6 +227,7 @@ class KYVE {
                             this.logger.info("📦 Creating new bundle proposal");
                             // create bundle for upload
                             const uploadBundle = await this.createBundle(created_at);
+                            console.log("bundle created");
                             if (uploadBundle) {
                                 // upload bundle to arweave if not yet done
                                 if (!transaction) {
@@ -381,8 +382,10 @@ class KYVE {
                     await this.getPool(false);
                     // check if new proposal is available in the meantime
                     if (+this.pool.bundle_proposal.created_at > +created_at) {
+                        console.log("return null");
                         return null;
                     }
+                    console.log("loop");
                 }
                 else {
                     break;
