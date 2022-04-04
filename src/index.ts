@@ -141,7 +141,12 @@ class KYVE {
     }
 
     // check if network is valid
-    if (options.network === "alpha" || options.network === "beta") {
+    if (
+      options.network === "alpha" ||
+      options.network === "beta" ||
+      options.network === "local" ||
+      options.network === "korellia"
+    ) {
       this.network = options.network;
     } else {
       this.logger.error(

@@ -128,7 +128,10 @@ class KYVE {
             process.exit(1);
         }
         // check if network is valid
-        if (options.network === "alpha" || options.network === "beta") {
+        if (options.network === "alpha" ||
+            options.network === "beta" ||
+            options.network === "local" ||
+            options.network === "korellia") {
             this.network = options.network;
         }
         else {
