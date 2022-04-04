@@ -6,85 +6,91 @@
   <p align="center">🚀 The base KYVE node implementation.</p>
 </p>
 
-## Integrations
+# Integrations
 
-### Existing integrations
+## Existing integrations
 
-- [Celo](https://github.com/KYVENetwork/celo)
-- [Cosmos](https://github.com/KYVENetwork/cosmos)
 - [EVM](https://github.com/KYVENetwork/evm)
-- [Solana Snapshots](https://github.com/KYVENetwork/solana-snapshots)
 
-### Creating a custom integration
+## Creating a custom integration
 
-#### Installation
+### Installation
 
 ```
 yarn add @kyve/core
 ```
 
-#### Using KYVE in your application
+### Using KYVE in your application
 
-##### Initiating a node
+In order to use KYVE in your own integration you only need to extend the exported base class `KYVE`.
 
-Next you need to set up the pool. You can create a new pool [here](https://app.kyve.network).
+#### Example EVM integration
 
 ```ts
 import KYVE from "@kyve/core";
-import { BigNumber } from "ethers";
+import { providers } from "ethers";
+import { version } from "../package.json";
 
-const pool = "0x...";
-const pk = process.env.PK;
-const stake = BigNumber.from(100).mul(10).pow(18);
-const jwk = ... // Arweave keyfile (optional).
-const name = "my-node"; // optional.
+process.env.KYVE_RUNTIME = "@kyve/evm";
+process.env.KYVE_VERSION = version;
 
-const node = new KYVE(pool, pk, stake, jwk, name);
-```
+KYVE.metrics.register.setDefaultLabels({
+  app: process.env.KYVE_RUNTIME,
+});
 
-##### Node configuration
+class EVM extends KYVE {
+  // pull data item from source
+  public async getDataItem(key: number): Promise<{ key: number; value: any }> {
+    let provider;
+    let block;
 
-KYVE requires two custom functions. One which fetches the data from your data source and one which validates this data. You can then simply add these two functions into the KYVE `run` method.
+    // setup provider for evm chain
+    try {
+      provider = new providers.StaticJsonRpcProvider(this.pool.config.rpc);
+    } catch (err) {
+      this.logger.warn(
+        `⚠️  EXTERNAL ERROR: Failed to connect with rpc: ${this.pool.config.rpc}. Retrying ...`
+      );
+      // forward error to core
+      throw err;
+    }
 
-###### Specifying an upload function
+    // fetch block with transactions at requested height
+    try {
+      block = await provider?.getBlockWithTransactions(key)!;
 
-To pass data into KYVE, simply call `subscriber.next()`:
+      // delete transaction confirmations from block since they are not deterministic
+      block.transactions.forEach(
+        (transaction: Partial<providers.TransactionResponse>) =>
+          delete transaction.confirmations
+      );
+    } catch (err) {
+      this.logger.warn(
+        `⚠️  EXTERNAL ERROR: Failed to fetch data item from source at height ${key}. Retrying ...`
+      );
+      // forward error to core
+      throw err;
+    }
 
-```ts
-const myUploader = (subscriber, config, logger) => {
-  // use your custom logic here
-  const data = ...
-  subscriber.next({ data });
+    return {
+      key,
+      value: block,
+    };
+  }
+
+  // validate the data item uploaded by a node
+  public async validate(
+    localBundle: any[],
+    localBytes: number,
+    uploadBundle: any[],
+    uploadBytes: number
+  ): Promise<boolean> {
+    // default validate consists of a simple hash comparison
+    return super.validate(localBundle, localBytes, uploadBundle, uploadBytes);
+  }
 }
-```
 
-You can also, optionally, add custom tags to your transactions:
-
-```ts
-const myUploader = (subscriber, config, logger) => {
-  // use your custom logic here
-  const data = ...
-  const tags = [...]
-  subscriber.next({ data, tags });
-}
-```
-
-###### Specifying a validation function
-
-```ts
-const myValidator = (listener, subscriber, config, logger) => {
-  // use your custom logic here
-  const valid = ...
-  subscriber.next({ transaction: res.transaction, valid });
-}
-```
-
-###### Running your node
-
-To run your node, simply call the `run` function and pass your functions in:
-
-```ts
-node.run(myUploader, myValidator);
+new EVM().start();
 ```
 
 ### Querying data
@@ -97,7 +103,7 @@ To contribute to this repository please follow these steps:
 
 1.  Clone the repository
     ```
-    https://github.com/KYVENetwork/core.git
+    git clone git@github.com:KYVENetwork/core.git
     ```
 2.  Install dependencies
     ```

@@ -23,7 +23,7 @@ import {
   animals,
   uniqueNamesGenerator,
 } from "unique-names-generator";
-import { KyveSDK, KyveWallet } from "@kyve/sdk-test";
+import { KyveSDK, KyveWallet } from "@kyve/sdk";
 import Transaction from "arweave/node/lib/transaction";
 
 export * from "./utils";

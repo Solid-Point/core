@@ -4,7 +4,7 @@ import { Logger } from "tslog";
 import { CLI } from "./utils";
 import client from "prom-client";
 import { Database } from "./utils/database";
-import { KyveSDK, KyveWallet } from "@kyve/sdk-test";
+import { KyveSDK, KyveWallet } from "@kyve/sdk";
 export * from "./utils";
 export * from "./faces";
 export * from "./utils/helpers";
