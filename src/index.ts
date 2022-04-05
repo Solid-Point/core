@@ -308,7 +308,6 @@ class KYVE {
                 transaction = await this.uploadBundleToArweave(uploadBundle);
 
                 // submit bundle proposal
-                // TODO: why if transaction???
                 if (transaction) {
                   await this.submitBundleProposal(
                     transaction.id,
