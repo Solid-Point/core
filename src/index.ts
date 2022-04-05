@@ -285,15 +285,27 @@ class KYVE {
             reason: "Failed to execute can_propose query",
           };
 
-          try {
-            const { data } = await axios.get(
-              `${this.wallet.getRestEndpoint()}/kyve/registry/${
-                this.chainVersion
-              }/can_propose/${this.poolId}/${address}`
-            );
+          while (true) {
+            try {
+              const { data } = await axios.get(
+                `${this.wallet.getRestEndpoint()}/kyve/registry/${
+                  this.chainVersion
+                }/can_propose/${this.poolId}/${address}`
+              );
 
-            canPropose = data;
-          } catch {}
+              canPropose = data;
+
+              if (
+                !canPropose.possible &&
+                canPropose.reason === "Upload interval not surpassed"
+              ) {
+                await sleep(1000);
+                continue;
+              } else {
+                break;
+              }
+            } catch {}
+          }
 
           if (canPropose.possible) {
             if (canPropose.reason === NO_QUORUM_BUNDLE) {

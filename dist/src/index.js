@@ -229,11 +229,21 @@ class KYVE {
                         possible: false,
                         reason: "Failed to execute can_propose query",
                     };
-                    try {
-                        const { data } = await axios_1.default.get(`${this.wallet.getRestEndpoint()}/kyve/registry/${this.chainVersion}/can_propose/${this.poolId}/${address}`);
-                        canPropose = data;
+                    while (true) {
+                        try {
+                            const { data } = await axios_1.default.get(`${this.wallet.getRestEndpoint()}/kyve/registry/${this.chainVersion}/can_propose/${this.poolId}/${address}`);
+                            canPropose = data;
+                            if (!canPropose.possible &&
+                                canPropose.reason === "Upload interval not surpassed") {
+                                await (0, helpers_1.sleep)(1000);
+                                continue;
+                            }
+                            else {
+                                break;
+                            }
+                        }
+                        catch { }
                     }
-                    catch { }
                     if (canPropose.possible) {
                         if (canPropose.reason === constants_1.NO_QUORUM_BUNDLE) {
                             this.logger.info(`📦 Creating new bundle proposal of type ${constants_1.NO_QUORUM_BUNDLE}`);
