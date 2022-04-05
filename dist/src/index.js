@@ -47,7 +47,9 @@ const zlib_1 = require("zlib");
 const axios_1 = __importDefault(require("axios"));
 const object_sizeof_1 = __importDefault(require("object-sizeof"));
 const unique_names_generator_1 = require("unique-names-generator");
-const sdk_1 = require("@kyve/sdk");
+const sdk_test_1 = require("@kyve/sdk-test");
+const bignumber_js_1 = __importDefault(require("bignumber.js"));
+const constants_1 = require("./utils/constants");
 __exportStar(require("./utils"), exports);
 __exportStar(require("./faces"), exports);
 __exportStar(require("./utils/helpers"), exports);
@@ -86,8 +88,8 @@ class KYVE {
         this.runMetrics = options.metrics;
         this.name = (_a = options === null || options === void 0 ? void 0 : options.name) !== null && _a !== void 0 ? _a : this.generateRandomName(options.mnemonic);
         this.chainVersion = "v1beta1";
-        this.wallet = new sdk_1.KyveWallet(options.network, options.mnemonic);
-        this.sdk = new sdk_1.KyveSDK(this.wallet);
+        this.wallet = new sdk_test_1.KyveWallet(options.network, options.mnemonic);
+        this.sdk = new sdk_test_1.KyveSDK(this.wallet);
         this.db = new database_1.Database(this.name);
         if (!(0, fs_1.existsSync)("./logs")) {
             (0, fs_1.mkdirSync)("./logs");
@@ -161,7 +163,7 @@ class KYVE {
                 const created_at = this.pool.bundle_proposal.created_at;
                 // check if pool is paused
                 if (this.pool.paused) {
-                    this.logger.info("💤  Pool is paused. Idling ...");
+                    this.logger.warn("⚠️  Pool is paused. Idling ...");
                     await (0, helpers_1.sleep)(60 * 1000);
                     continue;
                 }
@@ -205,64 +207,61 @@ class KYVE {
                 else if (this.pool.paused) {
                     continue;
                 }
+                // claim uploader role if genesis bundle
                 if (!this.pool.bundle_proposal.next_uploader) {
                     await this.claimUploaderRole();
-                    await this.getPool(false);
+                    continue;
                 }
+                // submit bundle proposals if node is next uploader
                 if (this.pool.bundle_proposal.next_uploader === address) {
-                    this.logger.debug("Waiting for proposal quorum ...");
-                }
-                let transaction = null;
-                while (true) {
-                    await this.getPool(false);
-                    // check if new proposal is available in the meantime
-                    if (+this.pool.bundle_proposal.created_at > +created_at) {
-                        break;
+                    this.logger.debug("Waiting for upload interval to pass ...");
+                    let transaction = null;
+                    const unixNow = new bignumber_js_1.default(Math.floor(Date.now() / 1000));
+                    const uploadTime = new bignumber_js_1.default(this.pool.bundle_proposal.created_at).plus(this.pool.upload_interval);
+                    if (unixNow.lt(uploadTime)) {
+                        // sleep until upload interval is reached
+                        await (0, helpers_1.sleep)(uploadTime.minus(unixNow).multipliedBy(1000).toNumber());
                     }
-                    else if (this.pool.paused) {
-                        break;
+                    let canPropose = {
+                        possible: false,
+                        reason: "Failed to execute can_propose query",
+                    };
+                    try {
+                        const { data } = await axios_1.default.get(`${this.wallet.getRestEndpoint()}/kyve/registry/${this.chainVersion}/can_propose/${this.poolId}/${address}`);
+                        canPropose = data;
                     }
-                    if (this.pool.bundle_proposal.next_uploader === address) {
-                        let canPropose = {
-                            possible: false,
-                            reason: "Failed to execute canPropose query",
-                        };
-                        try {
-                            const { data } = await axios_1.default.get(`${this.wallet.getRestEndpoint()}/kyve/registry/${this.chainVersion}/can_propose/${this.poolId}/${address}`);
-                            canPropose = data;
+                    catch { }
+                    if (canPropose.possible) {
+                        if (canPropose.reason === constants_1.NO_QUORUM_BUNDLE) {
+                            this.logger.info(`📦 Creating new bundle proposal of type ${constants_1.NO_QUORUM_BUNDLE}`);
+                            await this.submitBundleProposal(constants_1.NO_QUORUM_BUNDLE, 0, 0);
                         }
-                        catch { }
-                        if (canPropose.possible) {
-                            this.logger.info("📦 Creating new bundle proposal");
-                            // create bundle for upload
-                            const uploadBundle = await this.createBundle(created_at);
-                            if (uploadBundle) {
-                                // upload bundle to arweave if not yet done
-                                if (!transaction) {
-                                    transaction = await this.uploadBundleToArweave(uploadBundle);
-                                }
+                        else {
+                            this.logger.info(`📦 Creating new bundle proposal of type ${constants_1.ARWEAVE_BUNDLE}`);
+                            const uploadBundle = await this.createBundle();
+                            if (uploadBundle.bundleSize) {
+                                // upload bundle to Arweave
+                                transaction = await this.uploadBundleToArweave(uploadBundle);
                                 // submit bundle proposal
+                                // TODO: why if transaction???
                                 if (transaction) {
-                                    await this.submitBundleProposal(transaction, uploadBundle);
-                                    break;
+                                    await this.submitBundleProposal(transaction.id, +transaction.data_size, uploadBundle.bundleSize);
                                 }
                             }
                             else {
-                                this.logger.debug(`New bundle proposal available. Skipping ...`);
-                                break;
+                                this.logger.info(`📦 Creating new bundle proposal of type ${constants_1.NO_DATA_BUNDLE}`);
+                                await this.submitBundleProposal(constants_1.NO_DATA_BUNDLE, 0, 0);
                             }
-                        }
-                        else {
-                            this.logger.debug(`Can not propose: ${canPropose.reason}. Retrying in 10s ...`);
-                            await (0, helpers_1.sleep)(10 * 1000);
                         }
                     }
                     else {
-                        await this.nextBundleProposal(created_at);
-                        break;
+                        this.logger.debug(`Can not propose: ${canPropose.reason}. Skipping upload ...`);
                     }
                 }
-                this.logger.debug(`Proposal ended`);
+                else {
+                    // let validators wait for next bundle proposal
+                    await this.nextBundleProposal(created_at);
+                }
             }
         }
         catch (error) {
@@ -357,9 +356,9 @@ class KYVE {
             }
         }
     }
-    async createBundle(created_at) {
+    async createBundle() {
         const bundleDataSizeLimit = 20 * 1000 * 1000; // 20 MB
-        const bundleItemSizeLimit = 10000;
+        const bundleItemSizeLimit = 1000;
         const bundle = [];
         let currentDataSize = 0;
         let h = +this.pool.bundle_proposal.to_height;
@@ -371,38 +370,25 @@ class KYVE {
                     value: await this.db.get(h),
                 };
                 currentDataSize += (0, object_sizeof_1.default)(entry);
-                // break if min_bundle_size is reached and is over data size limit
-                if (bundle.length >= +this.pool.min_bundle_size &&
-                    currentDataSize > bundleDataSizeLimit) {
+                // break if over data size limit
+                if (currentDataSize > bundleDataSizeLimit) {
                     break;
                 }
                 // break if bundle item size limit is reached
-                if (bundle.length >= bundleItemSizeLimit + this.pool.min_bundle_size) {
+                if (bundle.length > bundleItemSizeLimit) {
                     break;
                 }
                 bundle.push(entry);
                 h++;
             }
             catch {
-                if (bundle.length < +this.pool.min_bundle_size) {
-                    await (0, helpers_1.sleep)(10 * 1000);
-                    await this.getPool(false);
-                    // check if new proposal is available in the meantime
-                    if (+this.pool.bundle_proposal.created_at > +created_at) {
-                        return null;
-                    }
-                    else if (this.pool.paused) {
-                        return null;
-                    }
-                }
-                else {
-                    break;
-                }
+                break;
             }
         }
         return {
             fromHeight: +this.pool.bundle_proposal.to_height,
             toHeight: +this.pool.bundle_proposal.to_height + bundle.length,
+            bundleSize: bundle.length,
             bundle: Buffer.from(JSON.stringify(bundle)),
         };
     }
@@ -460,20 +446,14 @@ class KYVE {
             else if (this.pool.paused) {
                 break;
             }
-            // check if empty bundle
-            if (this.pool.bundle_proposal.bundle_id === "KYVE_EMPTY_BUNDLE") {
-                this.logger.debug(`Found empty bundle. Validating if data is available ...`);
-                // load pool height and cache height
-                let fromHeight = +this.pool.bundle_proposal.to_height;
-                let cacheHeight = +this.pool.height_archived;
-                try {
-                    cacheHeight = parseInt(await this.db.get("head"));
-                }
-                catch { }
-                // vote valid if cache height is not enough to create a full bundle
+            // check if NO_DATA_BUNDLE
+            if (this.pool.bundle_proposal.bundle_id === constants_1.NO_DATA_BUNDLE) {
+                this.logger.debug(`Found bundle of type ${constants_1.NO_DATA_BUNDLE}. Validating if data is available ...`);
+                const uploadBundle = await this.createBundle();
+                // vote valid if bundle size is zero
                 this.vote({
-                    transaction: this.pool.bundle_proposal.bundle_id,
-                    valid: cacheHeight < fromHeight + parseInt(this.pool.min_bundle_size),
+                    transaction: constants_1.NO_DATA_BUNDLE,
+                    valid: !uploadBundle.bundleSize,
                 });
                 break;
             }
@@ -572,14 +552,14 @@ class KYVE {
             return null;
         }
     }
-    async submitBundleProposal(transaction, uploadBundle) {
+    async submitBundleProposal(bundleId, byteSize, bundleSize) {
         try {
             this.logger.debug(`Submitting bundle proposal ...`);
-            const { transactionHash, transactionBroadcast } = await this.sdk.submitBundleProposal(this.poolId, transaction.id, +transaction.data_size, uploadBundle.toHeight - uploadBundle.fromHeight);
+            const { transactionHash, transactionBroadcast } = await this.sdk.submitBundleProposal(this.poolId, bundleId, byteSize, bundleSize);
             this.logger.debug(`Transaction = ${transactionHash}`);
             const res = await transactionBroadcast;
             if (res.code === 0) {
-                this.logger.info(`📤 Successfully submitted bundle proposal ${transaction.id}`);
+                this.logger.info(`📤 Successfully submitted bundle proposal ${bundleId}`);
             }
             else {
                 this.logger.warn(`⚠️  Could not submit bundle proposal. Skipping ...`);

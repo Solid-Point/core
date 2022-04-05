@@ -23,8 +23,14 @@ import {
   animals,
   uniqueNamesGenerator,
 } from "unique-names-generator";
-import { KyveSDK, KyveWallet } from "@kyve/sdk";
+import { KyveSDK, KyveWallet } from "@kyve/sdk-test";
 import Transaction from "arweave/node/lib/transaction";
+import BigNumber from "bignumber.js";
+import {
+  ARWEAVE_BUNDLE,
+  NO_DATA_BUNDLE,
+  NO_QUORUM_BUNDLE,
+} from "./utils/constants";
 
 export * from "./utils";
 export * from "./faces";
@@ -183,7 +189,7 @@ class KYVE {
 
         // check if pool is paused
         if (this.pool.paused) {
-          this.logger.info("💤  Pool is paused. Idling ...");
+          this.logger.warn("⚠️  Pool is paused. Idling ...");
           await sleep(60 * 1000);
           continue;
         }
@@ -244,78 +250,89 @@ class KYVE {
           continue;
         }
 
+        // claim uploader role if genesis bundle
         if (!this.pool.bundle_proposal.next_uploader) {
           await this.claimUploaderRole();
-          await this.getPool(false);
+          continue;
         }
 
+        // submit bundle proposals if node is next uploader
         if (this.pool.bundle_proposal.next_uploader === address) {
-          this.logger.debug("Waiting for proposal quorum ...");
-        }
+          this.logger.debug("Waiting for upload interval to pass ...");
 
-        let transaction: Transaction | null = null;
+          let transaction: Transaction | null = null;
 
-        while (true) {
-          await this.getPool(false);
+          const unixNow = new BigNumber(Math.floor(Date.now() / 1000));
+          const uploadTime = new BigNumber(
+            this.pool.bundle_proposal.created_at
+          ).plus(this.pool.upload_interval);
 
-          // check if new proposal is available in the meantime
-          if (+this.pool.bundle_proposal.created_at > +created_at) {
-            break;
-          } else if (this.pool.paused) {
-            break;
+          if (unixNow.lt(uploadTime)) {
+            // sleep until upload interval is reached
+            await sleep(
+              uploadTime.minus(unixNow).multipliedBy(1000).toNumber()
+            );
           }
 
-          if (this.pool.bundle_proposal.next_uploader === address) {
-            let canPropose = {
-              possible: false,
-              reason: "Failed to execute canPropose query",
-            };
+          let canPropose = {
+            possible: false,
+            reason: "Failed to execute can_propose query",
+          };
 
-            try {
-              const { data } = await axios.get(
-                `${this.wallet.getRestEndpoint()}/kyve/registry/${
-                  this.chainVersion
-                }/can_propose/${this.poolId}/${address}`
+          try {
+            const { data } = await axios.get(
+              `${this.wallet.getRestEndpoint()}/kyve/registry/${
+                this.chainVersion
+              }/can_propose/${this.poolId}/${address}`
+            );
+
+            canPropose = data;
+          } catch {}
+
+          if (canPropose.possible) {
+            if (canPropose.reason === NO_QUORUM_BUNDLE) {
+              this.logger.info(
+                `📦 Creating new bundle proposal of type ${NO_QUORUM_BUNDLE}`
               );
 
-              canPropose = data;
-            } catch {}
+              await this.submitBundleProposal(NO_QUORUM_BUNDLE, 0, 0);
+            } else {
+              this.logger.info(
+                `📦 Creating new bundle proposal of type ${ARWEAVE_BUNDLE}`
+              );
 
-            if (canPropose.possible) {
-              this.logger.info("📦 Creating new bundle proposal");
+              const uploadBundle = await this.createBundle();
 
-              // create bundle for upload
-              const uploadBundle = await this.createBundle(created_at);
+              if (uploadBundle.bundleSize) {
+                // upload bundle to Arweave
+                transaction = await this.uploadBundleToArweave(uploadBundle);
 
-              if (uploadBundle) {
-                // upload bundle to arweave if not yet done
-                if (!transaction) {
-                  transaction = await this.uploadBundleToArweave(uploadBundle);
-                }
                 // submit bundle proposal
+                // TODO: why if transaction???
                 if (transaction) {
-                  await this.submitBundleProposal(transaction, uploadBundle);
-                  break;
+                  await this.submitBundleProposal(
+                    transaction.id,
+                    +transaction.data_size,
+                    uploadBundle.bundleSize
+                  );
                 }
               } else {
-                this.logger.debug(
-                  `New bundle proposal available. Skipping ...`
+                this.logger.info(
+                  `📦 Creating new bundle proposal of type ${NO_DATA_BUNDLE}`
                 );
-                break;
+
+                await this.submitBundleProposal(NO_DATA_BUNDLE, 0, 0);
               }
-            } else {
-              this.logger.debug(
-                `Can not propose: ${canPropose.reason}. Retrying in 10s ...`
-              );
-              await sleep(10 * 1000);
             }
           } else {
-            await this.nextBundleProposal(created_at);
-            break;
+            this.logger.debug(
+              `Can not propose: ${canPropose.reason}. Skipping upload ...`
+            );
           }
+        } else {
+          // let validators wait for next bundle proposal
+          await this.nextBundleProposal(created_at);
         }
-
-        this.logger.debug(`Proposal ended`);
       }
     } catch (error) {
       this.logger.error(`❌ INTERNAL ERROR: Runtime error. Exiting ...`);
@@ -430,9 +447,9 @@ class KYVE {
     }
   }
 
-  private async createBundle(created_at: string): Promise<Bundle | null> {
+  private async createBundle(): Promise<Bundle> {
     const bundleDataSizeLimit = 20 * 1000 * 1000; // 20 MB
-    const bundleItemSizeLimit = 10000;
+    const bundleItemSizeLimit = 1000;
     const bundle: any[] = [];
 
     let currentDataSize = 0;
@@ -451,41 +468,27 @@ class KYVE {
 
         currentDataSize += sizeof(entry);
 
-        // break if min_bundle_size is reached and is over data size limit
-        if (
-          bundle.length >= +this.pool.min_bundle_size &&
-          currentDataSize > bundleDataSizeLimit
-        ) {
+        // break if over data size limit
+        if (currentDataSize > bundleDataSizeLimit) {
           break;
         }
 
         // break if bundle item size limit is reached
-        if (bundle.length >= bundleItemSizeLimit + this.pool.min_bundle_size) {
+        if (bundle.length > bundleItemSizeLimit) {
           break;
         }
 
         bundle.push(entry);
         h++;
       } catch {
-        if (bundle.length < +this.pool.min_bundle_size) {
-          await sleep(10 * 1000);
-          await this.getPool(false);
-
-          // check if new proposal is available in the meantime
-          if (+this.pool.bundle_proposal.created_at > +created_at) {
-            return null;
-          } else if (this.pool.paused) {
-            return null;
-          }
-        } else {
-          break;
-        }
+        break;
       }
     }
 
     return {
       fromHeight: +this.pool.bundle_proposal.to_height,
       toHeight: +this.pool.bundle_proposal.to_height + bundle.length,
+      bundleSize: bundle.length,
       bundle: Buffer.from(JSON.stringify(bundle)),
     };
   }
@@ -553,24 +556,18 @@ class KYVE {
         break;
       }
 
-      // check if empty bundle
-      if (this.pool.bundle_proposal.bundle_id === "KYVE_EMPTY_BUNDLE") {
+      // check if NO_DATA_BUNDLE
+      if (this.pool.bundle_proposal.bundle_id === NO_DATA_BUNDLE) {
         this.logger.debug(
-          `Found empty bundle. Validating if data is available ...`
+          `Found bundle of type ${NO_DATA_BUNDLE}. Validating if data is available ...`
         );
 
-        // load pool height and cache height
-        let fromHeight = +this.pool.bundle_proposal.to_height;
-        let cacheHeight = +this.pool.height_archived;
+        const uploadBundle = await this.createBundle();
 
-        try {
-          cacheHeight = parseInt(await this.db.get("head"));
-        } catch {}
-
-        // vote valid if cache height is not enough to create a full bundle
+        // vote valid if bundle size is zero
         this.vote({
-          transaction: this.pool.bundle_proposal.bundle_id,
-          valid: cacheHeight < fromHeight + parseInt(this.pool.min_bundle_size),
+          transaction: NO_DATA_BUNDLE,
+          valid: !uploadBundle.bundleSize,
         });
 
         break;
@@ -721,8 +718,9 @@ class KYVE {
   }
 
   private async submitBundleProposal(
-    transaction: Transaction,
-    uploadBundle: Bundle
+    bundleId: string,
+    byteSize: number,
+    bundleSize: number
   ) {
     try {
       this.logger.debug(`Submitting bundle proposal ...`);
@@ -730,9 +728,9 @@ class KYVE {
       const { transactionHash, transactionBroadcast } =
         await this.sdk.submitBundleProposal(
           this.poolId,
-          transaction.id,
-          +transaction.data_size,
-          uploadBundle.toHeight - uploadBundle.fromHeight
+          bundleId,
+          byteSize,
+          bundleSize
         );
 
       this.logger.debug(`Transaction = ${transactionHash}`);
@@ -741,7 +739,7 @@ class KYVE {
 
       if (res.code === 0) {
         this.logger.info(
-          `📤 Successfully submitted bundle proposal ${transaction.id}`
+          `📤 Successfully submitted bundle proposal ${bundleId}`
         );
       } else {
         this.logger.warn(`⚠️  Could not submit bundle proposal. Skipping ...`);
