@@ -264,20 +264,18 @@ class KYVE {
           const uploadTime = new BigNumber(
             this.pool.bundle_proposal.created_at
           ).plus(this.pool.upload_interval);
-
-          this.logger.debug(
-            `Waiting for remaining upload interval = ${uploadTime
-              .minus(unixNow)
-              .toString()}s ...`
-          );
+          let remainingUploadInterval = new BigNumber(0);
 
           if (unixNow.lt(uploadTime)) {
-            // sleep until upload interval is reached
-
-            await sleep(
-              uploadTime.minus(unixNow).multipliedBy(1000).toNumber()
-            );
+            remainingUploadInterval = uploadTime.minus(unixNow);
           }
+
+          this.logger.debug(
+            `Waiting for remaining upload interval = ${remainingUploadInterval.toString()}s ...`
+          );
+
+          // sleep until upload interval is reached
+          await sleep(remainingUploadInterval.multipliedBy(1000).toNumber());
           this.logger.debug(`Reached upload interval`);
 
           let canPropose = {
@@ -566,10 +564,19 @@ class KYVE {
     while (true) {
       await this.getPool(false);
 
-      // check if new proposal is available in the meantime
+      const unixNow = new BigNumber(Math.floor(Date.now() / 1000));
+      const uploadTime = new BigNumber(
+        this.pool.bundle_proposal.created_at
+      ).plus(this.pool.upload_interval);
+
       if (+this.pool.bundle_proposal.created_at > +created_at) {
+        // check if new proposal is available in the meantime
+        break;
+      } else if (unixNow.gte(uploadTime)) {
+        // check if upload interval was reached in the meantime
         break;
       } else if (this.pool.paused) {
+        // check if pool got paused in the meantime
         break;
       }
 
