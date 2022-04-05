@@ -258,8 +258,6 @@ class KYVE {
 
         // submit bundle proposals if node is next uploader
         if (this.pool.bundle_proposal.next_uploader === address) {
-          this.logger.debug("Waiting for upload interval to pass ...");
-
           let transaction: Transaction | null = null;
 
           const unixNow = new BigNumber(Math.floor(Date.now() / 1000));
@@ -267,12 +265,20 @@ class KYVE {
             this.pool.bundle_proposal.created_at
           ).plus(this.pool.upload_interval);
 
+          this.logger.debug(
+            `Waiting for remaining upload interval = ${uploadTime
+              .minus(unixNow)
+              .toString()}s ...`
+          );
+
           if (unixNow.lt(uploadTime)) {
             // sleep until upload interval is reached
+
             await sleep(
               uploadTime.minus(unixNow).multipliedBy(1000).toNumber()
             );
           }
+          this.logger.debug(`Reached upload interval`);
 
           let canPropose = {
             possible: false,
