@@ -728,6 +728,10 @@ class KYVE {
         let minimumStake = new bignumber_js_1.default(0);
         try {
             desiredStake = new bignumber_js_1.default(this.stake).multipliedBy(10 ** 9);
+            if (desiredStake.toString() === "NaN") {
+                this.logger.error("❌ INTERNAL ERROR: Could not parse desired stake. Exiting ...");
+                process.exit(1);
+            }
             if (desiredStake.isZero()) {
                 this.logger.warn("⚠️  EXTERNAL ERROR: Desired stake can not be zero. Please provide a higher stake. Exiting ...");
                 process.exit(0);
