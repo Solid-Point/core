@@ -727,11 +727,10 @@ class KYVE {
         });
     }
     async setupStake() {
-        var _a, _b, _c, _d;
         const address = await this.wallet.getAddress();
-        let stakers = [];
+        let balance = new bignumber_js_1.default(0);
         let desiredStake = new bignumber_js_1.default(0);
-        let stake = new bignumber_js_1.default(0);
+        let currentStake = new bignumber_js_1.default(0);
         let minimumStake = new bignumber_js_1.default(0);
         try {
             desiredStake = new bignumber_js_1.default(this.stake).multipliedBy(10 ** 9);
@@ -751,38 +750,30 @@ class KYVE {
         }
         while (true) {
             try {
-                // TODO: create a query which returns balance & stake of address and current minimum stake in pool
-                const { data } = await axios_1.default.get(`${this.wallet.getRestEndpoint()}/kyve/registry/${this.chainVersion}/stakers_list/${this.poolId}`);
-                stakers = (data.stakers || []).sort((x, y) => {
-                    if (new bignumber_js_1.default(x.amount).lt(y.amount)) {
-                        return 1;
-                    }
-                    if (new bignumber_js_1.default(x.amount).gt(y.amount)) {
-                        return -1;
-                    }
-                    return 0;
-                });
+                const { data } = await axios_1.default.get(`${this.wallet.getRestEndpoint()}/kyve/registry/${this.chainVersion}/stake_info/${this.poolId}/${address}`);
+                balance = new bignumber_js_1.default(data.balance);
+                currentStake = new bignumber_js_1.default(data.current_stake);
+                minimumStake = new bignumber_js_1.default(data.minimum_stake);
                 break;
             }
             catch (error) {
-                this.logger.warn("⚠️  EXTERNAL ERROR: Failed to fetch stakers of pool. Retrying in 10s ...");
+                this.logger.warn("⚠️  EXTERNAL ERROR: Failed to fetch stake info of address. Retrying in 10s ...");
                 await (0, helpers_1.sleep)(10 * 1000);
             }
         }
-        if (stakers.length) {
-            stake = new bignumber_js_1.default((_b = (_a = stakers.find((s) => s.account === address)) === null || _a === void 0 ? void 0 : _a.amount) !== null && _b !== void 0 ? _b : 0);
-        }
-        // TODO: remove hardcoded MAX_STAKERS
-        if (stakers.length == 50) {
-            minimumStake = new bignumber_js_1.default((_d = (_c = stakers[stakers.length - 1]) === null || _c === void 0 ? void 0 : _c.amount) !== null && _d !== void 0 ? _d : 0);
-        }
+        // check if node operator has more stake than the required minimum stake
         if (desiredStake.lte(minimumStake)) {
             this.logger.warn(`⚠️  EXTERNAL ERROR: Minimum stake is ${(0, helpers_1.toHumanReadable)(minimumStake.toString())} $KYVE - desired stake only ${(0, helpers_1.toHumanReadable)(desiredStake.toString())} $KYVE. Please provide a higher staking amount. Exiting ...`);
             process.exit(0);
         }
-        if (desiredStake.gt(stake)) {
+        if (desiredStake.gt(currentStake)) {
             try {
-                const diff = desiredStake.minus(stake);
+                const diff = desiredStake.minus(currentStake);
+                // check if node operator has enough balance to stake
+                if (balance.lt(diff)) {
+                    this.logger.warn(`⚠️  EXTERNAL ERROR: Not enough $KYVE in wallet. Exiting ...`);
+                    process.exit(0);
+                }
                 this.logger.debug(`Staking ${(0, helpers_1.toHumanReadable)(diff.toString())} $KYVE ...`);
                 const { transactionHash, transactionBroadcast } = await this.sdk.stake(this.poolId, diff);
                 this.logger.debug(`Transaction = ${transactionHash}`);
@@ -798,9 +789,9 @@ class KYVE {
                 this.logger.error(`❌ INTERNAL ERROR: Failed to stake. Skipping ...`);
             }
         }
-        else if (desiredStake.lt(stake)) {
+        else if (desiredStake.lt(currentStake)) {
             try {
-                const diff = stake.minus(desiredStake);
+                const diff = currentStake.minus(desiredStake);
                 this.logger.debug(`Unstaking ${(0, helpers_1.toHumanReadable)(diff.toString())} $KYVE ...`);
                 const { transactionHash, transactionBroadcast } = await this.sdk.unstake(this.poolId, diff);
                 this.logger.debug(`Transaction = ${transactionHash}`);

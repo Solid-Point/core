@@ -980,9 +980,9 @@ class KYVE {
   private async setupStake(): Promise<void> {
     const address = await this.wallet.getAddress();
 
-    let stakers = [];
+    let balance = new BigNumber(0);
     let desiredStake = new BigNumber(0);
-    let stake = new BigNumber(0);
+    let currentStake = new BigNumber(0);
     let minimumStake = new BigNumber(0);
 
     try {
@@ -1011,45 +1011,26 @@ class KYVE {
 
     while (true) {
       try {
-        // TODO: create a query which returns balance & stake of address and current minimum stake in pool
         const { data } = await axios.get(
           `${this.wallet.getRestEndpoint()}/kyve/registry/${
             this.chainVersion
-          }/stakers_list/${this.poolId}`
+          }/stake_info/${this.poolId}/${address}`
         );
 
-        stakers = (data.stakers || []).sort((x: any, y: any) => {
-          if (new BigNumber(x.amount).lt(y.amount)) {
-            return 1;
-          }
-
-          if (new BigNumber(x.amount).gt(y.amount)) {
-            return -1;
-          }
-
-          return 0;
-        });
+        balance = new BigNumber(data.balance);
+        currentStake = new BigNumber(data.current_stake);
+        minimumStake = new BigNumber(data.minimum_stake);
 
         break;
       } catch (error) {
         this.logger.warn(
-          "⚠️  EXTERNAL ERROR: Failed to fetch stakers of pool. Retrying in 10s ..."
+          "⚠️  EXTERNAL ERROR: Failed to fetch stake info of address. Retrying in 10s ..."
         );
         await sleep(10 * 1000);
       }
     }
 
-    if (stakers.length) {
-      stake = new BigNumber(
-        stakers.find((s: any) => s.account === address)?.amount ?? 0
-      );
-    }
-
-    // TODO: remove hardcoded MAX_STAKERS
-    if (stakers.length == 50) {
-      minimumStake = new BigNumber(stakers[stakers.length - 1]?.amount ?? 0);
-    }
-
+    // check if node operator has more stake than the required minimum stake
     if (desiredStake.lte(minimumStake)) {
       this.logger.warn(
         `⚠️  EXTERNAL ERROR: Minimum stake is ${toHumanReadable(
@@ -1061,9 +1042,17 @@ class KYVE {
       process.exit(0);
     }
 
-    if (desiredStake.gt(stake)) {
+    if (desiredStake.gt(currentStake)) {
       try {
-        const diff = desiredStake.minus(stake);
+        const diff = desiredStake.minus(currentStake);
+
+        // check if node operator has enough balance to stake
+        if (balance.lt(diff)) {
+          this.logger.warn(
+            `⚠️  EXTERNAL ERROR: Not enough $KYVE in wallet. Exiting ...`
+          );
+          process.exit(0);
+        }
 
         this.logger.debug(
           `Staking ${toHumanReadable(diff.toString())} $KYVE ...`
@@ -1092,9 +1081,9 @@ class KYVE {
       } catch {
         this.logger.error(`❌ INTERNAL ERROR: Failed to stake. Skipping ...`);
       }
-    } else if (desiredStake.lt(stake)) {
+    } else if (desiredStake.lt(currentStake)) {
       try {
-        const diff = stake.minus(desiredStake);
+        const diff = currentStake.minus(desiredStake);
 
         this.logger.debug(
           `Unstaking ${toHumanReadable(diff.toString())} $KYVE ...`
