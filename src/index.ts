@@ -858,9 +858,9 @@ class KYVE {
         this.name
       }\n\t${formatInfoLogs(
         "Address"
-      )} = ${await this.wallet.getAddress()}\n\t${formatInfoLogs("Pool")} = ${
-        this.pool.address
-      }\n\t${formatInfoLogs("Desired Stake")} = ${
+      )} = ${await this.wallet.getAddress()}\n\t${formatInfoLogs(
+        "Pool Id"
+      )} = ${this.poolId}\n\t${formatInfoLogs("Desired Stake")} = ${
         this.stake
       } $KYVE\n\n\t${formatInfoLogs(
         "@kyve/core"
