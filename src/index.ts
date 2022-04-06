@@ -199,6 +199,15 @@ class KYVE {
           continue;
         }
 
+        // check if enough nodes are online
+        if (this.pool.stakers.length < 2) {
+          this.logger.warn(
+            "⚠️  Not enough nodes online. Waiting for another validator to join. Idling ..."
+          );
+          await sleep(60 * 1000);
+          continue;
+        }
+
         await this.verifyNode(false);
         await this.clearFinalizedData();
 
@@ -862,11 +871,11 @@ class KYVE {
         "Address"
       )} = ${await this.wallet.getAddress()}\n\t${formatInfoLogs(
         "Pool Id"
-      )} = ${this.poolId}\n\t${formatInfoLogs("Desired Stake")} = ${
-        this.stake
-      } $KYVE\n\n\t${formatInfoLogs(
+      )} = ${this.poolId}\n\t${formatInfoLogs(
+        "Desired Stake"
+      )} = ${toHumanReadable(this.stake)} $KYVE\n\n\t${formatInfoLogs(
         "@kyve/core"
-      )} = v${version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}`
+      )} = v${version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}\n`
     );
   }
 
@@ -1113,7 +1122,7 @@ class KYVE {
         this.logger.error(`❌ INTERNAL ERROR: Failed to unstake. Skipping ...`);
       }
     } else {
-      this.logger.info(`"👌 Already staked with the correct amount."`);
+      this.logger.info(`👌 Already staked with the correct amount.`);
     }
   }
 

@@ -169,6 +169,12 @@ class KYVE {
                     await (0, helpers_1.sleep)(60 * 1000);
                     continue;
                 }
+                // check if enough nodes are online
+                if (this.pool.stakers.length < 2) {
+                    this.logger.warn("⚠️  Not enough nodes online. Waiting for another validator to join. Idling ...");
+                    await (0, helpers_1.sleep)(60 * 1000);
+                    continue;
+                }
                 await this.verifyNode(false);
                 await this.clearFinalizedData();
                 if (this.pool.bundle_proposal.next_uploader === address) {
@@ -643,7 +649,7 @@ class KYVE {
             const length = Math.max(13, this.runtime.length);
             return input.padEnd(length, " ");
         };
-        this.logger.info(`🚀 Starting node ...\n\t${formatInfoLogs("Name")} = ${this.name}\n\t${formatInfoLogs("Address")} = ${await this.wallet.getAddress()}\n\t${formatInfoLogs("Pool Id")} = ${this.poolId}\n\t${formatInfoLogs("Desired Stake")} = ${this.stake} $KYVE\n\n\t${formatInfoLogs("@kyve/core")} = v${package_json_1.version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}`);
+        this.logger.info(`🚀 Starting node ...\n\t${formatInfoLogs("Name")} = ${this.name}\n\t${formatInfoLogs("Address")} = ${await this.wallet.getAddress()}\n\t${formatInfoLogs("Pool Id")} = ${this.poolId}\n\t${formatInfoLogs("Desired Stake")} = ${(0, helpers_1.toHumanReadable)(this.stake)} $KYVE\n\n\t${formatInfoLogs("@kyve/core")} = v${package_json_1.version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}\n`);
     }
     setupMetrics() {
         if (this.runMetrics) {
@@ -811,7 +817,7 @@ class KYVE {
             }
         }
         else {
-            this.logger.info(`"👌 Already staked with the correct amount."`);
+            this.logger.info(`👌 Already staked with the correct amount.`);
         }
     }
     async verifyNode(logs = true) {
