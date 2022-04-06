@@ -346,7 +346,7 @@ class KYVE {
                 await this.db.put("head", targetHeight);
             }
             catch (error) {
-                this.logger.error(`❌ INTERNAL ERROR: Failed to write data items from height = ${height} to ${targetHeight} to local DB`);
+                this.logger.warn(`⚠️  EXTERNAL ERROR: Failed to write data items from height = ${height} to ${targetHeight} to local DB`);
                 this.logger.debug(error);
                 await (0, helpers_1.sleep)(10 * 1000);
             }
@@ -404,7 +404,7 @@ class KYVE {
             bundle: Buffer.from(JSON.stringify(bundle)),
         };
     }
-    async loadBundle(created_at) {
+    async loadBundle() {
         const bundle = [];
         let h = +this.pool.bundle_proposal.from_height;
         while (h < +this.pool.bundle_proposal.to_height) {
@@ -417,13 +417,11 @@ class KYVE {
                 h++;
             }
             catch {
-                await (0, helpers_1.sleep)(10 * 1000);
-                await this.getPool(false);
-                // check if new proposal is available in the meantime
-                if (+this.pool.bundle_proposal.created_at > +created_at) {
-                    return null;
-                }
-                else if (this.pool.paused) {
+                await (0, helpers_1.sleep)(1000);
+                const unixNow = new bignumber_js_1.default(Math.floor(Date.now() / 1000));
+                const uploadTime = new bignumber_js_1.default(this.pool.bundle_proposal.created_at).plus(this.pool.upload_interval);
+                // check if upload interval was reached in the meantime
+                if (unixNow.gte(uploadTime)) {
                     return null;
                 }
             }
@@ -481,7 +479,7 @@ class KYVE {
             if (arweaveBundle) {
                 this.logger.debug(`Successfully downloaded bundle from Arweave`);
                 this.logger.debug(`Loading local bundle from ${this.pool.bundle_proposal.from_height} to ${this.pool.bundle_proposal.to_height} ...`);
-                const localBundle = await this.loadBundle(created_at);
+                const localBundle = await this.loadBundle();
                 if (localBundle) {
                     try {
                         const uploadBundle = JSON.parse((0, zlib_1.gunzipSync)(arweaveBundle).toString());
@@ -502,7 +500,7 @@ class KYVE {
                     }
                 }
                 else {
-                    this.logger.debug(`New bundle proposal available. Skipping ...`);
+                    this.logger.debug(`Reached upload interval. Skipping ...`);
                     break;
                 }
             }

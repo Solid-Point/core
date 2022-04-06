@@ -434,8 +434,8 @@ class KYVE {
         await Promise.all(batch);
         await this.db.put("head", targetHeight);
       } catch (error) {
-        this.logger.error(
-          `❌ INTERNAL ERROR: Failed to write data items from height = ${height} to ${targetHeight} to local DB`
+        this.logger.warn(
+          `⚠️  EXTERNAL ERROR: Failed to write data items from height = ${height} to ${targetHeight} to local DB`
         );
         this.logger.debug(error);
         await sleep(10 * 1000);
@@ -508,7 +508,7 @@ class KYVE {
     };
   }
 
-  private async loadBundle(created_at: string): Promise<any[] | null> {
+  private async loadBundle(): Promise<any[] | null> {
     const bundle: any[] = [];
     let h: number = +this.pool.bundle_proposal.from_height;
 
@@ -522,13 +522,15 @@ class KYVE {
         bundle.push(entry);
         h++;
       } catch {
-        await sleep(10 * 1000);
-        await this.getPool(false);
+        await sleep(1000);
 
-        // check if new proposal is available in the meantime
-        if (+this.pool.bundle_proposal.created_at > +created_at) {
-          return null;
-        } else if (this.pool.paused) {
+        const unixNow = new BigNumber(Math.floor(Date.now() / 1000));
+        const uploadTime = new BigNumber(
+          this.pool.bundle_proposal.created_at
+        ).plus(this.pool.upload_interval);
+
+        // check if upload interval was reached in the meantime
+        if (unixNow.gte(uploadTime)) {
           return null;
         }
       }
@@ -606,7 +608,7 @@ class KYVE {
           `Loading local bundle from ${this.pool.bundle_proposal.from_height} to ${this.pool.bundle_proposal.to_height} ...`
         );
 
-        const localBundle = await this.loadBundle(created_at);
+        const localBundle = await this.loadBundle();
 
         if (localBundle) {
           try {
@@ -633,7 +635,7 @@ class KYVE {
             break;
           }
         } else {
-          this.logger.debug(`New bundle proposal available. Skipping ...`);
+          this.logger.debug(`Reached upload interval. Skipping ...`);
           break;
         }
       } else {
