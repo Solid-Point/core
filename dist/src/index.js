@@ -771,24 +771,6 @@ class KYVE {
         }
         if (desiredStake.gt(stake)) {
             try {
-                const diff = desiredStake.minus(stake);
-                this.logger.debug(`Unstaking ${diff} $KYVE ...`);
-                const { transactionHash, transactionBroadcast } = await this.sdk.unstake(this.poolId, diff);
-                this.logger.debug(`Transaction = ${transactionHash}`);
-                const res = await transactionBroadcast;
-                if (res.code === 0) {
-                    this.logger.info(`🔗 Successfully unstaked ${diff} $KYVE`);
-                }
-                else {
-                    this.logger.warn(`⚠️  Could not unstake ${diff} $KYVE. Skipping ...`);
-                }
-            }
-            catch {
-                this.logger.error(`❌ INTERNAL ERROR: Failed to unstake. Skipping ...`);
-            }
-        }
-        else if (desiredStake.lt(stake)) {
-            try {
                 const diff = stake.minus(desiredStake);
                 this.logger.debug(`Staking ${diff} $KYVE ...`);
                 const { transactionHash, transactionBroadcast } = await this.sdk.stake(this.poolId, diff);
@@ -803,6 +785,24 @@ class KYVE {
             }
             catch {
                 this.logger.error(`❌ INTERNAL ERROR: Failed to stake. Skipping ...`);
+            }
+        }
+        else if (desiredStake.lt(stake)) {
+            try {
+                const diff = desiredStake.minus(stake);
+                this.logger.debug(`Unstaking ${diff} $KYVE ...`);
+                const { transactionHash, transactionBroadcast } = await this.sdk.unstake(this.poolId, diff);
+                this.logger.debug(`Transaction = ${transactionHash}`);
+                const res = await transactionBroadcast;
+                if (res.code === 0) {
+                    this.logger.info(`🔗 Successfully unstaked ${diff} $KYVE`);
+                }
+                else {
+                    this.logger.warn(`⚠️  Could not unstake ${diff} $KYVE. Skipping ...`);
+                }
+            }
+            catch {
+                this.logger.error(`❌ INTERNAL ERROR: Failed to unstake. Skipping ...`);
             }
         }
         else {
