@@ -10,8 +10,14 @@ const toBN = (amount) => {
     return new bignumber_js_1.BigNumber(amount);
 };
 exports.toBN = toBN;
-const toHumanReadable = (amount) => {
-    return amount.dividedBy(new bignumber_js_1.BigNumber(10).exponentiatedBy(9)).toFixed(2);
+const toHumanReadable = (amount, stringDecimals = 4) => {
+    const fmt = new bignumber_js_1.BigNumber(amount || "0")
+        .div(10 ** 9)
+        .toFixed(stringDecimals, 1);
+    if (stringDecimals > 1) {
+        return `${fmt.split(".")[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",")}.${fmt.split(".")[1]}`;
+    }
+    return fmt.split(".")[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 };
 exports.toHumanReadable = toHumanReadable;
 const sleep = (ms) => {

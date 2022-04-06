@@ -170,6 +170,8 @@ class KYVE {
 
     await this.getPool();
     await this.setupStake();
+
+    await this.getPool(false);
     await this.verifyNode();
 
     this.cache();
@@ -1000,6 +1002,7 @@ class KYVE {
 
     while (true) {
       try {
+        // TODO: create a query which returns balance & stake of address and current minimum stake in pool
         const { data } = await axios.get(
           `${this.wallet.getRestEndpoint()}/kyve/registry/${
             this.chainVersion
@@ -1031,15 +1034,19 @@ class KYVE {
       stake = new BigNumber(
         stakers.find((s: any) => s.account === address)?.amount ?? 0
       );
+    }
+
+    // TODO: remove hardcoded MAX_STAKERS
+    if (stakers.length == 50) {
       minimumStake = new BigNumber(stakers[stakers.length - 1]?.amount ?? 0);
     }
 
     if (desiredStake.lte(minimumStake)) {
       this.logger.warn(
         `⚠️  EXTERNAL ERROR: Minimum stake is ${toHumanReadable(
-          minimumStake
+          minimumStake.toString()
         )} $KYVE - desired stake only ${toHumanReadable(
-          desiredStake
+          desiredStake.toString()
         )} $KYVE. Please provide a higher staking amount. Exiting ...`
       );
       process.exit(0);
@@ -1049,7 +1056,9 @@ class KYVE {
       try {
         const diff = desiredStake.minus(stake);
 
-        this.logger.debug(`Staking ${diff} $KYVE ...`);
+        this.logger.debug(
+          `Staking ${toHumanReadable(diff.toString())} $KYVE ...`
+        );
 
         const { transactionHash, transactionBroadcast } = await this.sdk.stake(
           this.poolId,
@@ -1061,9 +1070,15 @@ class KYVE {
         const res = await transactionBroadcast;
 
         if (res.code === 0) {
-          this.logger.info(`🔗 Successfully staked ${diff} $KYVE`);
+          this.logger.info(
+            `🔗 Successfully staked ${toHumanReadable(diff.toString())} $KYVE`
+          );
         } else {
-          this.logger.warn(`⚠️  Could not stake ${diff} $KYVE. Skipping ...`);
+          this.logger.warn(
+            `⚠️  Could not stake ${toHumanReadable(
+              diff.toString()
+            )} $KYVE. Skipping ...`
+          );
         }
       } catch {
         this.logger.error(`❌ INTERNAL ERROR: Failed to stake. Skipping ...`);
@@ -1072,7 +1087,9 @@ class KYVE {
       try {
         const diff = stake.minus(desiredStake);
 
-        this.logger.debug(`Unstaking ${diff} $KYVE ...`);
+        this.logger.debug(
+          `Unstaking ${toHumanReadable(diff.toString())} $KYVE ...`
+        );
 
         const { transactionHash, transactionBroadcast } =
           await this.sdk.unstake(this.poolId, diff);
@@ -1082,9 +1099,15 @@ class KYVE {
         const res = await transactionBroadcast;
 
         if (res.code === 0) {
-          this.logger.info(`🔗 Successfully unstaked ${diff} $KYVE`);
+          this.logger.info(
+            `🔗 Successfully unstaked ${toHumanReadable(diff.toString())} $KYVE`
+          );
         } else {
-          this.logger.warn(`⚠️  Could not unstake ${diff} $KYVE. Skipping ...`);
+          this.logger.warn(
+            `⚠️  Could not unstake ${toHumanReadable(
+              diff.toString()
+            )} $KYVE. Skipping ...`
+          );
         }
       } catch {
         this.logger.error(`❌ INTERNAL ERROR: Failed to unstake. Skipping ...`);
@@ -1098,8 +1121,6 @@ class KYVE {
     if (logs) {
       this.logger.debug("Attempting to verify node.");
     }
-
-    await this.getPool(false);
 
     const address = await this.wallet.getAddress();
     const isStaker = (this.pool.stakers || []).includes(address);

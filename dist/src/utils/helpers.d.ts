@@ -1,7 +1,7 @@
 /// <reference types="node" />
 import { BigNumber } from "bignumber.js";
 export declare const toBN: (amount: string) => BigNumber;
-export declare const toHumanReadable: (amount: BigNumber) => string;
+export declare const toHumanReadable: (amount: string, stringDecimals?: number) => string;
 export declare const sleep: (ms: number) => Promise<unknown>;
 export declare const toBytes: (input: string) => Buffer;
 export declare const fromBytes: (input: string) => string;

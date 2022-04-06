@@ -5,8 +5,18 @@ export const toBN = (amount: string) => {
   return new BigNumber(amount);
 };
 
-export const toHumanReadable = (amount: BigNumber) => {
-  return amount.dividedBy(new BigNumber(10).exponentiatedBy(9)).toFixed(2);
+export const toHumanReadable = (amount: string, stringDecimals = 4): string => {
+  const fmt = new BigNumber(amount || "0")
+    .div(10 ** 9)
+    .toFixed(stringDecimals, 1);
+
+  if (stringDecimals > 1) {
+    return `${fmt.split(".")[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",")}.${
+      fmt.split(".")[1]
+    }`;
+  }
+
+  return fmt.split(".")[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 };
 
 export const sleep = (ms: number) => {
