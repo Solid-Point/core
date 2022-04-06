@@ -11,7 +11,7 @@ const toBN = (amount) => {
 };
 exports.toBN = toBN;
 const toHumanReadable = (amount) => {
-    return amount.dividedBy(new bignumber_js_1.BigNumber(10).exponentiatedBy(9)).toFixed(4);
+    return amount.dividedBy(new bignumber_js_1.BigNumber(10).exponentiatedBy(9)).toFixed(2);
 };
 exports.toHumanReadable = toHumanReadable;
 const sleep = (ms) => {

@@ -6,7 +6,7 @@ import { satisfies } from "semver";
 import { ILogObject, Logger } from "tslog";
 import { Bundle } from "./faces";
 import { CLI } from "./utils";
-import { sleep } from "./utils/helpers";
+import { sleep, toHumanReadable } from "./utils/helpers";
 import { version } from "../package.json";
 import hash from "object-hash";
 import http from "http";
@@ -61,6 +61,7 @@ class KYVE {
   protected pool: any;
   protected runtime: string;
   protected version: string;
+  protected stake: string;
   protected chainVersion: string;
   protected wallet: KyveWallet;
   protected sdk: KyveSDK;
@@ -90,6 +91,7 @@ class KYVE {
     this.poolId = options.poolId;
     this.runtime = cli.runtime;
     this.version = cli.packageVersion;
+    this.stake = options.stake;
     this.keyfile = JSON.parse(readFileSync(options.keyfile, "utf-8"));
     this.runMetrics = options.metrics;
     this.name = options?.name ?? this.generateRandomName(options.mnemonic);
@@ -167,6 +169,7 @@ class KYVE {
     this.setupMetrics();
 
     await this.getPool();
+    await this.setupStake();
     await this.verifyNode();
 
     this.cache();
@@ -190,15 +193,6 @@ class KYVE {
         // check if pool is paused
         if (this.pool.paused) {
           this.logger.warn("⚠️  Pool is paused. Idling ...");
-          await sleep(60 * 1000);
-          continue;
-        }
-
-        // check if node is the only one
-        if (this.pool.stakers?.length < 2) {
-          this.logger.warn(
-            "⚠️  Your node is the only one in this pool. Waiting for at least one other node to join ..."
-          );
           await sleep(60 * 1000);
           continue;
         }
@@ -484,12 +478,12 @@ class KYVE {
         currentDataSize += sizeof(entry);
 
         // break if over data size limit
-        if (currentDataSize > bundleDataSizeLimit) {
+        if (currentDataSize >= bundleDataSizeLimit) {
           break;
         }
 
         // break if bundle item size limit is reached
-        if (bundle.length > bundleItemSizeLimit) {
+        if (bundle.length >= bundleItemSizeLimit) {
           break;
         }
 
@@ -859,26 +853,18 @@ class KYVE {
       return input.padEnd(length, " ");
     };
 
-    let height: number;
-
-    try {
-      height = parseInt(await this.db.get("head"));
-    } catch {
-      height = 0;
-    }
-
     this.logger.info(
-      `🚀 Starting node ...\n\n\t${formatInfoLogs("Node name")} = ${
+      `🚀 Starting node ...\n\t${formatInfoLogs("Name")} = ${
         this.name
       }\n\t${formatInfoLogs(
         "Address"
-      )} = ${await this.wallet.getAddress()}\n\t${formatInfoLogs(
-        "Pool Id"
-      )} = ${this.poolId}\n\t${formatInfoLogs(
-        "Cache height"
-      )} = ${height}\n\t${formatInfoLogs(
+      )} = ${await this.wallet.getAddress()}\n\t${formatInfoLogs("Pool")} = ${
+        this.pool.address
+      }\n\t${formatInfoLogs("Desired Stake")} = ${
+        this.stake
+      } $KYVE\n\n\t${formatInfoLogs(
         "@kyve/core"
-      )} = v${version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}\n`
+      )} = v${version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}`
     );
   }
 
@@ -980,41 +966,152 @@ class KYVE {
     });
   }
 
+  private async setupStake(): Promise<void> {
+    const address = await this.wallet.getAddress();
+
+    let stakers = [];
+    let desiredStake = new BigNumber(0);
+    let stake = new BigNumber(0);
+    let minimumStake = new BigNumber(0);
+
+    try {
+      desiredStake = new BigNumber(this.stake).multipliedBy(10 ** 9);
+
+      if (desiredStake.isZero()) {
+        this.logger.warn(
+          "⚠️  EXTERNAL ERROR: Desired stake can not be zero. Please provide a higher stake. Exiting ..."
+        );
+        process.exit(0);
+      }
+    } catch (error) {
+      this.logger.error(
+        "❌ INTERNAL ERROR: Could not parse desired stake. Exiting ..."
+      );
+      this.logger.debug(error);
+      process.exit(1);
+    }
+
+    while (true) {
+      try {
+        const { data } = await axios.get(
+          `${this.wallet.getRestEndpoint()}/kyve/registry/${
+            this.chainVersion
+          }/stakers_list/${this.poolId}`
+        );
+
+        stakers = (data.stakers || []).sort((x: any, y: any) => {
+          if (new BigNumber(x.amount).lt(y.amount)) {
+            return 1;
+          }
+
+          if (new BigNumber(x.amount).gt(y.amount)) {
+            return -1;
+          }
+
+          return 0;
+        });
+
+        break;
+      } catch (error) {
+        this.logger.warn(
+          "⚠️  EXTERNAL ERROR: Failed to fetch stakers of pool. Retrying in 10s ..."
+        );
+        await sleep(10 * 1000);
+      }
+    }
+
+    if (stakers.length) {
+      stake = new BigNumber(
+        stakers.find((s: any) => s.account === address)?.amount ?? 0
+      );
+      minimumStake = new BigNumber(stakers[stakers.length - 1]?.amount ?? 0);
+    }
+
+    if (desiredStake.lte(minimumStake)) {
+      this.logger.warn(
+        `⚠️  EXTERNAL ERROR: Minimum stake is ${toHumanReadable(
+          minimumStake
+        )} $KYVE - desired stake only ${toHumanReadable(
+          desiredStake
+        )} $KYVE. Please provide a higher staking amount. Exiting ...`
+      );
+      process.exit(0);
+    }
+
+    if (desiredStake.gt(stake)) {
+      try {
+        const diff = desiredStake.minus(stake);
+
+        this.logger.debug(`Unstaking ${diff} $KYVE ...`);
+
+        const { transactionHash, transactionBroadcast } =
+          await this.sdk.unstake(this.poolId, diff);
+
+        this.logger.debug(`Transaction = ${transactionHash}`);
+
+        const res = await transactionBroadcast;
+
+        if (res.code === 0) {
+          this.logger.info(`🔗 Successfully unstaked ${diff} $KYVE`);
+        } else {
+          this.logger.warn(`⚠️  Could not unstake ${diff} $KYVE. Skipping ...`);
+        }
+      } catch {
+        this.logger.error(`❌ INTERNAL ERROR: Failed to unstake. Skipping ...`);
+      }
+    } else if (desiredStake.lt(stake)) {
+      try {
+        const diff = stake.minus(desiredStake);
+
+        this.logger.debug(`Staking ${diff} $KYVE ...`);
+
+        const { transactionHash, transactionBroadcast } = await this.sdk.stake(
+          this.poolId,
+          diff
+        );
+
+        this.logger.debug(`Transaction = ${transactionHash}`);
+
+        const res = await transactionBroadcast;
+
+        if (res.code === 0) {
+          this.logger.info(`🔗 Successfully staked ${diff} $KYVE`);
+        } else {
+          this.logger.warn(`⚠️  Could not stake ${diff} $KYVE. Skipping ...`);
+        }
+      } catch {
+        this.logger.error(`❌ INTERNAL ERROR: Failed to stake. Skipping ...`);
+      }
+    } else {
+      this.logger.info(`"👌 Already staked with the correct amount."`);
+    }
+  }
+
   private async verifyNode(logs: boolean = true): Promise<void> {
     if (logs) {
       this.logger.debug("Attempting to verify node.");
     }
 
-    return new Promise(async (resolve) => {
-      while (true) {
-        try {
-          const address = await this.wallet.getAddress();
-          const isStaker = this.pool.stakers.includes(address);
+    while (true) {
+      try {
+        const address = await this.wallet.getAddress();
+        const isStaker = this.pool.stakers.includes(address);
 
-          if (isStaker) {
-            if (logs) {
-              this.logger.info("🔍  Node is running as a validator.");
-            }
-
-            break;
-          } else {
-            this.logger.warn(`⚠️  Node is not an active validator!`);
-            this.logger.warn(
-              `⚠️  Stake $KYVE here to join as a validator: https://app.kyve.network/#/pools/${this.poolId}/validators - Idling ...`
-            );
-            await sleep(60 * 1000);
-            await this.getPool(false);
+        if (isStaker) {
+          if (logs) {
+            this.logger.info("🔍  Node is running as a validator.");
           }
-        } catch (error) {
-          this.logger.error(
-            "❌ INTERNAL ERROR: Failed to fetch validator info"
-          );
-          await sleep(10 * 1000);
-        }
-      }
 
-      resolve();
-    });
+          break;
+        } else {
+          this.logger.warn(`⚠️  Node is not an active validator! Exiting ...`);
+          process.exit(1);
+        }
+      } catch (error) {
+        this.logger.error("❌ INTERNAL ERROR: Failed to fetch validator info");
+        await sleep(10 * 1000);
+      }
+    }
   }
 
   private generateRandomName(mnemonic: string) {

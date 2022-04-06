@@ -6,7 +6,7 @@ export const toBN = (amount: string) => {
 };
 
 export const toHumanReadable = (amount: BigNumber) => {
-  return amount.dividedBy(new BigNumber(10).exponentiatedBy(9)).toFixed(4);
+  return amount.dividedBy(new BigNumber(10).exponentiatedBy(9)).toFixed(2);
 };
 
 export const sleep = (ms: number) => {

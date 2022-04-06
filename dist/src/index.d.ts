@@ -14,6 +14,7 @@ declare class KYVE {
     protected pool: any;
     protected runtime: string;
     protected version: string;
+    protected stake: string;
     protected chainVersion: string;
     protected wallet: KyveWallet;
     protected sdk: KyveSDK;
@@ -51,6 +52,7 @@ declare class KYVE {
     private logNodeInfo;
     private setupMetrics;
     private getPool;
+    private setupStake;
     private verifyNode;
     private generateRandomName;
 }

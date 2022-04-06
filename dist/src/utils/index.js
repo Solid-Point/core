@@ -9,11 +9,8 @@ class CLI extends commander_1.Command {
         this.packageVersion = packageVersion;
         this.option("--name <string>", "The identifier name of the node. [optional, default = auto generated]");
         this.requiredOption("-p, --poolId <number>", "The id of the pool you want to run on.");
-        // this.requiredOption(
-        //   "-c, --commission <number>",
-        //   "The commission rate of your node."
-        // );
         this.requiredOption("-m, --mnemonic <string>", "Your mnemonic of your account.");
+        this.requiredOption("-s, --stake <number>", "Your desired stake the validator should run with [unit = $KYVE].");
         this.requiredOption("-k, --keyfile <string>", "The path to your Arweave keyfile.");
         this.option("-n, --network <string>", "The chain id of the network. [optional, default = korellia]", "korellia");
         this.option("-sp, --space <number>", "The size of disk space in bytes the node is allowed to use. [optional, default = 1000000000 (1 GB)]", "1000000000");

@@ -15,13 +15,13 @@ export class CLI extends Command {
       "-p, --poolId <number>",
       "The id of the pool you want to run on."
     );
-    // this.requiredOption(
-    //   "-c, --commission <number>",
-    //   "The commission rate of your node."
-    // );
     this.requiredOption(
       "-m, --mnemonic <string>",
       "Your mnemonic of your account."
+    );
+    this.requiredOption(
+      "-s, --stake <number>",
+      "Your desired stake the validator should run with [unit = $KYVE]."
     );
     this.requiredOption(
       "-k, --keyfile <string>",
