@@ -1099,25 +1099,18 @@ class KYVE {
       this.logger.debug("Attempting to verify node.");
     }
 
-    while (true) {
-      try {
-        const address = await this.wallet.getAddress();
-        const isStaker = this.pool.stakers.includes(address);
+    await this.getPool(false);
 
-        if (isStaker) {
-          if (logs) {
-            this.logger.info("🔍  Node is running as a validator.");
-          }
+    const address = await this.wallet.getAddress();
+    const isStaker = (this.pool.stakers || []).includes(address);
 
-          break;
-        } else {
-          this.logger.warn(`⚠️  Node is not an active validator! Exiting ...`);
-          process.exit(1);
-        }
-      } catch (error) {
-        this.logger.error("❌ INTERNAL ERROR: Failed to fetch validator info");
-        await sleep(10 * 1000);
+    if (isStaker) {
+      if (logs) {
+        this.logger.info("🔍  Node is running as a validator.");
       }
+    } else {
+      this.logger.warn(`⚠️  Node is not an active validator! Exiting ...`);
+      process.exit(1);
     }
   }
 

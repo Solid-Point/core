@@ -813,25 +813,17 @@ class KYVE {
         if (logs) {
             this.logger.debug("Attempting to verify node.");
         }
-        while (true) {
-            try {
-                const address = await this.wallet.getAddress();
-                const isStaker = this.pool.stakers.includes(address);
-                if (isStaker) {
-                    if (logs) {
-                        this.logger.info("🔍  Node is running as a validator.");
-                    }
-                    break;
-                }
-                else {
-                    this.logger.warn(`⚠️  Node is not an active validator! Exiting ...`);
-                    process.exit(1);
-                }
+        await this.getPool(false);
+        const address = await this.wallet.getAddress();
+        const isStaker = (this.pool.stakers || []).includes(address);
+        if (isStaker) {
+            if (logs) {
+                this.logger.info("🔍  Node is running as a validator.");
             }
-            catch (error) {
-                this.logger.error("❌ INTERNAL ERROR: Failed to fetch validator info");
-                await (0, helpers_1.sleep)(10 * 1000);
-            }
+        }
+        else {
+            this.logger.warn(`⚠️  Node is not an active validator! Exiting ...`);
+            process.exit(1);
         }
     }
     generateRandomName(mnemonic) {
