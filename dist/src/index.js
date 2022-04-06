@@ -771,7 +771,7 @@ class KYVE {
         }
         if (desiredStake.gt(stake)) {
             try {
-                const diff = stake.minus(desiredStake);
+                const diff = desiredStake.minus(stake);
                 this.logger.debug(`Staking ${diff} $KYVE ...`);
                 const { transactionHash, transactionBroadcast } = await this.sdk.stake(this.poolId, diff);
                 this.logger.debug(`Transaction = ${transactionHash}`);
@@ -789,7 +789,7 @@ class KYVE {
         }
         else if (desiredStake.lt(stake)) {
             try {
-                const diff = desiredStake.minus(stake);
+                const diff = stake.minus(desiredStake);
                 this.logger.debug(`Unstaking ${diff} $KYVE ...`);
                 const { transactionHash, transactionBroadcast } = await this.sdk.unstake(this.poolId, diff);
                 this.logger.debug(`Transaction = ${transactionHash}`);
