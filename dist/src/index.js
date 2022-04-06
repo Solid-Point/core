@@ -689,9 +689,9 @@ class KYVE {
                         this.pool.config = JSON.parse(this.pool.config);
                     }
                     catch (error) {
-                        this.logger.error(`❌ INTERNAL ERROR: Failed to parse the pool config: ${(_a = this.pool) === null || _a === void 0 ? void 0 : _a.config}`);
+                        this.logger.warn(`⚠️  EXTERNAL ERROR: Failed to parse the pool config: ${(_a = this.pool) === null || _a === void 0 ? void 0 : _a.config}`);
                         this.logger.debug(error);
-                        process.exit(1);
+                        this.pool.config = {};
                     }
                     if (this.pool.runtime === this.runtime) {
                         if (logs) {
@@ -748,7 +748,7 @@ class KYVE {
                     }
                     else {
                         this.logger.warn(`⚠️  Node is not an active validator!`);
-                        this.logger.warn(`⚠️  Stake $KYVE here to join as a validator: https://app.${this.network}.kyve.network/#/pools/${this.poolId}/validators - Idling ...`);
+                        this.logger.warn(`⚠️  Stake $KYVE here to join as a validator: https://app.kyve.network/#/pools/${this.poolId}/validators - Idling ...`);
                         await (0, helpers_1.sleep)(60 * 1000);
                         await this.getPool(false);
                     }
