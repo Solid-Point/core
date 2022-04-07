@@ -84,7 +84,7 @@ class KYVE {
         this.poolId = options.poolId;
         this.runtime = cli.runtime;
         this.version = cli.packageVersion;
-        this.stake = options.initialStake;
+        this.stake = options.initialStake || "0";
         this.keyfile = JSON.parse((0, fs_1.readFileSync)(options.keyfile, "utf-8"));
         this.runMetrics = options.metrics;
         this.name = (_a = options === null || options === void 0 ? void 0 : options.name) !== null && _a !== void 0 ? _a : this.generateRandomName(options.mnemonic);
@@ -144,13 +144,12 @@ class KYVE {
     }
     async start() {
         // log node info
-        console.log("");
         this.logger.info("Starting node ...");
         console.log("");
         this.logger.info(`Name \t\t = ${this.name}`);
         this.logger.info(`Address \t\t = ${await this.wallet.getAddress()}`);
         this.logger.info(`Pool Id \t\t = ${this.poolId}`);
-        this.logger.info(`Desired stake \t = ${(0, helpers_1.toHumanReadable)(this.stake)} $KYVE`);
+        this.logger.info(`Initial stake \t = ${(0, helpers_1.toHumanReadable)(this.stake)} $KYVE`);
         this.logger.info(`@kyve/core \t = v${package_json_1.version}`);
         this.logger.info(`${this.runtime} \t = v${this.version}`);
         console.log("");
