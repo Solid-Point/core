@@ -472,7 +472,7 @@ class KYVE {
         await this.db.put(key, value);
         break;
       } catch {
-        await sleep(1000);
+        await sleep(10 * 1000);
       }
     }
   }
@@ -603,13 +603,25 @@ class KYVE {
           `Found bundle of type ${NO_DATA_BUNDLE}. Validating if data is available ...`
         );
 
-        const uploadBundle = await this.createBundle();
+        try {
+          const item = await this.getDataItem(
+            +this.pool.bundle_proposal.to_height
+          );
 
-        // vote valid if bundle size is zero
-        this.vote({
-          transaction: NO_DATA_BUNDLE,
-          valid: !uploadBundle.bundleSize,
-        });
+          if (item.key === +this.pool.bundle_proposal.to_height && item.value) {
+            // vote invalid because at least one data item could be fetched
+            this.vote({
+              transaction: NO_DATA_BUNDLE,
+              valid: false,
+            });
+          }
+        } catch {
+          // vote valid because not even one data item could be fetched
+          this.vote({
+            transaction: NO_DATA_BUNDLE,
+            valid: true,
+          });
+        }
 
         break;
       }
