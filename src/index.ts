@@ -922,9 +922,11 @@ class KYVE {
           try {
             this.pool.config = JSON.parse(this.pool.config);
           } catch (error) {
-            this.logger.warn(
-              ` EXTERNAL ERROR: Failed to parse the pool config: ${this.pool?.config}`
-            );
+            if (logs) {
+              this.logger.warn(
+                ` EXTERNAL ERROR: Failed to parse the pool config: ${this.pool?.config}`
+              );
+            }
             this.pool.config = {};
           }
 
