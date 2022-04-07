@@ -133,7 +133,7 @@ class KYVE {
       this.space = +options.space;
     } else {
       this.logger.error(
-        `INTERNAL ERROR: Disk space has to be greater than 0 bytes. Exiting ...`
+        `Disk space has to be greater than 0 bytes. Exiting ...`
       );
       process.exit(1);
     }
@@ -142,9 +142,7 @@ class KYVE {
     if (+options.batchSize > 0) {
       this.batchSize = +options.batchSize;
     } else {
-      this.logger.error(
-        `INTERNAL ERROR: Batch size has to be greater than 0. Exiting ...`
-      );
+      this.logger.error(`Batch size has to be greater than 0. Exiting ...`);
       process.exit(1);
     }
 
@@ -157,9 +155,7 @@ class KYVE {
     ) {
       this.network = options.network;
     } else {
-      this.logger.error(
-        `INTERNAL ERROR: Unknown network "${options.network}". Exiting ...`
-      );
+      this.logger.error(`Unknown network "${options.network}". Exiting ...`);
       process.exit(1);
     }
   }
@@ -372,7 +368,7 @@ class KYVE {
         }
       }
     } catch (error) {
-      this.logger.error(`INTERNAL ERROR: Runtime error. Exiting ...`);
+      this.logger.error(`Runtime error. Exiting ...`);
       this.logger.debug(error);
       process.exit(1);
     }
@@ -455,7 +451,7 @@ class KYVE {
         await this.db.put("head", targetHeight);
       } catch (error) {
         this.logger.warn(
-          ` EXTERNAL ERROR: Failed to write data items from height = ${height} to ${targetHeight} to local DB`
+          ` Failed to write data items from height = ${height} to ${targetHeight} to local DB`
         );
         await sleep(10 * 1000);
       }
@@ -464,7 +460,7 @@ class KYVE {
 
   public async getDataItem(key: number): Promise<{ key: number; value: any }> {
     this.logger.error(
-      `INTERNAL ERROR: mandatory "getDataItem" method not implemented. Exiting ...`
+      `mandatory "getDataItem" method not implemented. Exiting ...`
     );
     process.exit(1);
   }
@@ -671,7 +667,7 @@ class KYVE {
         }
       } else {
         this.logger.warn(
-          ` EXTERNAL ERROR: Failed to fetch bundle from Arweave. Retrying in 30s ...`
+          ` Failed to fetch bundle from Arweave. Retrying in 30s ...`
         );
         await sleep(30 * 1000);
       }
@@ -748,14 +744,12 @@ class KYVE {
         );
 
         if (+transaction.reward > +balance) {
-          this.logger.warn(
-            " EXTERNAL ERROR: Not enough funds in Arweave wallet"
-          );
+          this.logger.error("Not enough funds in Arweave wallet. Exiting ...");
           process.exit(1);
         }
       } catch {
         this.logger.warn(
-          " EXTERNAL ERROR: Failed to load Arweave account balance. Skipping upload ..."
+          " Failed to load Arweave account balance. Skipping upload ..."
         );
         return null;
       }
@@ -767,7 +761,7 @@ class KYVE {
       return transaction;
     } catch {
       this.logger.warn(
-        " EXTERNAL ERROR: Failed to upload bundle to Arweave. Retrying in 30s ..."
+        " Failed to upload bundle to Arweave. Retrying in 30s ..."
       );
       await sleep(30 * 1000);
       return null;
@@ -801,7 +795,7 @@ class KYVE {
       }
     } catch {
       this.logger.error(
-        "INTERNAL ERROR: Failed to submit bundle proposal. Retrying in 30s ..."
+        "Failed to submit bundle proposal. Retrying in 30s ..."
       );
       await sleep(30 * 1000);
     }
@@ -824,9 +818,7 @@ class KYVE {
         this.logger.warn(` Could not claim uploader role. Skipping ...`);
       }
     } catch (error) {
-      this.logger.error(
-        "INTERNAL ERROR: Failed to claim uploader role. Skipping ..."
-      );
+      this.logger.error("Failed to claim uploader role. Skipping ...");
       this.logger.debug(error);
     }
   }
@@ -877,7 +869,7 @@ class KYVE {
         this.logger.warn(` Could not vote on proposal. Skipping ...`);
       }
     } catch (error) {
-      this.logger.error("INTERNAL ERROR: Failed to vote. Skipping ...");
+      this.logger.error("Failed to vote. Skipping ...");
       this.logger.debug(error);
     }
   }
@@ -928,7 +920,7 @@ class KYVE {
           } catch (error) {
             if (logs) {
               this.logger.warn(
-                ` EXTERNAL ERROR: Failed to parse the pool config: ${this.pool?.config}`
+                ` Failed to parse the pool config: ${this.pool?.config}`
               );
             }
             this.pool.config = {};
@@ -940,7 +932,7 @@ class KYVE {
             }
           } else {
             this.logger.error(
-              "INTERNAL ERROR: Specified pool does not match the integration runtime"
+              "Specified pool does not match the integration runtime"
             );
             process.exit(1);
           }
@@ -952,13 +944,13 @@ class KYVE {
               }
             } else {
               this.logger.error(
-                `INTERNAL ERROR: Running an invalid version for the specified pool. Version requirements are ${this.pool.versions}`
+                `Running an invalid version for the specified pool. Version requirements are ${this.pool.versions}`
               );
               process.exit(1);
             }
           } catch (error) {
             this.logger.error(
-              `INTERNAL ERROR: Failed to parse the node version: ${this.pool?.versions}`
+              `Failed to parse the node version: ${this.pool?.versions}`
             );
             this.logger.debug(error);
             process.exit(1);
@@ -966,9 +958,7 @@ class KYVE {
 
           break;
         } catch (error) {
-          this.logger.warn(
-            " EXTERNAL ERROR: Failed to fetch pool state. Retrying in 10s ..."
-          );
+          this.logger.warn(" Failed to fetch pool state. Retrying in 10s ...");
           await sleep(10 * 1000);
         }
       }
@@ -1006,7 +996,7 @@ class KYVE {
         break;
       } catch (error) {
         this.logger.warn(
-          " EXTERNAL ERROR: Failed to fetch stake info of address. Retrying in 10s ..."
+          " Failed to fetch stake info of address. Retrying in 10s ..."
         );
         await sleep(10 * 1000);
       }
@@ -1019,30 +1009,26 @@ class KYVE {
         initialStake = new BigNumber(this.stake).multipliedBy(10 ** 9);
 
         if (initialStake.toString() === "NaN") {
-          this.logger.error(
-            "INTERNAL ERROR: Could not parse initial stake. Exiting ..."
-          );
+          this.logger.error("Could not parse initial stake. Exiting ...");
           process.exit(1);
         }
 
         if (initialStake.isZero()) {
-          this.logger.warn(
-            " EXTERNAL ERROR: Initial stake can not be zero. Please provide a higher stake. Exiting ..."
+          this.logger.error(
+            "Initial stake can not be zero. Please provide a higher stake. Exiting ..."
           );
           process.exit(0);
         }
       } catch (error) {
-        this.logger.error(
-          "INTERNAL ERROR: Could not parse initial stake. Exiting ..."
-        );
+        this.logger.error("Could not parse initial stake. Exiting ...");
         this.logger.debug(error);
         process.exit(1);
       }
 
       // check if node operator has more stake than the required minimum stake
       if (initialStake.lte(minimumStake)) {
-        this.logger.warn(
-          ` EXTERNAL ERROR: Minimum stake is ${toHumanReadable(
+        this.logger.error(
+          ` Minimum stake is ${toHumanReadable(
             minimumStake.toString()
           )} $KYVE - initial stake only ${toHumanReadable(
             initialStake.toString()
@@ -1054,9 +1040,7 @@ class KYVE {
       try {
         // check if node operator has enough balance to stake
         if (balance.lt(initialStake)) {
-          this.logger.warn(
-            ` EXTERNAL ERROR: Not enough $KYVE in wallet. Exiting ...`
-          );
+          this.logger.error(`Not enough $KYVE in wallet. Exiting ...`);
           process.exit(0);
         }
 
@@ -1092,9 +1076,7 @@ class KYVE {
           );
         }
       } catch {
-        this.logger.error(
-          `INTERNAL ERROR: Failed to stake. Skipping initial stake ...`
-        );
+        this.logger.error(`Failed to stake. Skipping initial stake ...`);
       }
     } else {
       this.logger.info(`Node is already staked. Skipping ...`);
@@ -1123,7 +1105,7 @@ class KYVE {
         this.logger.info("Node is running as a validator.");
       }
     } else {
-      this.logger.warn(` Node is not an active validator! Exiting ...`);
+      this.logger.error(`Node is not an active validator! Exiting ...`);
       process.exit(1);
     }
   }
