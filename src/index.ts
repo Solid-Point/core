@@ -91,7 +91,7 @@ class KYVE {
     this.poolId = options.poolId;
     this.runtime = cli.runtime;
     this.version = cli.packageVersion;
-    this.stake = options.stake;
+    this.stake = options.initialStake;
     this.keyfile = JSON.parse(readFileSync(options.keyfile, "utf-8"));
     this.runMetrics = options.metrics;
     this.name = options?.name ?? this.generateRandomName(options.mnemonic);
