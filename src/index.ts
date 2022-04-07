@@ -267,18 +267,12 @@ class KYVE {
           }
         }
 
-        // check if new proposal is available in the meantime
-        if (+this.pool.bundle_proposal.created_at > +created_at) {
-          continue;
-        } else if (this.pool.paused) {
-          continue;
-        }
-
         // claim uploader role if genesis bundle
         if (
           !this.pool.bundle_proposal.next_uploader &&
           this.pool.stakers.length > 1 &&
-          +this.pool.total_funds > 0
+          +this.pool.total_funds > 0 &&
+          !this.pool.paused
         ) {
           await this.claimUploaderRole();
           continue;
