@@ -205,7 +205,7 @@ class KYVE {
 
         // check if pool is paused
         if (this.pool.paused) {
-          this.logger.warn("Pool is paused. Idling ...");
+          this.logger.warn(" Pool is paused. Idling ...");
           await sleep(60 * 1000);
           continue;
         }
@@ -213,7 +213,7 @@ class KYVE {
         // check if enough nodes are online
         if (this.pool.stakers.length < 2) {
           this.logger.warn(
-            "Not enough nodes online. Waiting for another validator to join. Idling ..."
+            " Not enough nodes online. Waiting for another validator to join. Idling ..."
           );
           await sleep(60 * 1000);
           continue;
@@ -384,7 +384,7 @@ class KYVE {
 
       // reset cache if state is inconsistent and continue with pool height
       if (height < tail) {
-        this.logger.warn(`Inconsistent state. Resetting cache ...`);
+        this.logger.warn(` Inconsistent state. Resetting cache ...`);
         await this.db.drop();
       }
 
@@ -449,7 +449,7 @@ class KYVE {
         await this.db.put("head", targetHeight);
       } catch (error) {
         this.logger.warn(
-          `EXTERNAL ERROR: Failed to write data items from height = ${height} to ${targetHeight} to local DB`
+          ` EXTERNAL ERROR: Failed to write data items from height = ${height} to ${targetHeight} to local DB`
         );
         await sleep(10 * 1000);
       }
@@ -639,7 +639,7 @@ class KYVE {
               ),
             });
           } catch {
-            this.logger.warn(`Could not gunzip bundle ...`);
+            this.logger.warn(` Could not gunzip bundle ...`);
             await this.vote({
               transaction: this.pool.bundle_proposal.bundle_id,
               valid: false,
@@ -653,7 +653,7 @@ class KYVE {
         }
       } else {
         this.logger.warn(
-          `EXTERNAL ERROR: Failed to fetch bundle from Arweave. Retrying in 30s ...`
+          ` EXTERNAL ERROR: Failed to fetch bundle from Arweave. Retrying in 30s ...`
         );
         await sleep(30 * 1000);
       }
@@ -731,13 +731,13 @@ class KYVE {
 
         if (+transaction.reward > +balance) {
           this.logger.warn(
-            "EXTERNAL ERROR: Not enough funds in Arweave wallet"
+            " EXTERNAL ERROR: Not enough funds in Arweave wallet"
           );
           process.exit(1);
         }
       } catch {
         this.logger.warn(
-          "EXTERNAL ERROR: Failed to load Arweave account balance. Skipping upload ..."
+          " EXTERNAL ERROR: Failed to load Arweave account balance. Skipping upload ..."
         );
         return null;
       }
@@ -749,7 +749,7 @@ class KYVE {
       return transaction;
     } catch {
       this.logger.warn(
-        "EXTERNAL ERROR: Failed to upload bundle to Arweave. Retrying in 30s ..."
+        " EXTERNAL ERROR: Failed to upload bundle to Arweave. Retrying in 30s ..."
       );
       await sleep(30 * 1000);
       return null;
@@ -779,7 +779,7 @@ class KYVE {
       if (res.code === 0) {
         this.logger.info(`Successfully submitted bundle proposal ${bundleId}`);
       } else {
-        this.logger.warn(`Could not submit bundle proposal. Skipping ...`);
+        this.logger.warn(` Could not submit bundle proposal. Skipping ...`);
       }
     } catch {
       this.logger.error(
@@ -803,7 +803,7 @@ class KYVE {
       if (res.code === 0) {
         this.logger.info(`🔍 Successfully claimed uploader role`);
       } else {
-        this.logger.warn(`Could not claim uploader role. Skipping ...`);
+        this.logger.warn(` Could not claim uploader role. Skipping ...`);
       }
     } catch (error) {
       this.logger.error(
@@ -856,7 +856,7 @@ class KYVE {
           }`
         );
       } else {
-        this.logger.warn(`Could not vote on proposal. Skipping ...`);
+        this.logger.warn(` Could not vote on proposal. Skipping ...`);
       }
     } catch (error) {
       this.logger.error("INTERNAL ERROR: Failed to vote. Skipping ...");
@@ -909,7 +909,7 @@ class KYVE {
             this.pool.config = JSON.parse(this.pool.config);
           } catch (error) {
             this.logger.warn(
-              `EXTERNAL ERROR: Failed to parse the pool config: ${this.pool?.config}`
+              ` EXTERNAL ERROR: Failed to parse the pool config: ${this.pool?.config}`
             );
             this.logger.debug(error);
             this.pool.config = {};
@@ -948,7 +948,7 @@ class KYVE {
           break;
         } catch (error) {
           this.logger.warn(
-            "EXTERNAL ERROR: Failed to fetch pool state. Retrying in 10s ..."
+            " EXTERNAL ERROR: Failed to fetch pool state. Retrying in 10s ..."
           );
           await sleep(10 * 1000);
         }
@@ -987,7 +987,7 @@ class KYVE {
         break;
       } catch (error) {
         this.logger.warn(
-          "EXTERNAL ERROR: Failed to fetch stake info of address. Retrying in 10s ..."
+          " EXTERNAL ERROR: Failed to fetch stake info of address. Retrying in 10s ..."
         );
         await sleep(10 * 1000);
       }
@@ -1008,7 +1008,7 @@ class KYVE {
 
         if (initialStake.isZero()) {
           this.logger.warn(
-            "EXTERNAL ERROR: Initial stake can not be zero. Please provide a higher stake. Exiting ..."
+            " EXTERNAL ERROR: Initial stake can not be zero. Please provide a higher stake. Exiting ..."
           );
           process.exit(0);
         }
@@ -1023,7 +1023,7 @@ class KYVE {
       // check if node operator has more stake than the required minimum stake
       if (initialStake.lte(minimumStake)) {
         this.logger.warn(
-          `EXTERNAL ERROR: Minimum stake is ${toHumanReadable(
+          ` EXTERNAL ERROR: Minimum stake is ${toHumanReadable(
             minimumStake.toString()
           )} $KYVE - initial stake only ${toHumanReadable(
             initialStake.toString()
@@ -1036,7 +1036,7 @@ class KYVE {
         // check if node operator has enough balance to stake
         if (balance.lt(initialStake)) {
           this.logger.warn(
-            `EXTERNAL ERROR: Not enough $KYVE in wallet. Exiting ...`
+            ` EXTERNAL ERROR: Not enough $KYVE in wallet. Exiting ...`
           );
           process.exit(0);
         }
@@ -1067,7 +1067,7 @@ class KYVE {
           );
         } else {
           this.logger.warn(
-            `Could not stake ${toHumanReadable(
+            ` Could not stake ${toHumanReadable(
               initialStake.toString()
             )} $KYVE. Skipping ...`
           );
@@ -1104,7 +1104,7 @@ class KYVE {
         this.logger.info("Node is running as a validator.");
       }
     } else {
-      this.logger.warn(`Node is not an active validator! Exiting ...`);
+      this.logger.warn(` Node is not an active validator! Exiting ...`);
       process.exit(1);
     }
   }
