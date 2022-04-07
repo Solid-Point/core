@@ -146,12 +146,13 @@ class KYVE {
         // log node info
         console.log("");
         this.logger.info("Starting node ...");
-        this.logger.info(`Name \t = ${this.name}`);
-        this.logger.info(`Address \t = ${await this.wallet.getAddress()}`);
-        this.logger.info(`Pool Id \t = ${this.poolId}`);
-        this.logger.info(`Desired stake \t = ${(0, helpers_1.toHumanReadable)(this.stake)} $KYVE`);
-        this.logger.info(`@kyve/core \t = v${package_json_1.version}`);
-        this.logger.info(`${this.runtime} \t = v${this.version}`);
+        console.log("");
+        this.logger.info(`Name \t\t = ${this.name}`);
+        this.logger.info(`Address \t\t = ${await this.wallet.getAddress()}`);
+        this.logger.info(`Pool Id \t\t = ${this.poolId}`);
+        this.logger.info(`Desired stake \t\t = ${(0, helpers_1.toHumanReadable)(this.stake)} $KYVE`);
+        this.logger.info(`@kyve/core \t\t = v${package_json_1.version}`);
+        this.logger.info(`${this.runtime} \t\t = v${this.version}`);
         console.log("");
         this.setupMetrics();
         await this.getPool();
@@ -782,19 +783,19 @@ class KYVE {
                 const res = await transactionBroadcast;
                 if (res.code === 0) {
                     this.logger.info(`Successfully staked ${(0, helpers_1.toHumanReadable)(initialStake.toString())} $KYVE`);
-                    this.logger.info(`Running node with stake: ${(0, helpers_1.toHumanReadable)(initialStake.toString())}`);
+                    this.logger.info(`Running node with a stake of ${(0, helpers_1.toHumanReadable)(initialStake.toString())} $KYVE`);
                 }
                 else {
                     this.logger.warn(`Could not stake ${(0, helpers_1.toHumanReadable)(initialStake.toString())} $KYVE. Skipping ...`);
                 }
             }
             catch {
-                this.logger.error(`INTERNAL ERROR: Failed to stake. Skipping ...`);
+                this.logger.error(`INTERNAL ERROR: Failed to stake. Skipping initial stake ...`);
             }
         }
         else {
-            this.logger.info(`Node is already stake. Skipped staking ...`);
-            this.logger.info(`Running node with stake: ${(0, helpers_1.toHumanReadable)(currentStake.toString())}`);
+            this.logger.info(`Node is already staked. Skipping ...`);
+            this.logger.info(`Running node with a stake of ${(0, helpers_1.toHumanReadable)(currentStake.toString())} $KYVE`);
         }
         console.log("");
         this.logger.info(`Joining KYVE network ...`);

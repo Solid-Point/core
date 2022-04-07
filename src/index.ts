@@ -168,12 +168,15 @@ class KYVE {
     // log node info
     console.log("");
     this.logger.info("Starting node ...");
-    this.logger.info(`Name \t = ${this.name}`);
-    this.logger.info(`Address \t = ${await this.wallet.getAddress()}`);
-    this.logger.info(`Pool Id \t = ${this.poolId}`);
-    this.logger.info(`Desired stake \t = ${toHumanReadable(this.stake)} $KYVE`);
-    this.logger.info(`@kyve/core \t = v${version}`);
-    this.logger.info(`${this.runtime} \t = v${this.version}`);
+    console.log("");
+    this.logger.info(`Name \t\t = ${this.name}`);
+    this.logger.info(`Address \t\t = ${await this.wallet.getAddress()}`);
+    this.logger.info(`Pool Id \t\t = ${this.poolId}`);
+    this.logger.info(
+      `Desired stake \t\t = ${toHumanReadable(this.stake)} $KYVE`
+    );
+    this.logger.info(`@kyve/core \t\t = v${version}`);
+    this.logger.info(`${this.runtime} \t\t = v${this.version}`);
     console.log("");
 
     this.setupMetrics();
@@ -1061,9 +1064,9 @@ class KYVE {
             )} $KYVE`
           );
           this.logger.info(
-            `Running node with stake: ${toHumanReadable(
+            `Running node with a stake of ${toHumanReadable(
               initialStake.toString()
-            )}`
+            )} $KYVE`
           );
         } else {
           this.logger.warn(
@@ -1073,12 +1076,16 @@ class KYVE {
           );
         }
       } catch {
-        this.logger.error(`INTERNAL ERROR: Failed to stake. Skipping ...`);
+        this.logger.error(
+          `INTERNAL ERROR: Failed to stake. Skipping initial stake ...`
+        );
       }
     } else {
-      this.logger.info(`Node is already stake. Skipped staking ...`);
+      this.logger.info(`Node is already staked. Skipping ...`);
       this.logger.info(
-        `Running node with stake: ${toHumanReadable(currentStake.toString())}`
+        `Running node with a stake of ${toHumanReadable(
+          currentStake.toString()
+        )} $KYVE`
       );
     }
 
