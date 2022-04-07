@@ -149,7 +149,6 @@ class KYVE {
         this.logger.info(`Name \t\t = ${this.name}`);
         this.logger.info(`Address \t\t = ${await this.wallet.getAddress()}`);
         this.logger.info(`Pool Id \t\t = ${this.poolId}`);
-        this.logger.info(`Initial stake \t = ${(0, helpers_1.toHumanReadable)(this.stake)} $KYVE`);
         this.logger.info(`@kyve/core \t = v${package_json_1.version}`);
         this.logger.info(`${this.runtime} \t = v${this.version}`);
         console.log("");
@@ -219,7 +218,8 @@ class KYVE {
                     continue;
                 }
                 // claim uploader role if genesis bundle
-                if (!this.pool.bundle_proposal.next_uploader) {
+                if (!this.pool.bundle_proposal.next_uploader &&
+                    this.pool.stakers.length > 1) {
                     await this.claimUploaderRole();
                     continue;
                 }
