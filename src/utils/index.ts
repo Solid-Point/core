@@ -20,12 +20,12 @@ export class CLI extends Command {
       "Your mnemonic of your account."
     );
     this.requiredOption(
-      "-s, --initialStake <number>",
-      "Your initial stake the node should start with. Flag is ignored node is already staked [unit = $KYVE]."
-    );
-    this.requiredOption(
       "-k, --keyfile <string>",
       "The path to your Arweave keyfile."
+    );
+    this.option(
+      "-s, --initialStake <number>",
+      "Your initial stake the node should start with. Flag is ignored node is already staked [unit = $KYVE]."
     );
     this.option(
       "-n, --network <string>",
