@@ -183,6 +183,12 @@ class KYVE {
                     await (0, helpers_1.sleep)(60 * 1000);
                     continue;
                 }
+                // check if pool is funded
+                if (+this.pool.total_funds === 0) {
+                    this.logger.warn(" Pool is out of funds. Waiting for additional funds. Idling ...");
+                    await (0, helpers_1.sleep)(60 * 1000);
+                    continue;
+                }
                 await this.verifyNode(false);
                 await this.clearFinalizedData();
                 if (this.pool.bundle_proposal.next_uploader === address) {
@@ -219,7 +225,8 @@ class KYVE {
                 }
                 // claim uploader role if genesis bundle
                 if (!this.pool.bundle_proposal.next_uploader &&
-                    this.pool.stakers.length > 1) {
+                    this.pool.stakers.length > 1 &&
+                    +this.pool.total_funds > 0) {
                     await this.claimUploaderRole();
                     continue;
                 }
