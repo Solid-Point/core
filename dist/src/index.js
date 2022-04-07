@@ -684,7 +684,6 @@ class KYVE {
                     }
                     catch (error) {
                         this.logger.warn(` EXTERNAL ERROR: Failed to parse the pool config: ${(_a = this.pool) === null || _a === void 0 ? void 0 : _a.config}`);
-                        this.logger.debug(error);
                         this.pool.config = {};
                     }
                     if (this.pool.runtime === this.runtime) {
