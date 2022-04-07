@@ -119,7 +119,7 @@ class KYVE {
             this.space = +options.space;
         }
         else {
-            this.logger.error(`❌ INTERNAL ERROR: Disk space has to be greater than 0 bytes. Exiting ...`);
+            this.logger.error(`INTERNAL ERROR: Disk space has to be greater than 0 bytes. Exiting ...`);
             process.exit(1);
         }
         // check if batch size is greater than 0
@@ -127,7 +127,7 @@ class KYVE {
             this.batchSize = +options.batchSize;
         }
         else {
-            this.logger.error(`❌ INTERNAL ERROR: Batch size has to be greater than 0. Exiting ...`);
+            this.logger.error(`INTERNAL ERROR: Batch size has to be greater than 0. Exiting ...`);
             process.exit(1);
         }
         // check if network is valid
@@ -138,7 +138,7 @@ class KYVE {
             this.network = options.network;
         }
         else {
-            this.logger.error(`❌ INTERNAL ERROR: Unknown network "${options.network}". Exiting ...`);
+            this.logger.error(`INTERNAL ERROR: Unknown network "${options.network}". Exiting ...`);
             process.exit(1);
         }
     }
@@ -150,7 +150,6 @@ class KYVE {
         await this.getPool(false);
         await this.verifyNode();
         this.cache();
-        this.logCacheHeight();
         this.run();
     }
     async run() {
@@ -158,30 +157,31 @@ class KYVE {
             const address = await this.wallet.getAddress();
             while (true) {
                 console.log("");
-                this.logger.info("⚡️ Starting new proposal");
+                this.logger.info("Starting new proposal");
+                await this.logCacheHeight();
                 // get current pool state
                 await this.getPool(false);
                 // save height of bundle proposal
                 const created_at = this.pool.bundle_proposal.created_at;
                 // check if pool is paused
                 if (this.pool.paused) {
-                    this.logger.warn("⚠️  Pool is paused. Idling ...");
+                    this.logger.warn("Pool is paused. Idling ...");
                     await (0, helpers_1.sleep)(60 * 1000);
                     continue;
                 }
                 // check if enough nodes are online
                 if (this.pool.stakers.length < 2) {
-                    this.logger.warn("⚠️  Not enough nodes online. Waiting for another validator to join. Idling ...");
+                    this.logger.warn("Not enough nodes online. Waiting for another validator to join. Idling ...");
                     await (0, helpers_1.sleep)(60 * 1000);
                     continue;
                 }
                 await this.verifyNode(false);
                 await this.clearFinalizedData();
                 if (this.pool.bundle_proposal.next_uploader === address) {
-                    this.logger.info("📚 Selected as UPLOADER");
+                    this.logger.info("Selected as UPLOADER");
                 }
                 else {
-                    this.logger.info("🧐 Selected as VALIDATOR");
+                    this.logger.info("Selected as VALIDATOR");
                 }
                 if (this.pool.bundle_proposal.uploader &&
                     this.pool.bundle_proposal.uploader !== address) {
@@ -248,11 +248,11 @@ class KYVE {
                     }
                     if (canPropose.possible) {
                         if (canPropose.reason === constants_1.NO_QUORUM_BUNDLE) {
-                            this.logger.info(`📦 Creating new bundle proposal of type ${constants_1.NO_QUORUM_BUNDLE}`);
+                            this.logger.info(`Creating new bundle proposal of type ${constants_1.NO_QUORUM_BUNDLE}`);
                             await this.submitBundleProposal(constants_1.NO_QUORUM_BUNDLE, 0, 0);
                         }
                         else {
-                            this.logger.info(`📦 Creating new bundle proposal of type ${constants_1.ARWEAVE_BUNDLE}`);
+                            this.logger.info(`Creating new bundle proposal of type ${constants_1.ARWEAVE_BUNDLE}`);
                             const uploadBundle = await this.createBundle();
                             if (uploadBundle.bundleSize) {
                                 // upload bundle to Arweave
@@ -263,7 +263,7 @@ class KYVE {
                                 }
                             }
                             else {
-                                this.logger.info(`📦 Creating new bundle proposal of type ${constants_1.NO_DATA_BUNDLE}`);
+                                this.logger.info(`Creating new bundle proposal of type ${constants_1.NO_DATA_BUNDLE}`);
                                 await this.submitBundleProposal(constants_1.NO_DATA_BUNDLE, 0, 0);
                             }
                         }
@@ -279,33 +279,31 @@ class KYVE {
             }
         }
         catch (error) {
-            this.logger.error(`❌ INTERNAL ERROR: Runtime error. Exiting ...`);
+            this.logger.error(`INTERNAL ERROR: Runtime error. Exiting ...`);
             this.logger.debug(error);
             process.exit(1);
         }
     }
     async logCacheHeight() {
-        setInterval(async () => {
-            let height = 0;
-            let head = 0;
-            let tail = 0;
-            try {
-                height = parseInt(this.pool.height_archived);
-                head = parseInt(await this.db.get("head"));
-                tail = parseInt(await this.db.get("tail"));
-                // reset cache and continue with pool height
-                if (height < tail) {
-                    this.logger.debug(`Resetting cache ...`);
-                    await this.db.drop();
-                }
-                // continue from current cache height
-                if (height < head) {
-                    height = head;
-                }
+        let height = 0;
+        let head = 0;
+        let tail = 0;
+        try {
+            height = parseInt(this.pool.height_archived);
+            head = parseInt(await this.db.get("head"));
+            tail = parseInt(await this.db.get("tail"));
+            // reset cache if state is inconsistent and continue with pool height
+            if (height < tail) {
+                this.logger.debug(`Resetting cache ...`);
+                await this.db.drop();
             }
-            catch { }
-            this.logger.debug(`Cached to height = ${height}`);
-        }, 60 * 1000);
+            // continue from current cache height
+            if (height < head) {
+                height = head;
+            }
+        }
+        catch { }
+        this.logger.debug(`Cached to height = ${height}`);
     }
     async cache() {
         while (true) {
@@ -348,14 +346,14 @@ class KYVE {
                 await this.db.put("head", targetHeight);
             }
             catch (error) {
-                this.logger.warn(`⚠️  EXTERNAL ERROR: Failed to write data items from height = ${height} to ${targetHeight} to local DB`);
+                this.logger.warn(`EXTERNAL ERROR: Failed to write data items from height = ${height} to ${targetHeight} to local DB`);
                 this.logger.debug(error);
                 await (0, helpers_1.sleep)(10 * 1000);
             }
         }
     }
     async getDataItem(key) {
-        this.logger.error(`❌ INTERNAL ERROR: mandatory "getDataItem" method not implemented. Exiting ...`);
+        this.logger.error(`INTERNAL ERROR: mandatory "getDataItem" method not implemented. Exiting ...`);
         process.exit(1);
     }
     async getDataItemAndSave(height) {
@@ -447,7 +445,7 @@ class KYVE {
         await this.db.put("tail", parseInt(this.pool.height_archived));
     }
     async validateProposal(created_at) {
-        this.logger.info(`🔬 Validating bundle ${this.pool.bundle_proposal.bundle_id}`);
+        this.logger.info(`Validating bundle ${this.pool.bundle_proposal.bundle_id}`);
         // try to fetch bundle
         while (true) {
             await this.getPool(false);
@@ -491,7 +489,7 @@ class KYVE {
                         });
                     }
                     catch {
-                        this.logger.warn(`⚠️  Could not gunzip bundle ...`);
+                        this.logger.warn(`Could not gunzip bundle ...`);
                         await this.vote({
                             transaction: this.pool.bundle_proposal.bundle_id,
                             valid: false,
@@ -507,7 +505,7 @@ class KYVE {
                 }
             }
             else {
-                this.logger.warn(`⚠️  EXTERNAL ERROR: Failed to fetch bundle from Arweave. Retrying in 30s ...`);
+                this.logger.warn(`EXTERNAL ERROR: Failed to fetch bundle from Arweave. Retrying in 30s ...`);
                 await (0, helpers_1.sleep)(30 * 1000);
             }
         }
@@ -553,12 +551,12 @@ class KYVE {
             try {
                 const balance = await this.arweave.wallets.getBalance(await this.arweave.wallets.getAddress(this.keyfile));
                 if (+transaction.reward > +balance) {
-                    this.logger.warn("⚠️  EXTERNAL ERROR: Not enough funds in Arweave wallet");
+                    this.logger.warn("EXTERNAL ERROR: Not enough funds in Arweave wallet");
                     process.exit(1);
                 }
             }
             catch {
-                this.logger.warn("⚠️  EXTERNAL ERROR: Failed to load Arweave account balance. Skipping upload ...");
+                this.logger.warn("EXTERNAL ERROR: Failed to load Arweave account balance. Skipping upload ...");
                 return null;
             }
             await this.arweave.transactions.post(transaction);
@@ -566,7 +564,7 @@ class KYVE {
             return transaction;
         }
         catch {
-            this.logger.warn("⚠️  EXTERNAL ERROR: Failed to upload bundle to Arweave. Retrying in 30s ...");
+            this.logger.warn("EXTERNAL ERROR: Failed to upload bundle to Arweave. Retrying in 30s ...");
             await (0, helpers_1.sleep)(30 * 1000);
             return null;
         }
@@ -578,14 +576,14 @@ class KYVE {
             this.logger.debug(`Transaction = ${transactionHash}`);
             const res = await transactionBroadcast;
             if (res.code === 0) {
-                this.logger.info(`📤 Successfully submitted bundle proposal ${bundleId}`);
+                this.logger.info(`Successfully submitted bundle proposal ${bundleId}`);
             }
             else {
-                this.logger.warn(`⚠️  Could not submit bundle proposal. Skipping ...`);
+                this.logger.warn(`Could not submit bundle proposal. Skipping ...`);
             }
         }
         catch {
-            this.logger.error("❌ INTERNAL ERROR: Failed to submit bundle proposal. Retrying in 30s ...");
+            this.logger.error("INTERNAL ERROR: Failed to submit bundle proposal. Retrying in 30s ...");
             await (0, helpers_1.sleep)(30 * 1000);
         }
     }
@@ -599,11 +597,11 @@ class KYVE {
                 this.logger.info(`🔍 Successfully claimed uploader role`);
             }
             else {
-                this.logger.warn(`⚠️  Could not claim uploader role. Skipping ...`);
+                this.logger.warn(`Could not claim uploader role. Skipping ...`);
             }
         }
         catch (error) {
-            this.logger.error("❌ INTERNAL ERROR: Failed to claim uploader role. Skipping ...");
+            this.logger.error("INTERNAL ERROR: Failed to claim uploader role. Skipping ...");
             this.logger.debug(error);
         }
     }
@@ -633,14 +631,14 @@ class KYVE {
             this.logger.debug(`Transaction = ${transactionHash}`);
             const res = await transactionBroadcast;
             if (res.code === 0) {
-                this.logger.info(`🖋  Voted ${vote.valid ? "valid" : "invalid"} on bundle ${vote.transaction}`);
+                this.logger.info(`Voted ${vote.valid ? "valid" : "invalid"} on bundle ${vote.transaction}`);
             }
             else {
-                this.logger.warn(`⚠️  Could not vote on proposal. Skipping ...`);
+                this.logger.warn(`Could not vote on proposal. Skipping ...`);
             }
         }
         catch (error) {
-            this.logger.error("❌ INTERNAL ERROR: Failed to vote. Skipping ...");
+            this.logger.error("INTERNAL ERROR: Failed to vote. Skipping ...");
             this.logger.debug(error);
         }
     }
@@ -649,11 +647,11 @@ class KYVE {
             const length = Math.max(13, this.runtime.length);
             return input.padEnd(length, " ");
         };
-        this.logger.info(`🚀 Starting node ...\n\t${formatInfoLogs("Name")} = ${this.name}\n\t${formatInfoLogs("Address")} = ${await this.wallet.getAddress()}\n\t${formatInfoLogs("Pool Id")} = ${this.poolId}\n\t${formatInfoLogs("Desired Stake")} = ${(0, helpers_1.toHumanReadable)(this.stake)} $KYVE\n\n\t${formatInfoLogs("@kyve/core")} = v${package_json_1.version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}\n`);
+        this.logger.info(`Starting node ...\n\n\t${formatInfoLogs("Name")} = ${this.name}\n\t${formatInfoLogs("Address")} = ${await this.wallet.getAddress()}\n\t${formatInfoLogs("Pool Id")} = ${this.poolId}\n\t${formatInfoLogs("Desired Stake")} = ${(0, helpers_1.toHumanReadable)(this.stake)} $KYVE\n\n\t${formatInfoLogs("@kyve/core")} = v${package_json_1.version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}\n`);
     }
     setupMetrics() {
         if (this.runMetrics) {
-            this.logger.info("🔬 Starting metric server on: http://localhost:8080/metrics");
+            this.logger.info("Starting metric server on: http://localhost:8080/metrics");
             // HTTP server which exposes the metrics on http://localhost:8080/metrics
             http_1.default
                 .createServer(async (req, res) => {
@@ -684,7 +682,7 @@ class KYVE {
                         this.pool.config = JSON.parse(this.pool.config);
                     }
                     catch (error) {
-                        this.logger.warn(`⚠️  EXTERNAL ERROR: Failed to parse the pool config: ${(_a = this.pool) === null || _a === void 0 ? void 0 : _a.config}`);
+                        this.logger.warn(`EXTERNAL ERROR: Failed to parse the pool config: ${(_a = this.pool) === null || _a === void 0 ? void 0 : _a.config}`);
                         this.logger.debug(error);
                         this.pool.config = {};
                     }
@@ -694,34 +692,34 @@ class KYVE {
                         }
                     }
                     else {
-                        this.logger.error("❌ INTERNAL ERROR: Specified pool does not match the integration runtime");
+                        this.logger.error("INTERNAL ERROR: Specified pool does not match the integration runtime");
                         process.exit(1);
                     }
                     try {
                         if ((0, semver_1.satisfies)(this.version, this.pool.versions || this.version)) {
                             if (logs) {
-                                this.logger.info("⏱  Pool version requirements met");
+                                this.logger.info("Pool version requirements met");
                             }
                         }
                         else {
-                            this.logger.error(`❌ INTERNAL ERROR: Running an invalid version for the specified pool. Version requirements are ${this.pool.versions}`);
+                            this.logger.error(`INTERNAL ERROR: Running an invalid version for the specified pool. Version requirements are ${this.pool.versions}`);
                             process.exit(1);
                         }
                     }
                     catch (error) {
-                        this.logger.error(`❌ INTERNAL ERROR: Failed to parse the node version: ${(_b = this.pool) === null || _b === void 0 ? void 0 : _b.versions}`);
+                        this.logger.error(`INTERNAL ERROR: Failed to parse the node version: ${(_b = this.pool) === null || _b === void 0 ? void 0 : _b.versions}`);
                         this.logger.debug(error);
                         process.exit(1);
                     }
                     break;
                 }
                 catch (error) {
-                    this.logger.warn("⚠️  EXTERNAL ERROR: Failed to fetch pool state. Retrying in 10s ...");
+                    this.logger.warn("EXTERNAL ERROR: Failed to fetch pool state. Retrying in 10s ...");
                     await (0, helpers_1.sleep)(10 * 1000);
                 }
             }
             if (logs) {
-                this.logger.info("✅ Fetched pool state");
+                this.logger.info("Fetched pool state");
             }
             resolve();
         });
@@ -735,16 +733,16 @@ class KYVE {
         try {
             desiredStake = new bignumber_js_1.default(this.stake).multipliedBy(10 ** 9);
             if (desiredStake.toString() === "NaN") {
-                this.logger.error("❌ INTERNAL ERROR: Could not parse desired stake. Exiting ...");
+                this.logger.error("INTERNAL ERROR: Could not parse desired stake. Exiting ...");
                 process.exit(1);
             }
             if (desiredStake.isZero()) {
-                this.logger.warn("⚠️  EXTERNAL ERROR: Desired stake can not be zero. Please provide a higher stake. Exiting ...");
+                this.logger.warn("EXTERNAL ERROR: Desired stake can not be zero. Please provide a higher stake. Exiting ...");
                 process.exit(0);
             }
         }
         catch (error) {
-            this.logger.error("❌ INTERNAL ERROR: Could not parse desired stake. Exiting ...");
+            this.logger.error("INTERNAL ERROR: Could not parse desired stake. Exiting ...");
             this.logger.debug(error);
             process.exit(1);
         }
@@ -757,13 +755,13 @@ class KYVE {
                 break;
             }
             catch (error) {
-                this.logger.warn("⚠️  EXTERNAL ERROR: Failed to fetch stake info of address. Retrying in 10s ...");
+                this.logger.warn("EXTERNAL ERROR: Failed to fetch stake info of address. Retrying in 10s ...");
                 await (0, helpers_1.sleep)(10 * 1000);
             }
         }
         // check if node operator has more stake than the required minimum stake
         if (desiredStake.lte(minimumStake)) {
-            this.logger.warn(`⚠️  EXTERNAL ERROR: Minimum stake is ${(0, helpers_1.toHumanReadable)(minimumStake.toString())} $KYVE - desired stake only ${(0, helpers_1.toHumanReadable)(desiredStake.toString())} $KYVE. Please provide a higher staking amount. Exiting ...`);
+            this.logger.warn(`EXTERNAL ERROR: Minimum stake is ${(0, helpers_1.toHumanReadable)(minimumStake.toString())} $KYVE - desired stake only ${(0, helpers_1.toHumanReadable)(desiredStake.toString())} $KYVE. Please provide a higher staking amount. Exiting ...`);
             process.exit(0);
         }
         if (desiredStake.gt(currentStake)) {
@@ -771,7 +769,7 @@ class KYVE {
                 const diff = desiredStake.minus(currentStake);
                 // check if node operator has enough balance to stake
                 if (balance.lt(diff)) {
-                    this.logger.warn(`⚠️  EXTERNAL ERROR: Not enough $KYVE in wallet. Exiting ...`);
+                    this.logger.warn(`EXTERNAL ERROR: Not enough $KYVE in wallet. Exiting ...`);
                     process.exit(0);
                 }
                 this.logger.debug(`Staking ${(0, helpers_1.toHumanReadable)(diff.toString())} $KYVE ...`);
@@ -779,14 +777,14 @@ class KYVE {
                 this.logger.debug(`Transaction = ${transactionHash}`);
                 const res = await transactionBroadcast;
                 if (res.code === 0) {
-                    this.logger.info(`🔗 Successfully staked ${(0, helpers_1.toHumanReadable)(diff.toString())} $KYVE`);
+                    this.logger.info(`Successfully staked ${(0, helpers_1.toHumanReadable)(diff.toString())} $KYVE`);
                 }
                 else {
-                    this.logger.warn(`⚠️  Could not stake ${(0, helpers_1.toHumanReadable)(diff.toString())} $KYVE. Skipping ...`);
+                    this.logger.warn(`Could not stake ${(0, helpers_1.toHumanReadable)(diff.toString())} $KYVE. Skipping ...`);
                 }
             }
             catch {
-                this.logger.error(`❌ INTERNAL ERROR: Failed to stake. Skipping ...`);
+                this.logger.error(`INTERNAL ERROR: Failed to stake. Skipping ...`);
             }
         }
         else if (desiredStake.lt(currentStake)) {
@@ -797,18 +795,18 @@ class KYVE {
                 this.logger.debug(`Transaction = ${transactionHash}`);
                 const res = await transactionBroadcast;
                 if (res.code === 0) {
-                    this.logger.info(`🔗 Successfully unstaked ${(0, helpers_1.toHumanReadable)(diff.toString())} $KYVE`);
+                    this.logger.info(`Successfully unstaked ${(0, helpers_1.toHumanReadable)(diff.toString())} $KYVE`);
                 }
                 else {
-                    this.logger.warn(`⚠️  Could not unstake ${(0, helpers_1.toHumanReadable)(diff.toString())} $KYVE. Skipping ...`);
+                    this.logger.warn(`Could not unstake ${(0, helpers_1.toHumanReadable)(diff.toString())} $KYVE. Skipping ...`);
                 }
             }
             catch {
-                this.logger.error(`❌ INTERNAL ERROR: Failed to unstake. Skipping ...`);
+                this.logger.error(`INTERNAL ERROR: Failed to unstake. Skipping ...`);
             }
         }
         else {
-            this.logger.info(`👌 Already staked with the correct amount.`);
+            this.logger.info(`Already staked with the correct amount.`);
         }
     }
     async verifyNode(logs = true) {
@@ -819,11 +817,11 @@ class KYVE {
         const isStaker = (this.pool.stakers || []).includes(address);
         if (isStaker) {
             if (logs) {
-                this.logger.info("🔍  Node is running as a validator.");
+                this.logger.info("Node is running as a validator.");
             }
         }
         else {
-            this.logger.warn(`⚠️  Node is not an active validator! Exiting ...`);
+            this.logger.warn(`Node is not an active validator! Exiting ...`);
             process.exit(1);
         }
     }
