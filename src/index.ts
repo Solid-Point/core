@@ -172,11 +172,9 @@ class KYVE {
     this.logger.info(`Name \t\t = ${this.name}`);
     this.logger.info(`Address \t\t = ${await this.wallet.getAddress()}`);
     this.logger.info(`Pool Id \t\t = ${this.poolId}`);
-    this.logger.info(
-      `Desired stake \t\t = ${toHumanReadable(this.stake)} $KYVE`
-    );
-    this.logger.info(`@kyve/core \t\t = v${version}`);
-    this.logger.info(`${this.runtime} \t\t = v${this.version}`);
+    this.logger.info(`Desired stake \t = ${toHumanReadable(this.stake)} $KYVE`);
+    this.logger.info(`@kyve/core \t = v${version}`);
+    this.logger.info(`${this.runtime} \t = v${this.version}`);
     console.log("");
 
     this.setupMetrics();
