@@ -49,7 +49,6 @@ declare class KYVE {
     private claimUploaderRole;
     private nextBundleProposal;
     private vote;
-    private logNodeInfo;
     private setupMetrics;
     private getPool;
     private setupStake;

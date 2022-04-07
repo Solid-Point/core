@@ -20,8 +20,8 @@ export class CLI extends Command {
       "Your mnemonic of your account."
     );
     this.requiredOption(
-      "-s, --stake <number>",
-      "Your desired stake the validator should run with [unit = $KYVE]."
+      "-s, --initial-stake <number>",
+      "Your inital stake the node should start with. Flag is ignored node is already staked [unit = $KYVE]."
     );
     this.requiredOption(
       "-k, --keyfile <string>",

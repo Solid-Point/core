@@ -143,7 +143,16 @@ class KYVE {
         }
     }
     async start() {
-        await this.logNodeInfo();
+        // log node info
+        console.log("");
+        this.logger.info("Starting node ...");
+        this.logger.info(`Name \t = ${this.name}`);
+        this.logger.info(`Address \t = ${await this.wallet.getAddress()}`);
+        this.logger.info(`Pool Id \t = ${this.poolId}`);
+        this.logger.info(`Desired stake \t = ${(0, helpers_1.toHumanReadable)(this.stake)} $KYVE`);
+        this.logger.info(`@kyve/core \t = v${package_json_1.version}`);
+        this.logger.info(`${this.runtime} \t = v${this.version}`);
+        console.log("");
         this.setupMetrics();
         await this.getPool();
         await this.setupStake();
@@ -294,7 +303,7 @@ class KYVE {
             tail = parseInt(await this.db.get("tail"));
             // reset cache if state is inconsistent and continue with pool height
             if (height < tail) {
-                this.logger.debug(`Resetting cache ...`);
+                this.logger.warn(`Inconsistent state. Resetting cache ...`);
                 await this.db.drop();
             }
             // continue from current cache height
@@ -303,7 +312,7 @@ class KYVE {
             }
         }
         catch { }
-        this.logger.debug(`Cached to height = ${height}`);
+        this.logger.info(`Cached to height = ${height}`);
     }
     async cache() {
         while (true) {
@@ -347,7 +356,6 @@ class KYVE {
             }
             catch (error) {
                 this.logger.warn(`EXTERNAL ERROR: Failed to write data items from height = ${height} to ${targetHeight} to local DB`);
-                this.logger.debug(error);
                 await (0, helpers_1.sleep)(10 * 1000);
             }
         }
@@ -642,13 +650,6 @@ class KYVE {
             this.logger.debug(error);
         }
     }
-    async logNodeInfo() {
-        const formatInfoLogs = (input) => {
-            const length = Math.max(13, this.runtime.length);
-            return input.padEnd(length, " ");
-        };
-        this.logger.info(`Starting node ...\n\n\t${formatInfoLogs("Name")} = ${this.name}\n\t${formatInfoLogs("Address")} = ${await this.wallet.getAddress()}\n\t${formatInfoLogs("Pool Id")} = ${this.poolId}\n\t${formatInfoLogs("Desired Stake")} = ${(0, helpers_1.toHumanReadable)(this.stake)} $KYVE\n\n\t${formatInfoLogs("@kyve/core")} = v${package_json_1.version}\n\t${formatInfoLogs(this.runtime)} = v${this.version}\n`);
-    }
     setupMetrics() {
         if (this.runMetrics) {
             this.logger.info("Starting metric server on: http://localhost:8080/metrics");
@@ -688,7 +689,7 @@ class KYVE {
                     }
                     if (this.pool.runtime === this.runtime) {
                         if (logs) {
-                            this.logger.info(`💻 Running node on runtime ${this.runtime}.`);
+                            this.logger.info(`Running node on runtime ${this.runtime}.`);
                         }
                     }
                     else {
@@ -727,30 +728,16 @@ class KYVE {
     async setupStake() {
         const address = await this.wallet.getAddress();
         let balance = new bignumber_js_1.default(0);
-        let desiredStake = new bignumber_js_1.default(0);
+        let initialStake = new bignumber_js_1.default(0);
         let currentStake = new bignumber_js_1.default(0);
+        let currentUnbonding = new bignumber_js_1.default(0);
         let minimumStake = new bignumber_js_1.default(0);
-        try {
-            desiredStake = new bignumber_js_1.default(this.stake).multipliedBy(10 ** 9);
-            if (desiredStake.toString() === "NaN") {
-                this.logger.error("INTERNAL ERROR: Could not parse desired stake. Exiting ...");
-                process.exit(1);
-            }
-            if (desiredStake.isZero()) {
-                this.logger.warn("EXTERNAL ERROR: Desired stake can not be zero. Please provide a higher stake. Exiting ...");
-                process.exit(0);
-            }
-        }
-        catch (error) {
-            this.logger.error("INTERNAL ERROR: Could not parse desired stake. Exiting ...");
-            this.logger.debug(error);
-            process.exit(1);
-        }
         while (true) {
             try {
                 const { data } = await axios_1.default.get(`${this.wallet.getRestEndpoint()}/kyve/registry/${this.chainVersion}/stake_info/${this.poolId}/${address}`);
                 balance = new bignumber_js_1.default(data.balance);
                 currentStake = new bignumber_js_1.default(data.current_stake);
+                currentUnbonding = new bignumber_js_1.default(data.current_unbonding);
                 minimumStake = new bignumber_js_1.default(data.minimum_stake);
                 break;
             }
@@ -759,55 +746,59 @@ class KYVE {
                 await (0, helpers_1.sleep)(10 * 1000);
             }
         }
-        // check if node operator has more stake than the required minimum stake
-        if (desiredStake.lte(minimumStake)) {
-            this.logger.warn(`EXTERNAL ERROR: Minimum stake is ${(0, helpers_1.toHumanReadable)(minimumStake.toString())} $KYVE - desired stake only ${(0, helpers_1.toHumanReadable)(desiredStake.toString())} $KYVE. Please provide a higher staking amount. Exiting ...`);
-            process.exit(0);
-        }
-        if (desiredStake.gt(currentStake)) {
+        // check if node has already staked
+        if (currentStake.isZero() && currentUnbonding.isZero()) {
+            // try to parse the provided inital staking amount
             try {
-                const diff = desiredStake.minus(currentStake);
+                initialStake = new bignumber_js_1.default(this.stake).multipliedBy(10 ** 9);
+                if (initialStake.toString() === "NaN") {
+                    this.logger.error("INTERNAL ERROR: Could not parse initial stake. Exiting ...");
+                    process.exit(1);
+                }
+                if (initialStake.isZero()) {
+                    this.logger.warn("EXTERNAL ERROR: Initial stake can not be zero. Please provide a higher stake. Exiting ...");
+                    process.exit(0);
+                }
+            }
+            catch (error) {
+                this.logger.error("INTERNAL ERROR: Could not parse initial stake. Exiting ...");
+                this.logger.debug(error);
+                process.exit(1);
+            }
+            // check if node operator has more stake than the required minimum stake
+            if (initialStake.lte(minimumStake)) {
+                this.logger.warn(`EXTERNAL ERROR: Minimum stake is ${(0, helpers_1.toHumanReadable)(minimumStake.toString())} $KYVE - initial stake only ${(0, helpers_1.toHumanReadable)(initialStake.toString())} $KYVE. Please provide a higher staking amount. Exiting ...`);
+                process.exit(0);
+            }
+            try {
                 // check if node operator has enough balance to stake
-                if (balance.lt(diff)) {
+                if (balance.lt(initialStake)) {
                     this.logger.warn(`EXTERNAL ERROR: Not enough $KYVE in wallet. Exiting ...`);
                     process.exit(0);
                 }
-                this.logger.debug(`Staking ${(0, helpers_1.toHumanReadable)(diff.toString())} $KYVE ...`);
-                const { transactionHash, transactionBroadcast } = await this.sdk.stake(this.poolId, diff);
+                this.logger.debug(`Staking ${(0, helpers_1.toHumanReadable)(initialStake.toString())} $KYVE ...`);
+                const { transactionHash, transactionBroadcast } = await this.sdk.stake(this.poolId, initialStake);
                 this.logger.debug(`Transaction = ${transactionHash}`);
                 const res = await transactionBroadcast;
                 if (res.code === 0) {
-                    this.logger.info(`Successfully staked ${(0, helpers_1.toHumanReadable)(diff.toString())} $KYVE`);
+                    this.logger.info(`Successfully staked ${(0, helpers_1.toHumanReadable)(initialStake.toString())} $KYVE`);
+                    this.logger.info(`Running node with stake: ${(0, helpers_1.toHumanReadable)(initialStake.toString())}`);
                 }
                 else {
-                    this.logger.warn(`Could not stake ${(0, helpers_1.toHumanReadable)(diff.toString())} $KYVE. Skipping ...`);
+                    this.logger.warn(`Could not stake ${(0, helpers_1.toHumanReadable)(initialStake.toString())} $KYVE. Skipping ...`);
                 }
             }
             catch {
                 this.logger.error(`INTERNAL ERROR: Failed to stake. Skipping ...`);
             }
         }
-        else if (desiredStake.lt(currentStake)) {
-            try {
-                const diff = currentStake.minus(desiredStake);
-                this.logger.debug(`Unstaking ${(0, helpers_1.toHumanReadable)(diff.toString())} $KYVE ...`);
-                const { transactionHash, transactionBroadcast } = await this.sdk.unstake(this.poolId, diff);
-                this.logger.debug(`Transaction = ${transactionHash}`);
-                const res = await transactionBroadcast;
-                if (res.code === 0) {
-                    this.logger.info(`Successfully unstaked ${(0, helpers_1.toHumanReadable)(diff.toString())} $KYVE`);
-                }
-                else {
-                    this.logger.warn(`Could not unstake ${(0, helpers_1.toHumanReadable)(diff.toString())} $KYVE. Skipping ...`);
-                }
-            }
-            catch {
-                this.logger.error(`INTERNAL ERROR: Failed to unstake. Skipping ...`);
-            }
-        }
         else {
-            this.logger.info(`Already staked with the correct amount.`);
+            this.logger.info(`Node is already stake. Skipped staking ...`);
+            this.logger.info(`Running node with stake: ${(0, helpers_1.toHumanReadable)(currentStake.toString())}`);
         }
+        console.log("");
+        this.logger.info(`Joining KYVE network ...`);
+        console.log("");
     }
     async verifyNode(logs = true) {
         if (logs) {
