@@ -167,8 +167,9 @@ class KYVE {
                 console.log("");
                 this.logger.info("Starting new proposal");
                 await this.logCacheHeight();
-                // get current pool state
+                // get current pool state and verify node
                 await this.getPool(false);
+                await this.verifyNode(false);
                 // save height of bundle proposal
                 const created_at = this.pool.bundle_proposal.created_at;
                 // check if pool is paused
@@ -189,7 +190,6 @@ class KYVE {
                     await (0, helpers_1.sleep)(60 * 1000);
                     continue;
                 }
-                await this.verifyNode(false);
                 await this.clearFinalizedData();
                 if (this.pool.bundle_proposal.next_uploader === address) {
                     this.logger.info("Selected as UPLOADER");

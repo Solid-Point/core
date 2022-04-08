@@ -193,8 +193,10 @@ class KYVE {
 
         await this.logCacheHeight();
 
-        // get current pool state
+        // get current pool state and verify node
         await this.getPool(false);
+        await this.verifyNode(false);
+
         // save height of bundle proposal
         const created_at = this.pool.bundle_proposal.created_at;
 
@@ -223,7 +225,6 @@ class KYVE {
           continue;
         }
 
-        await this.verifyNode(false);
         await this.clearFinalizedData();
 
         if (this.pool.bundle_proposal.next_uploader === address) {
