@@ -475,22 +475,34 @@ class KYVE {
             // check if NO_DATA_BUNDLE
             if (this.pool.bundle_proposal.bundle_id === constants_1.NO_DATA_BUNDLE) {
                 this.logger.debug(`Found bundle of type ${constants_1.NO_DATA_BUNDLE}. Validating if data is available ...`);
-                try {
-                    const item = await this.getDataItem(+this.pool.bundle_proposal.to_height);
-                    if (item.key === +this.pool.bundle_proposal.to_height && item.value) {
-                        // vote invalid because at least one data item could be fetched
-                        this.vote({
-                            transaction: constants_1.NO_DATA_BUNDLE,
-                            valid: false,
-                        });
-                    }
-                }
-                catch {
-                    // vote valid because not even one data item could be fetched
+                const bundle = await this.createBundle();
+                if (bundle.bundleSize === 0) {
+                    // vote valid because no bundle could be recreated
                     this.vote({
                         transaction: constants_1.NO_DATA_BUNDLE,
                         valid: true,
                     });
+                }
+                else {
+                    // check if datasource is online
+                    try {
+                        const item = await this.getDataItem(+this.pool.bundle_proposal.to_height);
+                        if (item.key === +this.pool.bundle_proposal.to_height &&
+                            item.value) {
+                            // vote invalid because at least one data item could be fetched
+                            this.vote({
+                                transaction: constants_1.NO_DATA_BUNDLE,
+                                valid: false,
+                            });
+                        }
+                    }
+                    catch {
+                        // vote valid because not even one data item could be fetched
+                        this.vote({
+                            transaction: constants_1.NO_DATA_BUNDLE,
+                            valid: true,
+                        });
+                    }
                 }
                 break;
             }

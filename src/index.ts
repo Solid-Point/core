@@ -604,24 +604,38 @@ class KYVE {
           `Found bundle of type ${NO_DATA_BUNDLE}. Validating if data is available ...`
         );
 
-        try {
-          const item = await this.getDataItem(
-            +this.pool.bundle_proposal.to_height
-          );
+        const bundle = await this.createBundle();
 
-          if (item.key === +this.pool.bundle_proposal.to_height && item.value) {
-            // vote invalid because at least one data item could be fetched
-            this.vote({
-              transaction: NO_DATA_BUNDLE,
-              valid: false,
-            });
-          }
-        } catch {
-          // vote valid because not even one data item could be fetched
+        if (bundle.bundleSize === 0) {
+          // vote valid because no bundle could be recreated
           this.vote({
             transaction: NO_DATA_BUNDLE,
             valid: true,
           });
+        } else {
+          // check if datasource is online
+          try {
+            const item = await this.getDataItem(
+              +this.pool.bundle_proposal.to_height
+            );
+
+            if (
+              item.key === +this.pool.bundle_proposal.to_height &&
+              item.value
+            ) {
+              // vote invalid because at least one data item could be fetched
+              this.vote({
+                transaction: NO_DATA_BUNDLE,
+                valid: false,
+              });
+            }
+          } catch {
+            // vote valid because not even one data item could be fetched
+            this.vote({
+              transaction: NO_DATA_BUNDLE,
+              valid: true,
+            });
+          }
         }
 
         break;
