@@ -575,6 +575,7 @@ class KYVE {
             transaction.addTag("Pool", this.poolId.toString());
             transaction.addTag("@kyve/core", package_json_1.version);
             transaction.addTag(this.runtime, this.version);
+            transaction.addTag("Network", this.network);
             transaction.addTag("Uploader", this.pool.bundle_proposal.next_uploader);
             transaction.addTag("FromHeight", uploadBundle.fromHeight.toString());
             transaction.addTag("ToHeight", uploadBundle.toHeight.toString());
