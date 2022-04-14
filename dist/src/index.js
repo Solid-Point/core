@@ -197,6 +197,40 @@ class KYVE {
                 else {
                     this.logger.info("Selected as VALIDATOR");
                 }
+                // handle resubmit of NO_DATA_BUNDLES
+                if (this.pool.bundle_proposal.bundle_id === constants_1.NO_DATA_BUNDLE &&
+                    this.pool.bundle_proposal.uploader === address) {
+                    let canPropose = {
+                        possible: false,
+                        reason: "Failed to execute can_propose query",
+                    };
+                    try {
+                        const { data } = await axios_1.default.get(`${this.wallet.getRestEndpoint()}/kyve/registry/${this.chainVersion}/can_propose/${this.poolId}/${address}`);
+                        canPropose = data;
+                    }
+                    catch { }
+                    if (canPropose.possible) {
+                        const uploadBundle = await this.createBundle();
+                        if (uploadBundle.bundleSize) {
+                            this.logger.debug(`Trying to resubmit bundle proposal with data.`);
+                            // upload bundle to Arweave
+                            const transaction = await this.uploadBundleToArweave(uploadBundle);
+                            // submit bundle proposal
+                            if (transaction) {
+                                await this.submitBundleProposal(transaction.id, +transaction.data_size, uploadBundle.bundleSize);
+                            }
+                        }
+                        else {
+                            this.logger.debug(`Could not resubmit bundle proposal with data. Retrying in 10s ...`);
+                            await (0, helpers_1.sleep)(10 * 1000);
+                        }
+                    }
+                    else {
+                        this.logger.debug(`Can not propose: ${canPropose.reason}. Retrying in 10s ...`);
+                        await (0, helpers_1.sleep)(10 * 1000);
+                    }
+                    continue;
+                }
                 if (this.pool.bundle_proposal.uploader &&
                     this.pool.bundle_proposal.uploader !== address) {
                     let canVote = {
@@ -236,25 +270,6 @@ class KYVE {
                         try {
                             const { data } = await axios_1.default.get(`${this.wallet.getRestEndpoint()}/kyve/registry/${this.chainVersion}/can_propose/${this.poolId}/${address}`);
                             canPropose = data;
-                            if (canPropose.possible &&
-                                canPropose.reason === "RESUBMIT_ARWEAVE_BUNDLE") {
-                                const uploadBundle = await this.createBundle();
-                                if (uploadBundle.bundleSize) {
-                                    // upload bundle to Arweave
-                                    transaction = await this.uploadBundleToArweave(uploadBundle);
-                                    // submit bundle proposal
-                                    if (transaction) {
-                                        await this.submitBundleProposal(transaction.id, +transaction.data_size, uploadBundle.bundleSize);
-                                        break;
-                                    }
-                                    continue;
-                                }
-                                else {
-                                    this.logger.debug(`Could not resubmit bundle proposal with data. Retrying in 10s ...`);
-                                    await (0, helpers_1.sleep)(10 * 1000);
-                                    continue;
-                                }
-                            }
                             if (!canPropose.possible &&
                                 canPropose.reason === "Upload interval not surpassed") {
                                 await (0, helpers_1.sleep)(1000);
@@ -637,7 +652,7 @@ class KYVE {
             this.logger.debug(`Transaction = ${transactionHash}`);
             const res = await transactionBroadcast;
             if (res.code === 0) {
-                this.logger.info(`🔍 Successfully claimed uploader role`);
+                this.logger.info(`Successfully claimed uploader role`);
             }
             else {
                 this.logger.warn(` Could not claim uploader role. Skipping ...`);
