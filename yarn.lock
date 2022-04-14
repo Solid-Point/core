@@ -30,6 +30,16 @@
     "@cosmjs/math" "0.28.1"
     "@cosmjs/utils" "0.28.1"
 
+"@cosmjs/amino@^0.28.3":
+  version "0.28.3"
+  resolved "https://registry.yarnpkg.com/@cosmjs/amino/-/amino-0.28.3.tgz#103c9804c028d71af2aaf86fd0873df9aa02bd9d"
+  integrity sha512-35qgkj7m4NeC/UJf3RgT153mmfz0m/2xdbBEwhkf2VF3T1acmeSI8AymSGCz0Rp2VmcUZumEVXEAETJ1XZsrmw==
+  dependencies:
+    "@cosmjs/crypto" "0.28.3"
+    "@cosmjs/encoding" "0.28.3"
+    "@cosmjs/math" "0.28.3"
+    "@cosmjs/utils" "0.28.3"
+
 "@cosmjs/crypto@0.27.1", "@cosmjs/crypto@^0.27.1":
   version "0.27.1"
   resolved "https://registry.yarnpkg.com/@cosmjs/crypto/-/crypto-0.27.1.tgz#271c853089a3baf3acd6cf0b2122fd49f8815743"
@@ -54,6 +64,19 @@
     "@cosmjs/encoding" "0.28.1"
     "@cosmjs/math" "0.28.1"
     "@cosmjs/utils" "0.28.1"
+    "@noble/hashes" "^1"
+    bn.js "^5.2.0"
+    elliptic "^6.5.3"
+    libsodium-wrappers "^0.7.6"
+
+"@cosmjs/crypto@0.28.3":
+  version "0.28.3"
+  resolved "https://registry.yarnpkg.com/@cosmjs/crypto/-/crypto-0.28.3.tgz#07f8bb7423bdb9e06cc08efbd47ae07d87c17ee1"
+  integrity sha512-o6YMT40zjQuAnJ+LUOjZYuV3jfz5q25YmGkuwvQJa+c+ETMU+bOCnSgaAMC+hA9HAlVi2xZGywr8nHXCtx8lnA==
+  dependencies:
+    "@cosmjs/encoding" "0.28.3"
+    "@cosmjs/math" "0.28.3"
+    "@cosmjs/utils" "0.28.3"
     "@noble/hashes" "^1"
     bn.js "^5.2.0"
     elliptic "^6.5.3"
@@ -90,6 +113,15 @@
   version "0.28.1"
   resolved "https://registry.yarnpkg.com/@cosmjs/encoding/-/encoding-0.28.1.tgz#e7214a29d73847c23e5ae28adeec081c3b1e0f92"
   integrity sha512-FqKc+P5rBKq8hW2WHF6L8dmSJhy9mVBDhnJNCLUwyiKBywY9m4BZNTa0mPVQSXISx/c5DPbpJ5SChGL72qNgBw==
+  dependencies:
+    base64-js "^1.3.0"
+    bech32 "^1.1.4"
+    readonly-date "^1.0.0"
+
+"@cosmjs/encoding@0.28.3":
+  version "0.28.3"
+  resolved "https://registry.yarnpkg.com/@cosmjs/encoding/-/encoding-0.28.3.tgz#b61494336968fd36d46a81524420f729a50810c3"
+  integrity sha512-KXHIqWxloyGMcfHheT6c7qJVg7JOpcHlsZEK3KXktqQU4lQpVbmZc3Bi6o1r8AymVh8UnaxBuKcbbMRHlXhCJw==
   dependencies:
     base64-js "^1.3.0"
     bech32 "^1.1.4"
@@ -152,6 +184,13 @@
   version "0.28.1"
   resolved "https://registry.yarnpkg.com/@cosmjs/math/-/math-0.28.1.tgz#3f2bbf14674f7a0f70a09413ba0bba140e77f1cc"
   integrity sha512-rF5q4BSwNBo0kNBi8asaoHsRx/TchJ/P4IlRjXY8UGCfKCkSRQEID3ffgE8naXf+BDn5x4cSC8da3xy/aCZpAA==
+  dependencies:
+    bn.js "^5.2.0"
+
+"@cosmjs/math@0.28.3":
+  version "0.28.3"
+  resolved "https://registry.yarnpkg.com/@cosmjs/math/-/math-0.28.3.tgz#6f44b146afb419773adacde010d081995b6f0606"
+  integrity sha512-Y5vWF0Le2GVeIgWJGWXbqOcAMZ6WqcHehZ8toVPwmLhwdX+61VNwNox+2a18RuSvwwI0P9EEheZNwchHEMV7Ww==
   dependencies:
     bn.js "^5.2.0"
 
@@ -315,6 +354,11 @@
   resolved "https://registry.yarnpkg.com/@cosmjs/utils/-/utils-0.28.1.tgz#3c5043c6b4f92a2eba1aba63bed737b542b21662"
   integrity sha512-PhdsifctdpMUXeWQjbQiHeOCOhWtK/OXdEG3E2PvvYxlmWHNu1faio+u2gZU6PPjL+qgqlAu92sybwsw/TRa+w==
 
+"@cosmjs/utils@0.28.3":
+  version "0.28.3"
+  resolved "https://registry.yarnpkg.com/@cosmjs/utils/-/utils-0.28.3.tgz#a11f72369d69d9f2dd24e251593ab19b9a36753d"
+  integrity sha512-fc4yt0E0QF7bfsmvSvrOTbJ6RdLJwWbv+pYhVzqSYURj3YfP4qow49vUIEfhO7MLyskXV9exRj4mqoIUUymlBQ==
+
 "@cosmjs/utils@^0.20.0":
   version "0.20.1"
   resolved "https://registry.yarnpkg.com/@cosmjs/utils/-/utils-0.20.1.tgz#4d239b7d93c15523cdf109f225cbf61326fb69cd"
@@ -414,11 +458,12 @@
     big-integer "^1.6.48"
     utility-types "^3.10.0"
 
-"@kyve/sdk@^1.0.3":
-  version "1.0.3"
-  resolved "https://registry.yarnpkg.com/@kyve/sdk/-/sdk-1.0.3.tgz#88ee71e55b5f6cb4910462c3f9431cd7eeba9f8d"
-  integrity sha512-aRdL7jNzgg2wfk6s1Q/HwbKiXvYy3zUL7uAuc6RtRv5UqHM1PHgOi5doB0fFrVz95ZDaQ2nvBkNJpedQOfJgHA==
+"@kyve/sdk@^1.0.6":
+  version "1.0.6"
+  resolved "https://registry.yarnpkg.com/@kyve/sdk/-/sdk-1.0.6.tgz#6b0c54ee38e7687c5953b0d7bb7e6c92643ae207"
+  integrity sha512-t8R1sWiQzxgT2rgms5Ty1qaE+Zb7MzdR7a6QWQWr4XxFPpqdkTuofiwam9U7rsItDEdUw/0OPAD3rkf3tYEzCA==
   dependencies:
+    "@cosmjs/amino" "^0.28.3"
     "@cosmjs/crypto" "^0.27.1"
     "@cosmjs/encoding" "^0.27.1"
     "@cosmjs/proto-signing" "^0.28.0"
