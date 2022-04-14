@@ -236,6 +236,25 @@ class KYVE {
                         try {
                             const { data } = await axios_1.default.get(`${this.wallet.getRestEndpoint()}/kyve/registry/${this.chainVersion}/can_propose/${this.poolId}/${address}`);
                             canPropose = data;
+                            if (canPropose.possible &&
+                                canPropose.reason === "RESUBMIT_ARWEAVE_BUNDLE") {
+                                const uploadBundle = await this.createBundle();
+                                if (uploadBundle.bundleSize) {
+                                    // upload bundle to Arweave
+                                    transaction = await this.uploadBundleToArweave(uploadBundle);
+                                    // submit bundle proposal
+                                    if (transaction) {
+                                        await this.submitBundleProposal(transaction.id, +transaction.data_size, uploadBundle.bundleSize);
+                                        break;
+                                    }
+                                    continue;
+                                }
+                                else {
+                                    this.logger.debug(`Could not resubmit bundle proposal with data. Retrying in 10s ...`);
+                                    await (0, helpers_1.sleep)(10 * 1000);
+                                    continue;
+                                }
+                            }
                             if (!canPropose.possible &&
                                 canPropose.reason === "Upload interval not surpassed") {
                                 await (0, helpers_1.sleep)(1000);

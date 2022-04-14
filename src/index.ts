@@ -297,6 +297,37 @@ class KYVE {
               canPropose = data;
 
               if (
+                canPropose.possible &&
+                canPropose.reason === "RESUBMIT_ARWEAVE_BUNDLE"
+              ) {
+                const uploadBundle = await this.createBundle();
+
+                if (uploadBundle.bundleSize) {
+                  // upload bundle to Arweave
+                  transaction = await this.uploadBundleToArweave(uploadBundle);
+
+                  // submit bundle proposal
+                  if (transaction) {
+                    await this.submitBundleProposal(
+                      transaction.id,
+                      +transaction.data_size,
+                      uploadBundle.bundleSize
+                    );
+                    break;
+                  }
+
+                  continue;
+                } else {
+                  this.logger.debug(
+                    `Could not resubmit bundle proposal with data. Retrying in 10s ...`
+                  );
+
+                  await sleep(10 * 1000);
+                  continue;
+                }
+              }
+
+              if (
                 !canPropose.possible &&
                 canPropose.reason === "Upload interval not surpassed"
               ) {
