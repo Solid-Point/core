@@ -279,23 +279,7 @@ class KYVE {
         if (this.pool.bundle_proposal.next_uploader === address) {
           let transaction: Transaction | null = null;
 
-          const unixNow = new BigNumber(Math.floor(Date.now() / 1000));
-          const uploadTime = new BigNumber(
-            this.pool.bundle_proposal.created_at
-          ).plus(this.pool.upload_interval);
-          let remainingUploadInterval = new BigNumber(0);
-
-          if (unixNow.lt(uploadTime)) {
-            remainingUploadInterval = uploadTime.minus(unixNow);
-          }
-
-          this.logger.debug(
-            `Waiting for remaining upload interval = ${remainingUploadInterval.toString()}s ...`
-          );
-
-          // sleep until upload interval is reached
-          await sleep(remainingUploadInterval.multipliedBy(1000).toNumber());
-          this.logger.debug(`Reached upload interval`);
+          await this.waitForUploadInterval();
 
           let canPropose = {
             possible: false,
@@ -839,8 +823,30 @@ class KYVE {
     }
   }
 
+  private async waitForUploadInterval(): Promise<void> {
+    const unixNow = new BigNumber(Math.floor(Date.now() / 1000));
+    const uploadTime = new BigNumber(this.pool.bundle_proposal.created_at).plus(
+      this.pool.upload_interval
+    );
+    let remainingUploadInterval = new BigNumber(0);
+
+    if (unixNow.lt(uploadTime)) {
+      remainingUploadInterval = uploadTime.minus(unixNow);
+    }
+
+    this.logger.debug(
+      `Waiting for remaining upload interval = ${remainingUploadInterval.toString()}s ...`
+    );
+
+    // sleep until upload interval is reached
+    await sleep(remainingUploadInterval.multipliedBy(1000).toNumber());
+    this.logger.debug(`Reached upload interval`);
+  }
+
   private async nextBundleProposal(created_at: string): Promise<void> {
     return new Promise(async (resolve) => {
+      await this.waitForUploadInterval();
+
       this.logger.debug("Waiting for new proposal ...");
 
       while (true) {
@@ -852,7 +858,7 @@ class KYVE {
         } else if (this.pool.paused) {
           break;
         } else {
-          await sleep(2 * 1000); // sleep 2 secs
+          await sleep(10 * 1000);
         }
       }
 

@@ -227,16 +227,7 @@ class KYVE {
                 // submit bundle proposals if node is next uploader
                 if (this.pool.bundle_proposal.next_uploader === address) {
                     let transaction = null;
-                    const unixNow = new bignumber_js_1.default(Math.floor(Date.now() / 1000));
-                    const uploadTime = new bignumber_js_1.default(this.pool.bundle_proposal.created_at).plus(this.pool.upload_interval);
-                    let remainingUploadInterval = new bignumber_js_1.default(0);
-                    if (unixNow.lt(uploadTime)) {
-                        remainingUploadInterval = uploadTime.minus(unixNow);
-                    }
-                    this.logger.debug(`Waiting for remaining upload interval = ${remainingUploadInterval.toString()}s ...`);
-                    // sleep until upload interval is reached
-                    await (0, helpers_1.sleep)(remainingUploadInterval.multipliedBy(1000).toNumber());
-                    this.logger.debug(`Reached upload interval`);
+                    await this.waitForUploadInterval();
                     let canPropose = {
                         possible: false,
                         reason: "Failed to execute can_propose query",
@@ -638,8 +629,21 @@ class KYVE {
             this.logger.debug(error);
         }
     }
+    async waitForUploadInterval() {
+        const unixNow = new bignumber_js_1.default(Math.floor(Date.now() / 1000));
+        const uploadTime = new bignumber_js_1.default(this.pool.bundle_proposal.created_at).plus(this.pool.upload_interval);
+        let remainingUploadInterval = new bignumber_js_1.default(0);
+        if (unixNow.lt(uploadTime)) {
+            remainingUploadInterval = uploadTime.minus(unixNow);
+        }
+        this.logger.debug(`Waiting for remaining upload interval = ${remainingUploadInterval.toString()}s ...`);
+        // sleep until upload interval is reached
+        await (0, helpers_1.sleep)(remainingUploadInterval.multipliedBy(1000).toNumber());
+        this.logger.debug(`Reached upload interval`);
+    }
     async nextBundleProposal(created_at) {
         return new Promise(async (resolve) => {
+            await this.waitForUploadInterval();
             this.logger.debug("Waiting for new proposal ...");
             while (true) {
                 await this.getPool(false);
@@ -651,7 +655,7 @@ class KYVE {
                     break;
                 }
                 else {
-                    await (0, helpers_1.sleep)(2 * 1000); // sleep 2 secs
+                    await (0, helpers_1.sleep)(10 * 1000);
                 }
             }
             resolve();
