@@ -850,8 +850,7 @@ class KYVE {
       } else {
         this.logger.warn(` Could not submit bundle proposal. Skipping ...`);
       }
-    } catch (err) {
-      console.log(err);
+    } catch {
       this.logger.error(
         "Failed to submit bundle proposal. Retrying in 30s ..."
       );
@@ -903,8 +902,6 @@ class KYVE {
 
   private async nextBundleProposal(created_at: string): Promise<void> {
     return new Promise(async (resolve) => {
-      await this.waitForUploadInterval();
-
       this.logger.debug("Waiting for new proposal ...");
 
       while (true) {
