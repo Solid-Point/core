@@ -640,7 +640,8 @@ class KYVE {
                 this.logger.warn(` Could not submit bundle proposal. Skipping ...`);
             }
         }
-        catch {
+        catch (err) {
+            console.log(err);
             this.logger.error("Failed to submit bundle proposal. Retrying in 30s ...");
             await (0, helpers_1.sleep)(30 * 1000);
         }
