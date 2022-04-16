@@ -262,6 +262,10 @@ class KYVE {
                 if (this.pool.bundle_proposal.next_uploader === address) {
                     let transaction = null;
                     await this.waitForUploadInterval();
+                    await this.getPool(false);
+                    if (+this.pool.bundle_proposal.created_at > +created_at) {
+                        continue;
+                    }
                     let canPropose = {
                         possible: false,
                         reason: "Failed to execute can_propose query",
@@ -503,7 +507,7 @@ class KYVE {
                 const bundle = await this.createBundle();
                 if (bundle.bundleSize === 0) {
                     // vote valid because no bundle could be recreated
-                    this.vote({
+                    await this.vote({
                         transaction: constants_1.NO_DATA_BUNDLE,
                         valid: true,
                     });
@@ -515,7 +519,7 @@ class KYVE {
                         if (item.key === +this.pool.bundle_proposal.to_height &&
                             item.value) {
                             // vote invalid because at least one data item could be fetched
-                            this.vote({
+                            await this.vote({
                                 transaction: constants_1.NO_DATA_BUNDLE,
                                 valid: false,
                             });
@@ -523,7 +527,7 @@ class KYVE {
                     }
                     catch {
                         // vote valid because not even one data item could be fetched
-                        this.vote({
+                        await this.vote({
                             transaction: constants_1.NO_DATA_BUNDLE,
                             valid: true,
                         });

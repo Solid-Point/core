@@ -337,6 +337,11 @@ class KYVE {
           let transaction: Transaction | null = null;
 
           await this.waitForUploadInterval();
+          await this.getPool(false);
+
+          if (+this.pool.bundle_proposal.created_at > +created_at) {
+            continue;
+          }
 
           let canPropose = {
             possible: false,
@@ -649,7 +654,7 @@ class KYVE {
 
         if (bundle.bundleSize === 0) {
           // vote valid because no bundle could be recreated
-          this.vote({
+          await this.vote({
             transaction: NO_DATA_BUNDLE,
             valid: true,
           });
@@ -665,14 +670,14 @@ class KYVE {
               item.value
             ) {
               // vote invalid because at least one data item could be fetched
-              this.vote({
+              await this.vote({
                 transaction: NO_DATA_BUNDLE,
                 valid: false,
               });
             }
           } catch {
             // vote valid because not even one data item could be fetched
-            this.vote({
+            await this.vote({
               transaction: NO_DATA_BUNDLE,
               valid: true,
             });
