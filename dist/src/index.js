@@ -651,9 +651,10 @@ class KYVE {
                 this.logger.warn(` Could not submit bundle proposal. Skipping ...`);
             }
         }
-        catch {
-            this.logger.error("Failed to submit bundle proposal. Retrying in 10s ...");
-            await (0, helpers_1.sleep)(10 * 1000);
+        catch (error) {
+            this.logger.error("Failed to submit bundle proposal. Retrying in 30s ...");
+            console.log(error);
+            await (0, helpers_1.sleep)(30 * 1000);
         }
     }
     async claimUploaderRole() {

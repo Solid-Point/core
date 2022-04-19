@@ -864,11 +864,12 @@ class KYVE {
       } else {
         this.logger.warn(` Could not submit bundle proposal. Skipping ...`);
       }
-    } catch {
+    } catch (error) {
       this.logger.error(
-        "Failed to submit bundle proposal. Retrying in 10s ..."
+        "Failed to submit bundle proposal. Retrying in 30s ..."
       );
-      await sleep(10 * 1000);
+      console.log(error);
+      await sleep(30 * 1000);
     }
   }
 
