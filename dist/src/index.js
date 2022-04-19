@@ -283,7 +283,9 @@ class KYVE {
                                 break;
                             }
                         }
-                        catch { }
+                        catch {
+                            break;
+                        }
                     }
                     if (canPropose.possible) {
                         if (canPropose.reason === constants_1.NO_QUORUM_BUNDLE) {
@@ -395,6 +397,7 @@ class KYVE {
         process.exit(1);
     }
     async getDataItemAndSave(height) {
+        let requests = 1;
         while (true) {
             try {
                 const { key, value } = await this.getDataItem(height);
@@ -402,7 +405,11 @@ class KYVE {
                 break;
             }
             catch {
-                await (0, helpers_1.sleep)(10 * 1000);
+                await (0, helpers_1.sleep)(requests * 10 * 1000);
+                // limit timeout to 5 mins
+                if (requests < 30) {
+                    requests++;
+                }
             }
         }
     }
@@ -645,8 +652,8 @@ class KYVE {
             }
         }
         catch {
-            this.logger.error("Failed to submit bundle proposal. Retrying in 30s ...");
-            await (0, helpers_1.sleep)(30 * 1000);
+            this.logger.error("Failed to submit bundle proposal. Retrying in 10s ...");
+            await (0, helpers_1.sleep)(10 * 1000);
         }
     }
     async claimUploaderRole() {
@@ -741,6 +748,7 @@ class KYVE {
         }
         return new Promise(async (resolve) => {
             var _a, _b;
+            let requests = 1;
             while (true) {
                 try {
                     const { data: { pool }, } = await axios_1.default.get(`${this.wallet.getRestEndpoint()}/kyve/registry/${this.chainVersion}/pool/${this.poolId}`);
@@ -782,8 +790,12 @@ class KYVE {
                     break;
                 }
                 catch (error) {
-                    this.logger.warn(" Failed to fetch pool state. Retrying in 10s ...");
-                    await (0, helpers_1.sleep)(10 * 1000);
+                    this.logger.warn(` Failed to fetch pool state. Retrying in ${requests * 10}s ...`);
+                    await (0, helpers_1.sleep)(requests * 10 * 1000);
+                    // limit timeout to 5 mins
+                    if (requests < 30) {
+                        requests++;
+                    }
                 }
             }
             if (logs) {
@@ -799,6 +811,7 @@ class KYVE {
         let currentStake = new bignumber_js_1.default(0);
         let currentUnbonding = new bignumber_js_1.default(0);
         let minimumStake = new bignumber_js_1.default(0);
+        let requests = 1;
         while (true) {
             try {
                 const { data } = await axios_1.default.get(`${this.wallet.getRestEndpoint()}/kyve/registry/${this.chainVersion}/stake_info/${this.poolId}/${address}`);
@@ -809,8 +822,12 @@ class KYVE {
                 break;
             }
             catch (error) {
-                this.logger.warn(" Failed to fetch stake info of address. Retrying in 10s ...");
-                await (0, helpers_1.sleep)(10 * 1000);
+                this.logger.warn(` Failed to fetch stake info of address. Retrying in ${requests * 10}s ...`);
+                await (0, helpers_1.sleep)(requests * 10 * 1000);
+                // limit timeout to 5 mins
+                if (requests < 30) {
+                    requests++;
+                }
             }
         }
         // check if node has already staked

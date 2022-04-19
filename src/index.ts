@@ -367,7 +367,9 @@ class KYVE {
               } else {
                 break;
               }
-            } catch {}
+            } catch {
+              break;
+            }
           }
 
           if (canPropose.possible) {
@@ -513,13 +515,20 @@ class KYVE {
   }
 
   private async getDataItemAndSave(height: number): Promise<void> {
+    let requests = 1;
+
     while (true) {
       try {
         const { key, value } = await this.getDataItem(height);
         await this.db.put(key, value);
         break;
       } catch {
-        await sleep(10 * 1000);
+        await sleep(requests * 10 * 1000);
+
+        // limit timeout to 5 mins
+        if (requests < 30) {
+          requests++;
+        }
       }
     }
   }
@@ -857,9 +866,9 @@ class KYVE {
       }
     } catch {
       this.logger.error(
-        "Failed to submit bundle proposal. Retrying in 30s ..."
+        "Failed to submit bundle proposal. Retrying in 10s ..."
       );
-      await sleep(30 * 1000);
+      await sleep(10 * 1000);
     }
   }
 
@@ -986,6 +995,8 @@ class KYVE {
     }
 
     return new Promise(async (resolve) => {
+      let requests = 1;
+
       while (true) {
         try {
           const {
@@ -1040,8 +1051,15 @@ class KYVE {
 
           break;
         } catch (error) {
-          this.logger.warn(" Failed to fetch pool state. Retrying in 10s ...");
-          await sleep(10 * 1000);
+          this.logger.warn(
+            ` Failed to fetch pool state. Retrying in ${requests * 10}s ...`
+          );
+          await sleep(requests * 10 * 1000);
+
+          // limit timeout to 5 mins
+          if (requests < 30) {
+            requests++;
+          }
         }
       }
 
@@ -1062,6 +1080,8 @@ class KYVE {
     let currentUnbonding = new BigNumber(0);
     let minimumStake = new BigNumber(0);
 
+    let requests = 1;
+
     while (true) {
       try {
         const { data } = await axios.get(
@@ -1078,9 +1098,16 @@ class KYVE {
         break;
       } catch (error) {
         this.logger.warn(
-          " Failed to fetch stake info of address. Retrying in 10s ..."
+          ` Failed to fetch stake info of address. Retrying in ${
+            requests * 10
+          }s ...`
         );
-        await sleep(10 * 1000);
+        await sleep(requests * 10 * 1000);
+
+        // limit timeout to 5 mins
+        if (requests < 30) {
+          requests++;
+        }
       }
     }
 
