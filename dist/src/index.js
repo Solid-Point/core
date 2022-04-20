@@ -810,7 +810,6 @@ class KYVE {
         let balance = new bignumber_js_1.default(0);
         let initialStake = new bignumber_js_1.default(0);
         let currentStake = new bignumber_js_1.default(0);
-        let currentUnbonding = new bignumber_js_1.default(0);
         let minimumStake = new bignumber_js_1.default(0);
         let requests = 1;
         while (true) {
@@ -818,7 +817,6 @@ class KYVE {
                 const { data } = await axios_1.default.get(`${this.wallet.getRestEndpoint()}/kyve/registry/${this.chainVersion}/stake_info/${this.poolId}/${address}`);
                 balance = new bignumber_js_1.default(data.balance);
                 currentStake = new bignumber_js_1.default(data.current_stake);
-                currentUnbonding = new bignumber_js_1.default(data.current_unbonding);
                 minimumStake = new bignumber_js_1.default(data.minimum_stake);
                 break;
             }
@@ -832,7 +830,7 @@ class KYVE {
             }
         }
         // check if node has already staked
-        if (currentStake.isZero() && currentUnbonding.isZero()) {
+        if (currentStake.isZero()) {
             // try to parse the provided inital staking amount
             try {
                 initialStake = new bignumber_js_1.default(this.stake).multipliedBy(10 ** 9);

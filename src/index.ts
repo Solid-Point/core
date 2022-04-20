@@ -1078,7 +1078,6 @@ class KYVE {
     let balance = new BigNumber(0);
     let initialStake = new BigNumber(0);
     let currentStake = new BigNumber(0);
-    let currentUnbonding = new BigNumber(0);
     let minimumStake = new BigNumber(0);
 
     let requests = 1;
@@ -1093,7 +1092,6 @@ class KYVE {
 
         balance = new BigNumber(data.balance);
         currentStake = new BigNumber(data.current_stake);
-        currentUnbonding = new BigNumber(data.current_unbonding);
         minimumStake = new BigNumber(data.minimum_stake);
 
         break;
@@ -1113,7 +1111,7 @@ class KYVE {
     }
 
     // check if node has already staked
-    if (currentStake.isZero() && currentUnbonding.isZero()) {
+    if (currentStake.isZero()) {
       // try to parse the provided inital staking amount
       try {
         initialStake = new BigNumber(this.stake).multipliedBy(10 ** 9);
