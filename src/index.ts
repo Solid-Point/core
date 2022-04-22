@@ -1219,7 +1219,7 @@ class KYVE {
   }
 
   private generateRandomName(mnemonic: string) {
-    const r = new Prando(mnemonic + this.poolId);
+    const r = new Prando(mnemonic + this.poolId + this.version);
 
     return uniqueNamesGenerator({
       dictionaries: [adjectives, colors, animals],

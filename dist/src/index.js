@@ -900,7 +900,7 @@ class KYVE {
         }
     }
     generateRandomName(mnemonic) {
-        const r = new prando_1.default(mnemonic + this.poolId);
+        const r = new prando_1.default(mnemonic + this.poolId + this.version);
         return (0, unique_names_generator_1.uniqueNamesGenerator)({
             dictionaries: [unique_names_generator_1.adjectives, unique_names_generator_1.colors, unique_names_generator_1.animals],
             separator: "-",
