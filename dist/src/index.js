@@ -202,32 +202,18 @@ class KYVE {
                     this.pool.bundle_proposal.uploader === address) {
                     const remaining = this.remainingUploadInterval();
                     if (!remaining.isZero()) {
-                        let canPropose = {
-                            possible: false,
-                            reason: "Failed to execute can_propose query",
-                        };
-                        try {
-                            const { data } = await axios_1.default.get(`${this.wallet.getRestEndpoint()}/kyve/registry/${this.chainVersion}/can_propose/${this.poolId}/${address}`);
-                            canPropose = data;
-                        }
-                        catch { }
-                        if (canPropose.possible) {
-                            const uploadBundle = await this.createBundle();
-                            if (uploadBundle.bundleSize) {
-                                this.logger.debug(`Trying to resubmit bundle proposal with data.`);
-                                // upload bundle to Arweave
-                                const transaction = await this.uploadBundleToArweave(uploadBundle);
-                                // submit bundle proposal
-                                if (transaction) {
-                                    await this.submitBundleProposal(transaction.id, +transaction.data_size, uploadBundle.bundleSize);
-                                }
-                            }
-                            else {
-                                this.logger.debug(`Could not resubmit bundle proposal with data. Retrying in 10s ...`);
+                        const uploadBundle = await this.createBundle();
+                        if (uploadBundle.bundleSize) {
+                            this.logger.debug(`Trying to resubmit bundle proposal with data.`);
+                            // upload bundle to Arweave
+                            const transaction = await this.uploadBundleToArweave(uploadBundle);
+                            // submit bundle proposal
+                            if (transaction) {
+                                await this.submitBundleProposal(transaction.id, +transaction.data_size, uploadBundle.bundleSize);
                             }
                         }
                         else {
-                            this.logger.debug(`Can not propose: ${canPropose.reason}. Retrying in 10s ...`);
+                            this.logger.debug(`Could not resubmit bundle proposal with data. Retrying in 10s ...`);
                         }
                         await (0, helpers_1.sleep)(10 * 1000);
                         continue;

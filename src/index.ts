@@ -241,50 +241,29 @@ class KYVE {
           const remaining = this.remainingUploadInterval();
 
           if (!remaining.isZero()) {
-            let canPropose = {
-              possible: false,
-              reason: "Failed to execute can_propose query",
-            };
+            const uploadBundle = await this.createBundle();
 
-            try {
-              const { data } = await axios.get(
-                `${this.wallet.getRestEndpoint()}/kyve/registry/${
-                  this.chainVersion
-                }/can_propose/${this.poolId}/${address}`
+            if (uploadBundle.bundleSize) {
+              this.logger.debug(
+                `Trying to resubmit bundle proposal with data.`
               );
 
-              canPropose = data;
-            } catch {}
+              // upload bundle to Arweave
+              const transaction = await this.uploadBundleToArweave(
+                uploadBundle
+              );
 
-            if (canPropose.possible) {
-              const uploadBundle = await this.createBundle();
-
-              if (uploadBundle.bundleSize) {
-                this.logger.debug(
-                  `Trying to resubmit bundle proposal with data.`
-                );
-
-                // upload bundle to Arweave
-                const transaction = await this.uploadBundleToArweave(
-                  uploadBundle
-                );
-
-                // submit bundle proposal
-                if (transaction) {
-                  await this.submitBundleProposal(
-                    transaction.id,
-                    +transaction.data_size,
-                    uploadBundle.bundleSize
-                  );
-                }
-              } else {
-                this.logger.debug(
-                  `Could not resubmit bundle proposal with data. Retrying in 10s ...`
+              // submit bundle proposal
+              if (transaction) {
+                await this.submitBundleProposal(
+                  transaction.id,
+                  +transaction.data_size,
+                  uploadBundle.bundleSize
                 );
               }
             } else {
               this.logger.debug(
-                `Can not propose: ${canPropose.reason}. Retrying in 10s ...`
+                `Could not resubmit bundle proposal with data. Retrying in 10s ...`
               );
             }
 
