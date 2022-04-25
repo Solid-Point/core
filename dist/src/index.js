@@ -586,10 +586,21 @@ class KYVE {
         }
     }
     async validate(localBundle, localBytes, uploadBundle, uploadBytes) {
+        console.log("");
+        this.logger.debug("Comparing by byte size:");
+        this.logger.debug(`Local bundle: \t${localBytes}`);
+        this.logger.debug(`Upload bundle: \t${uploadBytes}`);
         if (localBytes !== uploadBytes) {
             return false;
         }
-        if ((0, object_hash_1.default)(localBundle) !== (0, object_hash_1.default)(uploadBundle)) {
+        const localHash = (0, object_hash_1.default)(localBundle);
+        const uploadHash = (0, object_hash_1.default)(uploadBundle);
+        console.log("");
+        this.logger.debug("Comparing bundles by hash:");
+        this.logger.debug(`Local bundle: \t${localHash}`);
+        this.logger.debug(`Upload bundle: \t${uploadHash}`);
+        console.log("");
+        if (localHash !== uploadHash) {
             return false;
         }
         return true;

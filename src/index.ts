@@ -763,11 +763,25 @@ class KYVE {
     uploadBundle: any[],
     uploadBytes: number
   ): Promise<boolean> {
+    console.log("");
+    this.logger.debug("Comparing by byte size:");
+    this.logger.debug(`Local bundle: \t${localBytes}`);
+    this.logger.debug(`Upload bundle: \t${uploadBytes}`);
+
     if (localBytes !== uploadBytes) {
       return false;
     }
 
-    if (hash(localBundle) !== hash(uploadBundle)) {
+    const localHash = hash(localBundle);
+    const uploadHash = hash(uploadBundle);
+
+    console.log("");
+    this.logger.debug("Comparing bundles by hash:");
+    this.logger.debug(`Local bundle: \t${localHash}`);
+    this.logger.debug(`Upload bundle: \t${uploadHash}`);
+    console.log("");
+
+    if (localHash !== uploadHash) {
       return false;
     }
 
