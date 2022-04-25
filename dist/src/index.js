@@ -215,7 +215,7 @@ class KYVE {
                             }
                             // submit bundle proposal
                             if (transaction) {
-                                await this.submitBundleProposal(transaction.id, +transaction.data_size, uploadBundle.bundleSize);
+                                await this.submitBundleProposal(transaction.id, +transaction.data_size, uploadBundle.fromHeight, uploadBundle.bundleSize);
                             }
                         }
                         else {
@@ -288,7 +288,7 @@ class KYVE {
                     if (canPropose.possible) {
                         if (canPropose.reason === constants_1.NO_QUORUM_BUNDLE) {
                             this.logger.info(`Creating new bundle proposal of type ${constants_1.NO_QUORUM_BUNDLE}`);
-                            await this.submitBundleProposal(constants_1.NO_QUORUM_BUNDLE, 0, 0);
+                            await this.submitBundleProposal(constants_1.NO_QUORUM_BUNDLE, 0, +this.pool.bundle_proposal.to_height, 0);
                         }
                         else {
                             this.logger.info(`Creating new bundle proposal of type ${constants_1.ARWEAVE_BUNDLE}`);
@@ -296,24 +296,14 @@ class KYVE {
                             if (uploadBundle.bundleSize) {
                                 // upload bundle to Arweave
                                 transaction = await this.uploadBundleToArweave(uploadBundle);
-                                await this.getPool(false);
-                                if (+this.pool.bundle_proposal.created_at > +created_at) {
-                                    continue;
-                                }
-                                // double check if bundle height matches pool height
-                                if (+this.pool.bundle_proposal.to_height !==
-                                    uploadBundle.fromHeight) {
-                                    this.logger.debug(`Found old bundle. Recreating bundle ...`);
-                                    continue;
-                                }
                                 // submit bundle proposal
                                 if (transaction) {
-                                    await this.submitBundleProposal(transaction.id, +transaction.data_size, uploadBundle.bundleSize);
+                                    await this.submitBundleProposal(transaction.id, +transaction.data_size, uploadBundle.fromHeight, uploadBundle.bundleSize);
                                 }
                             }
                             else {
                                 this.logger.info(`Creating new bundle proposal of type ${constants_1.NO_DATA_BUNDLE}`);
-                                await this.submitBundleProposal(constants_1.NO_DATA_BUNDLE, 0, 0);
+                                await this.submitBundleProposal(constants_1.NO_DATA_BUNDLE, 0, uploadBundle.fromHeight, 0);
                             }
                         }
                     }
@@ -657,10 +647,10 @@ class KYVE {
             return null;
         }
     }
-    async submitBundleProposal(bundleId, byteSize, bundleSize) {
+    async submitBundleProposal(bundleId, byteSize, fromHeight, bundleSize) {
         try {
             this.logger.debug(`Submitting bundle proposal ...`);
-            const { transactionHash, transactionBroadcast } = await this.sdk.submitBundleProposal(this.poolId, bundleId, byteSize, bundleSize);
+            const { transactionHash, transactionBroadcast } = await this.sdk.submitBundleProposal(this.poolId, bundleId, byteSize, fromHeight, bundleSize);
             this.logger.debug(`Transaction = ${transactionHash}`);
             const res = await transactionBroadcast;
             if (res.code === 0) {

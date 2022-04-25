@@ -268,6 +268,7 @@ class KYVE {
                 await this.submitBundleProposal(
                   transaction.id,
                   +transaction.data_size,
+                  uploadBundle.fromHeight,
                   uploadBundle.bundleSize
                 );
               }
@@ -379,7 +380,12 @@ class KYVE {
                 `Creating new bundle proposal of type ${NO_QUORUM_BUNDLE}`
               );
 
-              await this.submitBundleProposal(NO_QUORUM_BUNDLE, 0, 0);
+              await this.submitBundleProposal(
+                NO_QUORUM_BUNDLE,
+                0,
+                +this.pool.bundle_proposal.to_height,
+                0
+              );
             } else {
               this.logger.info(
                 `Creating new bundle proposal of type ${ARWEAVE_BUNDLE}`
@@ -391,26 +397,12 @@ class KYVE {
                 // upload bundle to Arweave
                 transaction = await this.uploadBundleToArweave(uploadBundle);
 
-                await this.getPool(false);
-
-                if (+this.pool.bundle_proposal.created_at > +created_at) {
-                  continue;
-                }
-
-                // double check if bundle height matches pool height
-                if (
-                  +this.pool.bundle_proposal.to_height !==
-                  uploadBundle.fromHeight
-                ) {
-                  this.logger.debug(`Found old bundle. Recreating bundle ...`);
-                  continue;
-                }
-
                 // submit bundle proposal
                 if (transaction) {
                   await this.submitBundleProposal(
                     transaction.id,
                     +transaction.data_size,
+                    uploadBundle.fromHeight,
                     uploadBundle.bundleSize
                   );
                 }
@@ -419,7 +411,12 @@ class KYVE {
                   `Creating new bundle proposal of type ${NO_DATA_BUNDLE}`
                 );
 
-                await this.submitBundleProposal(NO_DATA_BUNDLE, 0, 0);
+                await this.submitBundleProposal(
+                  NO_DATA_BUNDLE,
+                  0,
+                  uploadBundle.fromHeight,
+                  0
+                );
               }
             }
           } else {
@@ -872,6 +869,7 @@ class KYVE {
   private async submitBundleProposal(
     bundleId: string,
     byteSize: number,
+    fromHeight: number,
     bundleSize: number
   ) {
     try {
@@ -882,6 +880,7 @@ class KYVE {
           this.poolId,
           bundleId,
           byteSize,
+          fromHeight,
           bundleSize
         );
 
