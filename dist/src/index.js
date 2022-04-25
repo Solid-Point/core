@@ -297,6 +297,9 @@ class KYVE {
                                 // upload bundle to Arweave
                                 transaction = await this.uploadBundleToArweave(uploadBundle);
                                 await this.getPool(false);
+                                if (+this.pool.bundle_proposal.created_at > +created_at) {
+                                    continue;
+                                }
                                 // double check if bundle height matches pool height
                                 if (+this.pool.bundle_proposal.to_height !==
                                     uploadBundle.fromHeight) {
