@@ -207,12 +207,6 @@ class KYVE {
                             this.logger.debug(`Trying to resubmit bundle proposal with data.`);
                             // upload bundle to Arweave
                             const transaction = await this.uploadBundleToArweave(uploadBundle);
-                            await this.getPool(false);
-                            // double check if bundle height matches pool height
-                            if (+this.pool.bundle_proposal.to_height !== uploadBundle.fromHeight) {
-                                this.logger.debug(`Found old bundle. Recreating bundle ...`);
-                                continue;
-                            }
                             // submit bundle proposal
                             if (transaction) {
                                 await this.submitBundleProposal(transaction.id, +transaction.data_size, uploadBundle.fromHeight, uploadBundle.bundleSize);
