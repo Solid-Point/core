@@ -238,6 +238,7 @@ class KYVE {
           this.pool.bundle_proposal.bundle_id === NO_DATA_BUNDLE &&
           this.pool.bundle_proposal.uploader === address
         ) {
+          await sleep(10 * 1000);
           const remaining = this.remainingUploadInterval();
 
           if (!remaining.isZero()) {
@@ -281,13 +282,11 @@ class KYVE {
                 this.logger.debug(
                   `Could not resubmit bundle proposal with data. Retrying in 10s ...`
                 );
-                await sleep(10 * 1000);
               }
             } else {
               this.logger.debug(
                 `Can not propose: ${canPropose.reason}. Retrying in 10s ...`
               );
-              await sleep(10 * 1000);
             }
 
             continue;
