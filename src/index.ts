@@ -238,7 +238,6 @@ class KYVE {
           this.pool.bundle_proposal.bundle_id === NO_DATA_BUNDLE &&
           this.pool.bundle_proposal.uploader === address
         ) {
-          await sleep(10 * 1000);
           const remaining = this.remainingUploadInterval();
 
           if (!remaining.isZero()) {
@@ -289,6 +288,7 @@ class KYVE {
               );
             }
 
+            await sleep(10 * 1000);
             continue;
           }
         }
