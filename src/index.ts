@@ -376,12 +376,6 @@ class KYVE {
               ) {
                 await sleep(1000);
                 continue;
-              } else if (
-                canPropose.possible &&
-                canPropose.reason === "RESUBMIT_ARWEAVE_BUNDLE"
-              ) {
-                await sleep(1000);
-                continue;
               } else {
                 break;
               }
