@@ -47,7 +47,7 @@ declare class KYVE {
     private uploadBundleToArweave;
     private submitBundleProposal;
     private claimUploaderRole;
-    private waitForUploadInterval;
+    private remainingUploadInterval;
     private nextBundleProposal;
     private vote;
     private setupMetrics;
