@@ -253,6 +253,15 @@ class KYVE {
                 uploadBundle
               );
 
+              await this.getPool(false);
+
+              // double check if bundle height matches pool height
+              if (
+                +this.pool.bundle_proposal.to_height !== uploadBundle.fromHeight
+              ) {
+                continue;
+              }
+
               // submit bundle proposal
               if (transaction) {
                 await this.submitBundleProposal(
