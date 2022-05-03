@@ -494,6 +494,9 @@ class KYVE {
             }
             else if (unixNow.gte(uploadTime)) {
                 // check if upload interval was reached in the meantime
+                // vote with abstain if upload interval was reached
+                this.logger.debug(`Reached upload interval`);
+                await this.vote(this.pool.bundle_proposal.bundle_id, 2);
                 break;
             }
             else if (this.pool.paused) {
@@ -506,10 +509,7 @@ class KYVE {
                 const bundle = await this.createBundle();
                 if (bundle.bundleSize === 0) {
                     // vote valid because no bundle could be recreated
-                    await this.vote({
-                        transaction: constants_1.NO_DATA_BUNDLE,
-                        valid: true,
-                    });
+                    await this.vote(constants_1.NO_DATA_BUNDLE, 0);
                 }
                 else {
                     // check if datasource is online
@@ -518,18 +518,12 @@ class KYVE {
                         if (item.key === +this.pool.bundle_proposal.to_height &&
                             item.value) {
                             // vote invalid because at least one data item could be fetched
-                            await this.vote({
-                                transaction: constants_1.NO_DATA_BUNDLE,
-                                valid: false,
-                            });
+                            await this.vote(constants_1.NO_DATA_BUNDLE, 1);
                         }
                     }
                     catch {
                         // vote valid because not even one data item could be fetched
-                        await this.vote({
-                            transaction: constants_1.NO_DATA_BUNDLE,
-                            valid: true,
-                        });
+                        await this.vote(constants_1.NO_DATA_BUNDLE, 0);
                     }
                 }
                 break;
@@ -543,24 +537,26 @@ class KYVE {
                 if (localBundle) {
                     try {
                         const uploadBundle = JSON.parse((0, zlib_1.gunzipSync)(arweaveBundle).toString());
-                        await this.vote({
-                            transaction: this.pool.bundle_proposal.bundle_id,
-                            valid: await this.validate(localBundle, +this.pool.bundle_proposal.byte_size, uploadBundle, +arweaveBundle.byteLength),
-                        });
+                        const support = await this.validate(localBundle, +this.pool.bundle_proposal.byte_size, uploadBundle, +arweaveBundle.byteLength);
+                        if (support) {
+                            await this.vote(this.pool.bundle_proposal.bundle_id, 0);
+                        }
+                        else {
+                            await this.vote(this.pool.bundle_proposal.bundle_id, 1);
+                        }
                     }
                     catch {
                         this.logger.warn(` Could not gunzip bundle ...`);
-                        await this.vote({
-                            transaction: this.pool.bundle_proposal.bundle_id,
-                            valid: false,
-                        });
+                        await this.vote(this.pool.bundle_proposal.bundle_id, 1);
                     }
                     finally {
                         break;
                     }
                 }
                 else {
-                    this.logger.debug(`Reached upload interval. Skipping ...`);
+                    this.logger.debug(`Reached upload interval`);
+                    // vote with abstain if upload interval was reached
+                    await this.vote(this.pool.bundle_proposal.bundle_id, 2);
                     break;
                 }
             }
@@ -706,14 +702,27 @@ class KYVE {
             resolve();
         });
     }
-    async vote(vote) {
+    async vote(bundleId, vote) {
         try {
-            this.logger.debug(`Voting ${vote.valid ? "valid" : "invalid"} on bundle ${vote.transaction} ...`);
-            const { transactionHash, transactionBroadcast } = await this.sdk.voteProposal(this.poolId, vote.transaction, vote.valid);
+            let voteMessage = "";
+            if (vote === 0) {
+                voteMessage = "valid";
+            }
+            else if (vote === 1) {
+                voteMessage = "invalid";
+            }
+            else if (vote === 2) {
+                voteMessage = "abstain";
+            }
+            else {
+                throw Error(`Invalid vote: ${vote}`);
+            }
+            this.logger.debug(`Voting ${voteMessage} on bundle ${voteMessage} ...`);
+            const { transactionHash, transactionBroadcast } = await this.sdk.voteProposal(this.poolId, bundleId, vote);
             this.logger.debug(`Transaction = ${transactionHash}`);
             const res = await transactionBroadcast;
             if (res.code === 0) {
-                this.logger.info(`Voted ${vote.valid ? "valid" : "invalid"} on bundle ${vote.transaction}`);
+                this.logger.info(`Voted ${voteMessage} on bundle ${bundleId}`);
             }
             else {
                 this.logger.warn(` Could not vote on proposal. Skipping ...`);
