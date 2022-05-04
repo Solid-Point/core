@@ -26,11 +26,7 @@ import {
 import { KyveSDK, KyveWallet } from "@kyve/sdk";
 import Transaction from "arweave/node/lib/transaction";
 import BigNumber from "bignumber.js";
-import {
-  ARWEAVE_BUNDLE,
-  NO_DATA_BUNDLE,
-  NO_QUORUM_BUNDLE,
-} from "./utils/constants";
+import { ARWEAVE_BUNDLE, NO_DATA_BUNDLE } from "./utils/constants";
 
 export * from "./utils";
 export * from "./faces";
@@ -325,49 +321,36 @@ class KYVE {
           }
 
           if (canPropose.possible) {
-            if (canPropose.reason === NO_QUORUM_BUNDLE) {
+            this.logger.info(
+              `Creating new bundle proposal of type ${ARWEAVE_BUNDLE}`
+            );
+
+            const uploadBundle = await this.createBundle();
+
+            if (uploadBundle.bundleSize) {
+              // upload bundle to Arweave
+              transaction = await this.uploadBundleToArweave(uploadBundle);
+
+              // submit bundle proposal
+              if (transaction) {
+                await this.submitBundleProposal(
+                  transaction.id,
+                  +transaction.data_size,
+                  uploadBundle.fromHeight,
+                  uploadBundle.bundleSize
+                );
+              }
+            } else {
               this.logger.info(
-                `Creating new bundle proposal of type ${NO_QUORUM_BUNDLE}`
+                `Creating new bundle proposal of type ${NO_DATA_BUNDLE}`
               );
 
               await this.submitBundleProposal(
-                NO_QUORUM_BUNDLE,
+                NO_DATA_BUNDLE,
                 0,
-                +this.pool.bundle_proposal.to_height,
+                uploadBundle.fromHeight,
                 0
               );
-            } else {
-              this.logger.info(
-                `Creating new bundle proposal of type ${ARWEAVE_BUNDLE}`
-              );
-
-              const uploadBundle = await this.createBundle();
-
-              if (uploadBundle.bundleSize) {
-                // upload bundle to Arweave
-                transaction = await this.uploadBundleToArweave(uploadBundle);
-
-                // submit bundle proposal
-                if (transaction) {
-                  await this.submitBundleProposal(
-                    transaction.id,
-                    +transaction.data_size,
-                    uploadBundle.fromHeight,
-                    uploadBundle.bundleSize
-                  );
-                }
-              } else {
-                this.logger.info(
-                  `Creating new bundle proposal of type ${NO_DATA_BUNDLE}`
-                );
-
-                await this.submitBundleProposal(
-                  NO_DATA_BUNDLE,
-                  0,
-                  uploadBundle.fromHeight,
-                  0
-                );
-              }
             }
           } else {
             this.logger.debug(
