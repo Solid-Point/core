@@ -197,28 +197,6 @@ class KYVE {
                 else {
                     this.logger.info("Selected as VALIDATOR");
                 }
-                // handle resubmit of NO_DATA_BUNDLES
-                if (this.pool.bundle_proposal.bundle_id === constants_1.NO_DATA_BUNDLE &&
-                    this.pool.bundle_proposal.uploader === address) {
-                    const remaining = this.remainingUploadInterval();
-                    if (!remaining.isZero()) {
-                        const uploadBundle = await this.createBundle();
-                        if (uploadBundle.bundleSize) {
-                            this.logger.debug(`Trying to resubmit bundle proposal with data.`);
-                            // upload bundle to Arweave
-                            const transaction = await this.uploadBundleToArweave(uploadBundle);
-                            // submit bundle proposal
-                            if (transaction) {
-                                await this.submitBundleProposal(transaction.id, +transaction.data_size, uploadBundle.fromHeight, uploadBundle.bundleSize);
-                            }
-                        }
-                        else {
-                            this.logger.debug(`Could not resubmit bundle proposal with data. Retrying in 10s ...`);
-                        }
-                        await (0, helpers_1.sleep)(10 * 1000);
-                        continue;
-                    }
-                }
                 if (this.pool.bundle_proposal.uploader &&
                     this.pool.bundle_proposal.uploader !== address) {
                     let canVote = {
@@ -455,10 +433,9 @@ class KYVE {
             }
             catch {
                 await (0, helpers_1.sleep)(1000);
-                const unixNow = new bignumber_js_1.default(Math.floor(Date.now() / 1000));
-                const uploadTime = new bignumber_js_1.default(this.pool.bundle_proposal.created_at).plus(this.pool.upload_interval);
+                const remaining = this.remainingUploadInterval();
                 // check if upload interval was reached in the meantime
-                if (unixNow.gte(uploadTime)) {
+                if (remaining.isZero()) {
                     return null;
                 }
             }
@@ -486,13 +463,12 @@ class KYVE {
         // try to fetch bundle
         while (true) {
             await this.getPool(false);
-            const unixNow = new bignumber_js_1.default(Math.floor(Date.now() / 1000));
-            const uploadTime = new bignumber_js_1.default(this.pool.bundle_proposal.created_at).plus(this.pool.upload_interval);
+            const remaining = this.remainingUploadInterval();
             if (+this.pool.bundle_proposal.created_at > +created_at) {
                 // check if new proposal is available in the meantime
                 break;
             }
-            else if (unixNow.gte(uploadTime)) {
+            else if (remaining.isZero()) {
                 // check if upload interval was reached in the meantime
                 // vote with abstain if upload interval was reached
                 this.logger.debug(`Reached upload interval`);
@@ -501,31 +477,6 @@ class KYVE {
             }
             else if (this.pool.paused) {
                 // check if pool got paused in the meantime
-                break;
-            }
-            // check if NO_DATA_BUNDLE
-            if (this.pool.bundle_proposal.bundle_id === constants_1.NO_DATA_BUNDLE) {
-                this.logger.debug(`Found bundle of type ${constants_1.NO_DATA_BUNDLE}. Validating if data is available ...`);
-                const bundle = await this.createBundle();
-                if (bundle.bundleSize === 0) {
-                    // vote valid because no bundle could be recreated
-                    await this.vote(constants_1.NO_DATA_BUNDLE, 0);
-                }
-                else {
-                    // check if datasource is online
-                    try {
-                        const item = await this.getDataItem(+this.pool.bundle_proposal.to_height);
-                        if (item.key === +this.pool.bundle_proposal.to_height &&
-                            item.value) {
-                            // vote invalid because at least one data item could be fetched
-                            await this.vote(constants_1.NO_DATA_BUNDLE, 1);
-                        }
-                    }
-                    catch {
-                        // vote valid because not even one data item could be fetched
-                        await this.vote(constants_1.NO_DATA_BUNDLE, 0);
-                    }
-                }
                 break;
             }
             this.logger.debug(`Downloading bundle from Arweave ...`);
@@ -561,8 +512,9 @@ class KYVE {
                 }
             }
             else {
-                this.logger.warn(` Failed to fetch bundle from Arweave. Retrying in 30s ...`);
-                await (0, helpers_1.sleep)(30 * 1000);
+                this.logger.warn(` Failed to fetch bundle from Arweave. Retrying in 10s ...`);
+                // TODO: how to vote with abstain directly after upload_timeout?
+                await (0, helpers_1.sleep)(10 * 1000);
             }
         }
     }
@@ -577,7 +529,7 @@ class KYVE {
         const localHash = (0, object_hash_1.default)(localBundle);
         const uploadHash = (0, object_hash_1.default)(uploadBundle);
         console.log("");
-        this.logger.debug("Comparing bundles by hash:");
+        this.logger.debug("Comparing by hash:");
         this.logger.debug(`Local bundle: \t${localHash}`);
         this.logger.debug(`Upload bundle: \t${uploadHash}`);
         console.log("");
@@ -606,11 +558,11 @@ class KYVE {
                 data: (0, zlib_1.gzipSync)(uploadBundle.bundle),
             });
             this.logger.debug(`Bundle details = bytes: ${transaction.data_size}, items: ${uploadBundle.toHeight - uploadBundle.fromHeight}`);
-            transaction.addTag("Application", "KYVE - Testnet");
+            transaction.addTag("Application", "KYVE");
+            transaction.addTag("Network", this.network);
             transaction.addTag("Pool", this.poolId.toString());
             transaction.addTag("@kyve/core", package_json_1.version);
             transaction.addTag(this.runtime, this.version);
-            transaction.addTag("Network", this.network);
             transaction.addTag("Uploader", this.pool.bundle_proposal.next_uploader);
             transaction.addTag("FromHeight", uploadBundle.fromHeight.toString());
             transaction.addTag("ToHeight", uploadBundle.toHeight.toString());
@@ -717,7 +669,7 @@ class KYVE {
             else {
                 throw Error(`Invalid vote: ${vote}`);
             }
-            this.logger.debug(`Voting ${voteMessage} on bundle ${voteMessage} ...`);
+            this.logger.debug(`Voting ${voteMessage} on bundle ${bundleId} ...`);
             const { transactionHash, transactionBroadcast } = await this.sdk.voteProposal(this.poolId, bundleId, vote);
             this.logger.debug(`Transaction = ${transactionHash}`);
             const res = await transactionBroadcast;
