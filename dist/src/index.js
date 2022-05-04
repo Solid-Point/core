@@ -258,25 +258,19 @@ class KYVE {
                         }
                     }
                     if (canPropose.possible) {
-                        if (canPropose.reason === constants_1.NO_QUORUM_BUNDLE) {
-                            this.logger.info(`Creating new bundle proposal of type ${constants_1.NO_QUORUM_BUNDLE}`);
-                            await this.submitBundleProposal(constants_1.NO_QUORUM_BUNDLE, 0, +this.pool.bundle_proposal.to_height, 0);
+                        this.logger.info(`Creating new bundle proposal of type ${constants_1.ARWEAVE_BUNDLE}`);
+                        const uploadBundle = await this.createBundle();
+                        if (uploadBundle.bundleSize) {
+                            // upload bundle to Arweave
+                            transaction = await this.uploadBundleToArweave(uploadBundle);
+                            // submit bundle proposal
+                            if (transaction) {
+                                await this.submitBundleProposal(transaction.id, +transaction.data_size, uploadBundle.fromHeight, uploadBundle.bundleSize);
+                            }
                         }
                         else {
-                            this.logger.info(`Creating new bundle proposal of type ${constants_1.ARWEAVE_BUNDLE}`);
-                            const uploadBundle = await this.createBundle();
-                            if (uploadBundle.bundleSize) {
-                                // upload bundle to Arweave
-                                transaction = await this.uploadBundleToArweave(uploadBundle);
-                                // submit bundle proposal
-                                if (transaction) {
-                                    await this.submitBundleProposal(transaction.id, +transaction.data_size, uploadBundle.fromHeight, uploadBundle.bundleSize);
-                                }
-                            }
-                            else {
-                                this.logger.info(`Creating new bundle proposal of type ${constants_1.NO_DATA_BUNDLE}`);
-                                await this.submitBundleProposal(constants_1.NO_DATA_BUNDLE, 0, uploadBundle.fromHeight, 0);
-                            }
+                            this.logger.info(`Creating new bundle proposal of type ${constants_1.NO_DATA_BUNDLE}`);
+                            await this.submitBundleProposal(constants_1.NO_DATA_BUNDLE, 0, uploadBundle.fromHeight, 0);
                         }
                     }
                     else {
