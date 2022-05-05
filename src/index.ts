@@ -298,6 +298,7 @@ class KYVE {
 
           while (true) {
             try {
+              console.log(this.pool.bundle_proposal.to_height);
               const { data } = await axios.get(
                 `${this.wallet.getRestEndpoint()}/kyve/registry/${
                   this.chainVersion
