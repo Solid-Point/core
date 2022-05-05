@@ -301,7 +301,9 @@ class KYVE {
               const { data } = await axios.get(
                 `${this.wallet.getRestEndpoint()}/kyve/registry/${
                   this.chainVersion
-                }/can_propose/${this.poolId}/${address}`
+                }/can_propose/${this.poolId}/${address}/${
+                  this.pool.bundle_proposal.to_height
+                }`
               );
 
               canPropose = data;
