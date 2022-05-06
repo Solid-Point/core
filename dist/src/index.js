@@ -447,8 +447,9 @@ class KYVE {
         }
         await this.db.put("tail", parseInt(this.pool.height_archived));
     }
-    async validateProposal(created_at, alreadyVotedWithAbstain) {
+    async validateProposal(created_at, abstain) {
         this.logger.info(`Validating bundle ${this.pool.bundle_proposal.bundle_id}`);
+        let alreadyVotedWithAbstain = abstain;
         while (true) {
             await this.getPool(false);
             const remaining = this.remainingUploadInterval();
@@ -499,6 +500,7 @@ class KYVE {
                         this.logger.warn(` Could not load local bundle from ${this.pool.bundle_proposal.from_height} to ${this.pool.bundle_proposal.to_height}`);
                         // vote with abstain if local bundle could not be loaded
                         await this.vote(this.pool.bundle_proposal.bundle_id, 2);
+                        alreadyVotedWithAbstain = true;
                         await (0, helpers_1.sleep)(10 * 1000);
                     }
                 }
@@ -512,6 +514,7 @@ class KYVE {
                     this.logger.warn(` Could not download bundle from Arweave`);
                     // vote with abstain if arweave bundle could not be downloaded
                     await this.vote(this.pool.bundle_proposal.bundle_id, 2);
+                    alreadyVotedWithAbstain = true;
                     await (0, helpers_1.sleep)(10 * 1000);
                 }
             }

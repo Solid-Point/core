@@ -571,11 +571,13 @@ class KYVE {
 
   private async validateProposal(
     created_at: string,
-    alreadyVotedWithAbstain: boolean
+    abstain: boolean
   ): Promise<void> {
     this.logger.info(
       `Validating bundle ${this.pool.bundle_proposal.bundle_id}`
     );
+
+    let alreadyVotedWithAbstain = abstain;
 
     while (true) {
       await this.getPool(false);
@@ -643,6 +645,7 @@ class KYVE {
 
             // vote with abstain if local bundle could not be loaded
             await this.vote(this.pool.bundle_proposal.bundle_id, 2);
+            alreadyVotedWithAbstain = true;
             await sleep(10 * 1000);
           }
         }
@@ -658,6 +661,7 @@ class KYVE {
 
           // vote with abstain if arweave bundle could not be downloaded
           await this.vote(this.pool.bundle_proposal.bundle_id, 2);
+          alreadyVotedWithAbstain = true;
           await sleep(10 * 1000);
         }
       }
