@@ -499,7 +499,7 @@ class KYVE {
                         this.logger.warn(` Could not load local bundle from ${this.pool.bundle_proposal.from_height} to ${this.pool.bundle_proposal.to_height}`);
                         // vote with abstain if local bundle could not be loaded
                         await this.vote(this.pool.bundle_proposal.bundle_id, 2);
-                        break;
+                        await (0, helpers_1.sleep)(10 * 1000);
                     }
                 }
             }
@@ -512,7 +512,7 @@ class KYVE {
                     this.logger.warn(` Could not download bundle from Arweave`);
                     // vote with abstain if arweave bundle could not be downloaded
                     await this.vote(this.pool.bundle_proposal.bundle_id, 2);
-                    break;
+                    await (0, helpers_1.sleep)(10 * 1000);
                 }
             }
         }

@@ -643,7 +643,7 @@ class KYVE {
 
             // vote with abstain if local bundle could not be loaded
             await this.vote(this.pool.bundle_proposal.bundle_id, 2);
-            break;
+            await sleep(10 * 1000);
           }
         }
       } else {
@@ -658,7 +658,7 @@ class KYVE {
 
           // vote with abstain if arweave bundle could not be downloaded
           await this.vote(this.pool.bundle_proposal.bundle_id, 2);
-          break;
+          await sleep(10 * 1000);
         }
       }
     }
