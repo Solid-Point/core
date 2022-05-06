@@ -26,7 +26,7 @@ import {
 import { KyveSDK, KyveWallet } from "@kyve/sdk";
 import Transaction from "arweave/node/lib/transaction";
 import BigNumber from "bignumber.js";
-import { ARWEAVE_BUNDLE, NO_DATA_BUNDLE } from "./utils/constants";
+import { KYVE_ARWEAVE_BUNDLE, KYVE_NO_DATA_BUNDLE } from "./utils/constants";
 
 export * from "./utils";
 export * from "./faces";
@@ -251,7 +251,10 @@ class KYVE {
           } catch {}
 
           if (canVote.possible) {
-            await this.validateProposal(created_at);
+            await this.validateProposal(
+              created_at,
+              canVote.reason === "KYVE_VOTE_NO_ABSTAIN_ALLOWED"
+            );
             await this.getPool(false);
           } else {
             this.logger.debug(
@@ -298,7 +301,6 @@ class KYVE {
 
           while (true) {
             try {
-              console.log(this.pool.bundle_proposal.to_height);
               const { data } = await axios.get(
                 `${this.wallet.getRestEndpoint()}/kyve/registry/${
                   this.chainVersion
@@ -325,7 +327,7 @@ class KYVE {
 
           if (canPropose.possible) {
             this.logger.info(
-              `Creating new bundle proposal of type ${ARWEAVE_BUNDLE}`
+              `Creating new bundle proposal of type ${KYVE_ARWEAVE_BUNDLE}`
             );
 
             const uploadBundle = await this.createBundle();
@@ -345,11 +347,11 @@ class KYVE {
               }
             } else {
               this.logger.info(
-                `Creating new bundle proposal of type ${NO_DATA_BUNDLE}`
+                `Creating new bundle proposal of type ${KYVE_NO_DATA_BUNDLE}`
               );
 
               await this.submitBundleProposal(
-                NO_DATA_BUNDLE,
+                KYVE_NO_DATA_BUNDLE,
                 0,
                 uploadBundle.fromHeight,
                 0
@@ -542,14 +544,7 @@ class KYVE {
         bundle.push(entry);
         h++;
       } catch {
-        await sleep(1000);
-
-        const remaining = this.remainingUploadInterval();
-
-        // check if upload interval was reached in the meantime
-        if (remaining.isZero()) {
-          return null;
-        }
+        return null;
       }
     }
 
@@ -574,12 +569,14 @@ class KYVE {
     await this.db.put("tail", parseInt(this.pool.height_archived));
   }
 
-  private async validateProposal(created_at: string) {
+  private async validateProposal(
+    created_at: string,
+    alreadyVotedWithAbstain: boolean
+  ): Promise<void> {
     this.logger.info(
       `Validating bundle ${this.pool.bundle_proposal.bundle_id}`
     );
 
-    // try to fetch bundle
     while (true) {
       await this.getPool(false);
 
@@ -590,9 +587,7 @@ class KYVE {
         break;
       } else if (remaining.isZero()) {
         // check if upload interval was reached in the meantime
-        // vote with abstain if upload interval was reached
-        this.logger.debug(`Reached upload interval`);
-        await this.vote(this.pool.bundle_proposal.bundle_id, 2);
+        this.logger.debug(`Reached upload interval. Skipping vote ...`);
         break;
       } else if (this.pool.paused) {
         // check if pool got paused in the meantime
@@ -635,18 +630,36 @@ class KYVE {
             break;
           }
         } else {
-          this.logger.debug(`Reached upload interval`);
-          // vote with abstain if upload interval was reached
+          if (alreadyVotedWithAbstain) {
+            this.logger.warn(
+              ` Could not load local bundle from ${this.pool.bundle_proposal.from_height} to ${this.pool.bundle_proposal.to_height}. Retrying in 10s ...`
+            );
+
+            await sleep(10 * 1000);
+          } else {
+            this.logger.warn(
+              ` Could not load local bundle from ${this.pool.bundle_proposal.from_height} to ${this.pool.bundle_proposal.to_height}`
+            );
+
+            // vote with abstain if local bundle could not be loaded
+            await this.vote(this.pool.bundle_proposal.bundle_id, 2);
+            break;
+          }
+        }
+      } else {
+        if (alreadyVotedWithAbstain) {
+          this.logger.warn(
+            ` Could not download bundle from Arweave. Retrying in 10s ...`
+          );
+
+          await sleep(10 * 1000);
+        } else {
+          this.logger.warn(` Could not download bundle from Arweave`);
+
+          // vote with abstain if arweave bundle could not be downloaded
           await this.vote(this.pool.bundle_proposal.bundle_id, 2);
           break;
         }
-      } else {
-        this.logger.warn(
-          ` Failed to fetch bundle from Arweave. Retrying in 10s ...`
-        );
-
-        // TODO: how to vote with abstain directly after upload_timeout?
-        await sleep(10 * 1000);
       }
     }
   }

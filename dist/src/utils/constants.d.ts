@@ -1,2 +1,2 @@
-export declare const ARWEAVE_BUNDLE = "ARWEAVE_BUNDLE";
-export declare const NO_DATA_BUNDLE = "NO_DATA_BUNDLE";
+export declare const KYVE_ARWEAVE_BUNDLE = "KYVE_ARWEAVE_BUNDLE";
+export declare const KYVE_NO_DATA_BUNDLE = "KYVE_NO_DATA_BUNDLE";
