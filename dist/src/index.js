@@ -379,7 +379,6 @@ class KYVE {
     }
     async createBundle() {
         const bundleDataSizeLimit = 20 * 1000 * 1000; // 20 MB
-        const bundleItemSizeLimit = 1000;
         const bundle = [];
         let currentDataSize = 0;
         let h = +this.pool.bundle_proposal.to_height;
@@ -396,7 +395,7 @@ class KYVE {
                     break;
                 }
                 // break if bundle item size limit is reached
-                if (bundle.length >= bundleItemSizeLimit) {
+                if (bundle.length >= +this.pool.max_bundle_size) {
                     break;
                 }
                 bundle.push(entry);

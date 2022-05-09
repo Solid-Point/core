@@ -486,7 +486,6 @@ class KYVE {
 
   private async createBundle(): Promise<Bundle> {
     const bundleDataSizeLimit = 20 * 1000 * 1000; // 20 MB
-    const bundleItemSizeLimit = 1000;
     const bundle: any[] = [];
 
     let currentDataSize = 0;
@@ -511,7 +510,7 @@ class KYVE {
         }
 
         // break if bundle item size limit is reached
-        if (bundle.length >= bundleItemSizeLimit) {
+        if (bundle.length >= +this.pool.max_bundle_size) {
           break;
         }
 
