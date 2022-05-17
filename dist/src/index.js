@@ -29,7 +29,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const arweave_1 = __importDefault(require("arweave"));
 const fs_1 = require("fs");
 const prando_1 = __importDefault(require("prando"));
 const semver_1 = require("semver");
@@ -50,6 +49,7 @@ const unique_names_generator_1 = require("unique-names-generator");
 const sdk_1 = require("@kyve/sdk");
 const bignumber_js_1 = __importDefault(require("bignumber.js"));
 const constants_1 = require("./utils/constants");
+const client_1 = __importDefault(require("@bundlr-network/client"));
 __exportStar(require("./utils"), exports);
 __exportStar(require("./faces"), exports);
 __exportStar(require("./utils/helpers"), exports);
@@ -72,10 +72,6 @@ const metricsDbUsed = new prom_client_1.default.Gauge({
 class KYVE {
     constructor(cli) {
         var _a;
-        this.arweave = new arweave_1.default({
-            host: "arweave.net",
-            protocol: "https",
-        });
         if (!cli) {
             cli = new utils_1.CLI(process.env.KYVE_RUNTIME, process.env.KYVE_VERSION);
         }
@@ -92,6 +88,7 @@ class KYVE {
         this.wallet = new sdk_1.KyveWallet(options.network, options.mnemonic);
         this.sdk = new sdk_1.KyveSDK(this.wallet);
         this.db = new database_1.Database(this.name);
+        this.bundlr = new client_1.default("https://node1.bundlr.network", "kyve", options.mnemonic);
         if (!(0, fs_1.existsSync)("./logs")) {
             (0, fs_1.mkdirSync)("./logs");
         }
@@ -265,7 +262,7 @@ class KYVE {
                             transaction = await this.uploadBundleToArweave(uploadBundle);
                             // submit bundle proposal
                             if (transaction) {
-                                await this.submitBundleProposal(transaction.id, +transaction.data_size, uploadBundle.fromHeight, uploadBundle.bundleSize);
+                                await this.submitBundleProposal(transaction.id, +transaction.size, uploadBundle.fromHeight, uploadBundle.bundleSize);
                             }
                         }
                         else {
@@ -541,7 +538,7 @@ class KYVE {
     }
     async downloadBundleFromArweave() {
         try {
-            const { status } = await this.arweave.transactions.getStatus(this.pool.bundle_proposal.bundle_id);
+            const { status } = await axios_1.default.get(`https://arweave.net/tx/${this.pool.bundle_proposal.bundle_id}/status`);
             if (status === 200 || status === 202) {
                 const { data: downloadBundle } = await axios_1.default.get(`https://arweave.net/${this.pool.bundle_proposal.bundle_id}`, { responseType: "arraybuffer" });
                 return downloadBundle;
@@ -555,32 +552,32 @@ class KYVE {
     async uploadBundleToArweave(uploadBundle) {
         try {
             this.logger.debug("Uploading bundle to Arweave ...");
-            const transaction = await this.arweave.createTransaction({
-                data: (0, zlib_1.gzipSync)(uploadBundle.bundle),
-            });
-            this.logger.debug(`Bundle details = bytes: ${transaction.data_size}, items: ${uploadBundle.toHeight - uploadBundle.fromHeight}`);
-            transaction.addTag("Application", "KYVE");
-            transaction.addTag("Network", this.network);
-            transaction.addTag("Pool", this.poolId.toString());
-            transaction.addTag("@kyve/core", package_json_1.version);
-            transaction.addTag(this.runtime, this.version);
-            transaction.addTag("Uploader", this.pool.bundle_proposal.next_uploader);
-            transaction.addTag("FromHeight", uploadBundle.fromHeight.toString());
-            transaction.addTag("ToHeight", uploadBundle.toHeight.toString());
-            transaction.addTag("Content-Type", "application/gzip");
-            await this.arweave.transactions.sign(transaction, this.keyfile);
+            const tags = [
+                { name: "Application", value: "KYVE" },
+                { name: "Network", value: this.network },
+                { name: "Pool", value: this.poolId.toString() },
+                { name: "@kyve/core", value: package_json_1.version },
+                { name: this.runtime, value: this.version },
+                { name: "Uploader", value: this.pool.bundle_proposal.next_uploader },
+                { name: "FromHeight", value: uploadBundle.fromHeight.toString() },
+                { name: "ToHeight", value: uploadBundle.toHeight.toString() },
+                { name: "Content-Type", value: "application/gzip" },
+            ];
+            const transaction = this.bundlr.createTransaction((0, zlib_1.gzipSync)(uploadBundle.bundle), { tags });
+            this.logger.debug(`Bundle details = bytes: ${transaction.size}, items: ${uploadBundle.toHeight - uploadBundle.fromHeight}`);
+            await transaction.sign();
             try {
-                const balance = await this.arweave.wallets.getBalance(await this.arweave.wallets.getAddress(this.keyfile));
-                if (+transaction.reward > +balance) {
-                    this.logger.error("Not enough funds in Arweave wallet. Exiting ...");
-                    process.exit(1);
+                const balance = await this.bundlr.getLoadedBalance();
+                const price = await this.bundlr.getPrice(transaction.size);
+                if (balance.isLessThan(price)) {
+                    await this.bundlr.fund(balance.minus(price).multipliedBy(1.5));
                 }
             }
             catch {
-                this.logger.warn(" Failed to load Arweave account balance. Skipping upload ...");
+                this.logger.warn(" Failed while trying to top up Bundlr balance. Skipping upload ...");
                 return null;
             }
-            await this.arweave.transactions.post(transaction);
+            await transaction.upload();
             this.logger.debug(`Uploaded bundle with tx id: ${transaction.id}`);
             return transaction;
         }

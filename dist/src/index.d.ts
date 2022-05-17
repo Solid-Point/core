@@ -1,10 +1,10 @@
-import Arweave from "arweave";
 import { JWKInterface } from "arweave/node/lib/wallet";
 import { Logger } from "tslog";
 import { CLI } from "./utils";
 import client from "prom-client";
 import { Database } from "./utils/database";
 import { KyveSDK, KyveWallet } from "@kyve/sdk";
+import Bundlr from "@bundlr-network/client";
 export * from "./utils";
 export * from "./faces";
 export * from "./utils/helpers";
@@ -26,7 +26,7 @@ declare class KYVE {
     protected space: number;
     protected db: Database;
     protected logger: Logger;
-    protected arweave: Arweave;
+    protected bundlr: Bundlr;
     static metrics: typeof client;
     constructor(cli?: CLI);
     start(): Promise<void>;
