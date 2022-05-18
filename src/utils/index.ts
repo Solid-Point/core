@@ -7,10 +7,6 @@ export class CLI extends Command {
   ) {
     super(runtime);
 
-    this.option(
-      "--name <string>",
-      "The identifier name of the node. [optional, default = auto generated]"
-    );
     this.requiredOption(
       "-p, --poolId <number>",
       "The id of the pool you want to run on."

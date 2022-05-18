@@ -70,7 +70,6 @@ const metricsDbUsed = new prom_client_1.default.Gauge({
 });
 class KYVE {
     constructor(cli) {
-        var _a;
         this.arweave = new arweave_1.default({
             host: "arweave.net",
             protocol: "https",
@@ -86,7 +85,7 @@ class KYVE {
         this.stake = options.initialStake || "0";
         this.keyfile = JSON.parse((0, fs_1.readFileSync)(options.keyfile, "utf-8"));
         this.runMetrics = options.metrics;
-        this.name = (_a = options === null || options === void 0 ? void 0 : options.name) !== null && _a !== void 0 ? _a : this.generateRandomName(options.mnemonic);
+        this.name = this.generateRandomName(options.mnemonic);
         this.chainVersion = "v1beta1";
         this.wallet = new sdk_1.KyveWallet(options.network, options.mnemonic);
         this.sdk = new sdk_1.KyveSDK(this.wallet);
@@ -241,7 +240,6 @@ class KYVE {
                     };
                     while (true) {
                         try {
-                            console.log(`${this.wallet.getRestEndpoint()}/kyve/registry/${this.chainVersion}/can_propose/${this.poolId}/${address}/${this.pool.bundle_proposal.to_height}`);
                             const { data } = await axios_1.default.get(`${this.wallet.getRestEndpoint()}/kyve/registry/${this.chainVersion}/can_propose/${this.poolId}/${address}/${this.pool.bundle_proposal.to_height}`);
                             canPropose = data;
                             if (!canPropose.possible &&
@@ -253,8 +251,8 @@ class KYVE {
                                 break;
                             }
                         }
-                        catch (err) {
-                            console.log(err);
+                        catch {
+                            await (0, helpers_1.sleep)(10 * 1000);
                             break;
                         }
                     }

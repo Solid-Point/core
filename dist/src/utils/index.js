@@ -7,7 +7,6 @@ class CLI extends commander_1.Command {
         super(runtime);
         this.runtime = runtime;
         this.packageVersion = packageVersion;
-        this.option("--name <string>", "The identifier name of the node. [optional, default = auto generated]");
         this.requiredOption("-p, --poolId <number>", "The id of the pool you want to run on.");
         this.requiredOption("-m, --mnemonic <string>", "Your mnemonic of your account.");
         this.requiredOption("-k, --keyfile <string>", "The path to your Arweave keyfile.");

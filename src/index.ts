@@ -89,7 +89,7 @@ class KYVE {
     this.stake = options.initialStake || "0";
     this.keyfile = JSON.parse(readFileSync(options.keyfile, "utf-8"));
     this.runMetrics = options.metrics;
-    this.name = options?.name ?? this.generateRandomName(options.mnemonic);
+    this.name = this.generateRandomName(options.mnemonic);
     this.chainVersion = "v1beta1";
 
     this.wallet = new KyveWallet(options.network, options.mnemonic);
@@ -300,13 +300,6 @@ class KYVE {
 
           while (true) {
             try {
-              console.log(
-                `${this.wallet.getRestEndpoint()}/kyve/registry/${
-                  this.chainVersion
-                }/can_propose/${this.poolId}/${address}/${
-                  this.pool.bundle_proposal.to_height
-                }`
-              );
               const { data } = await axios.get(
                 `${this.wallet.getRestEndpoint()}/kyve/registry/${
                   this.chainVersion
@@ -326,8 +319,8 @@ class KYVE {
               } else {
                 break;
               }
-            } catch (err) {
-              console.log(err);
+            } catch {
+              await sleep(10 * 1000);
               break;
             }
           }
