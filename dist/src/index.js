@@ -219,8 +219,12 @@ class KYVE {
                     this.pool.stakers.length > 1 &&
                     +this.pool.total_funds > 0 &&
                     !this.pool.paused) {
-                    await this.claimUploaderRole();
-                    continue;
+                    if (!(+this.pool.upgrade_plan.scheduted_at > 0 &&
+                        Math.floor(Date.now() / 1000) >=
+                            +this.pool.upgrade_plan.scheduted_at)) {
+                        await this.claimUploaderRole();
+                        continue;
+                    }
                 }
                 // submit bundle proposals if node is next uploader
                 if (this.pool.bundle_proposal.next_uploader === address) {
@@ -623,7 +627,7 @@ class KYVE {
         }
         catch (error) {
             this.logger.error("Failed to claim uploader role. Skipping ...");
-            this.logger.debug(error);
+            await (0, helpers_1.sleep)(10 * 1000);
         }
     }
     remainingUploadInterval() {

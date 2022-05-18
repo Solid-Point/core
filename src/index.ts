@@ -269,8 +269,16 @@ class KYVE {
           +this.pool.total_funds > 0 &&
           !this.pool.paused
         ) {
-          await this.claimUploaderRole();
-          continue;
+          if (
+            !(
+              +this.pool.upgrade_plan.scheduted_at > 0 &&
+              Math.floor(Date.now() / 1000) >=
+                +this.pool.upgrade_plan.scheduted_at
+            )
+          ) {
+            await this.claimUploaderRole();
+            continue;
+          }
         }
 
         // submit bundle proposals if node is next uploader
@@ -830,7 +838,7 @@ class KYVE {
       }
     } catch (error) {
       this.logger.error("Failed to claim uploader role. Skipping ...");
-      this.logger.debug(error);
+      await sleep(10 * 1000);
     }
   }
 
