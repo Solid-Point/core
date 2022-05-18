@@ -300,6 +300,13 @@ class KYVE {
 
           while (true) {
             try {
+              console.log(
+                `${this.wallet.getRestEndpoint()}/kyve/registry/${
+                  this.chainVersion
+                }/can_propose/${this.poolId}/${address}/${
+                  this.pool.bundle_proposal.to_height
+                }`
+              );
               const { data } = await axios.get(
                 `${this.wallet.getRestEndpoint()}/kyve/registry/${
                   this.chainVersion
@@ -319,7 +326,8 @@ class KYVE {
               } else {
                 break;
               }
-            } catch {
+            } catch (err) {
+              console.log(err);
               break;
             }
           }

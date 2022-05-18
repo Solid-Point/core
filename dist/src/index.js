@@ -32,7 +32,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const arweave_1 = __importDefault(require("arweave"));
 const fs_1 = require("fs");
 const prando_1 = __importDefault(require("prando"));
-const semver_1 = require("semver");
 const tslog_1 = require("tslog");
 const utils_1 = require("./utils");
 const helpers_1 = require("./utils/helpers");
@@ -242,6 +241,7 @@ class KYVE {
                     };
                     while (true) {
                         try {
+                            console.log(`${this.wallet.getRestEndpoint()}/kyve/registry/${this.chainVersion}/can_propose/${this.poolId}/${address}/${this.pool.bundle_proposal.to_height}`);
                             const { data } = await axios_1.default.get(`${this.wallet.getRestEndpoint()}/kyve/registry/${this.chainVersion}/can_propose/${this.poolId}/${address}/${this.pool.bundle_proposal.to_height}`);
                             canPropose = data;
                             if (!canPropose.possible &&
@@ -253,7 +253,8 @@ class KYVE {
                                 break;
                             }
                         }
-                        catch {
+                        catch (err) {
+                            console.log(err);
                             break;
                         }
                     }
@@ -710,7 +711,7 @@ class KYVE {
             this.logger.debug("Attempting to fetch pool state.");
         }
         return new Promise(async (resolve) => {
-            var _a, _b;
+            var _a;
             let requests = 1;
             while (true) {
                 try {
@@ -725,6 +726,7 @@ class KYVE {
                         }
                         this.pool.config = {};
                     }
+                    // Validate runtime
                     if (this.pool.runtime === this.runtime) {
                         if (logs) {
                             this.logger.info(`Running node on runtime ${this.runtime}.`);
@@ -734,20 +736,14 @@ class KYVE {
                         this.logger.error("Specified pool does not match the integration runtime");
                         process.exit(1);
                     }
-                    try {
-                        if ((0, semver_1.satisfies)(this.version, this.pool.versions || this.version)) {
-                            if (logs) {
-                                this.logger.info("Pool version requirements met");
-                            }
-                        }
-                        else {
-                            this.logger.error(`Running an invalid version for the specified pool. Version requirements are ${this.pool.versions}`);
-                            process.exit(1);
+                    // Validate version
+                    if (this.pool.protocol.version === this.version) {
+                        if (logs) {
+                            this.logger.info("Pool version requirements met");
                         }
                     }
-                    catch (error) {
-                        this.logger.error(`Failed to parse the node version: ${(_b = this.pool) === null || _b === void 0 ? void 0 : _b.versions}`);
-                        this.logger.debug(error);
+                    else {
+                        this.logger.error(`Running an invalid version. Version requirements are ${this.pool.protocol.version}`);
                         process.exit(1);
                     }
                     break;
