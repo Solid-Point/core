@@ -2,12 +2,11 @@ import Arweave from "arweave";
 import { JWKInterface } from "arweave/node/lib/wallet";
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from "fs";
 import Prando from "prando";
-import { satisfies } from "semver";
 import { ILogObject, Logger } from "tslog";
 import { Bundle } from "./faces";
 import { CLI } from "./utils";
 import { sleep, toHumanReadable } from "./utils/helpers";
-import { version } from "../package.json";
+import { version as coreVersion } from "../package.json";
 import hash from "object-hash";
 import http from "http";
 import url from "url";
@@ -163,7 +162,7 @@ class KYVE {
     this.logger.info(`Name \t\t = ${this.name}`);
     this.logger.info(`Address \t\t = ${await this.wallet.getAddress()}`);
     this.logger.info(`Pool Id \t\t = ${this.poolId}`);
-    this.logger.info(`@kyve/core \t = v${version}`);
+    this.logger.info(`@kyve/core \t = v${coreVersion}`);
     this.logger.info(`${this.runtime} \t = v${this.version}`);
     console.log("");
 
@@ -737,7 +736,7 @@ class KYVE {
       transaction.addTag("Application", "KYVE");
       transaction.addTag("Network", this.network);
       transaction.addTag("Pool", this.poolId.toString());
-      transaction.addTag("@kyve/core", version);
+      transaction.addTag("@kyve/core", coreVersion);
       transaction.addTag(this.runtime, this.version);
       transaction.addTag("Uploader", this.pool.bundle_proposal.next_uploader);
       transaction.addTag("FromHeight", uploadBundle.fromHeight.toString());
@@ -957,6 +956,7 @@ class KYVE {
             this.pool.config = {};
           }
 
+          // Validate runtime
           if (this.pool.runtime === this.runtime) {
             if (logs) {
               this.logger.info(`Running node on runtime ${this.runtime}.`);
@@ -968,22 +968,15 @@ class KYVE {
             process.exit(1);
           }
 
-          try {
-            if (satisfies(this.version, this.pool.versions || this.version)) {
-              if (logs) {
-                this.logger.info("Pool version requirements met");
-              }
-            } else {
-              this.logger.error(
-                `Running an invalid version for the specified pool. Version requirements are ${this.pool.versions}`
-              );
-              process.exit(1);
+          // Validate version
+          if (this.pool.protocol.version === this.version) {
+            if (logs) {
+              this.logger.info("Pool version requirements met");
             }
-          } catch (error) {
+          } else {
             this.logger.error(
-              `Failed to parse the node version: ${this.pool?.versions}`
+              `Running an invalid version. Version requirements are ${this.pool.protocol.version}`
             );
-            this.logger.debug(error);
             process.exit(1);
           }
 
