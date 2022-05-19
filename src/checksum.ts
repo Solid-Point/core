@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { createReadStream, readdirSync } from "fs";
+import { createReadStream, readdirSync, writeFileSync } from "fs";
 
 export const getChecksum = (path: string): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -20,11 +20,16 @@ export const getChecksum = (path: string): Promise<string> => {
 
 const main = async () => {
   const files = readdirSync(`./out/`);
+  let result = "";
 
   for (let file of files) {
     const checksum = await getChecksum(`./out/${file}`);
+
     console.log(`${file} -> ${checksum}`);
+    result += `${file} ${checksum}\n`;
   }
+
+  writeFileSync(`./out/checksum.txt`, result);
 };
 
 main();

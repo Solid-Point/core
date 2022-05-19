@@ -22,9 +22,12 @@ const getChecksum = (path) => {
 exports.getChecksum = getChecksum;
 const main = async () => {
     const files = (0, fs_1.readdirSync)(`./out/`);
+    let result = "";
     for (let file of files) {
         const checksum = await (0, exports.getChecksum)(`./out/${file}`);
         console.log(`${file} -> ${checksum}`);
+        result += `${file} ${checksum}\n`;
     }
+    (0, fs_1.writeFileSync)(`./out/checksum.txt`, result);
 };
 main();
