@@ -26,7 +26,7 @@ const main = async () => {
     const checksum = await getChecksum(`./out/${file}`);
 
     console.log(`${file} -> ${checksum}`);
-    result += `${file} ${checksum}\n`;
+    result += `${checksum} ${file}\n`;
   }
 
   writeFileSync(`./out/checksum.txt`, result);

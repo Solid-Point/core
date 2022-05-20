@@ -26,7 +26,7 @@ const main = async () => {
     for (let file of files) {
         const checksum = await (0, exports.getChecksum)(`./out/${file}`);
         console.log(`${file} -> ${checksum}`);
-        result += `${file} ${checksum}\n`;
+        result += `${checksum} ${file}\n`;
     }
     (0, fs_1.writeFileSync)(`./out/checksum.txt`, result);
 };
