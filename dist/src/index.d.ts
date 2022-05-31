@@ -21,7 +21,6 @@ declare class KYVE {
     protected keyfile: JWKInterface;
     protected name: string;
     protected network: string;
-    protected batchSize: number;
     protected runMetrics: boolean;
     protected space: number;
     protected db: Database;

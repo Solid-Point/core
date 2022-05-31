@@ -120,14 +120,6 @@ class KYVE {
             this.logger.error(`Disk space has to be greater than 0 bytes. Exiting ...`);
             process.exit(1);
         }
-        // check if batch size is greater than 0
-        if (+options.batchSize > 0) {
-            this.batchSize = +options.batchSize;
-        }
-        else {
-            this.logger.error(`Batch size has to be greater than 0. Exiting ...`);
-            process.exit(1);
-        }
         // check if network is valid
         if (options.network === "alpha" ||
             options.network === "beta" ||
@@ -333,7 +325,6 @@ class KYVE {
                 }
             }
             catch { }
-            const targetHeight = height + this.batchSize;
             try {
                 const usedDiskSpace = await (0, du_1.default)(`./db/${this.name}/`);
                 const usedDiskSpacePercent = parseFloat(((usedDiskSpace * 100) / this.space).toFixed(2));
@@ -345,16 +336,11 @@ class KYVE {
                     await (0, helpers_1.sleep)(60 * 1000);
                     continue;
                 }
-                const batch = [];
-                for (let h = height; h < targetHeight; h++) {
-                    batch.push(this.getDataItemAndSave(h));
-                    await (0, helpers_1.sleep)(10);
-                }
-                await Promise.all(batch);
-                await this.db.put("head", targetHeight);
+                await this.getDataItemAndSave(height);
+                await this.db.put("head", height + 1);
             }
             catch (error) {
-                this.logger.warn(` Failed to write data items from height = ${height} to ${targetHeight} to local DB`);
+                this.logger.warn(` Failed to write data items from height = ${height} to local DB`);
                 await (0, helpers_1.sleep)(10 * 1000);
             }
         }
