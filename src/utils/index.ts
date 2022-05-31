@@ -34,11 +34,6 @@ export class CLI extends Command {
       "1000000000"
     );
     this.option(
-      "-b, --batchSize <number>",
-      "The batch size of fetching items from datasource. For synchronous fetching enter 1. [optional, default = 1]",
-      "1"
-    );
-    this.option(
       "--metrics",
       "Run Prometheus metrics server. [optional, default = false]",
       false
