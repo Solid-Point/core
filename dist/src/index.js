@@ -113,7 +113,7 @@ class KYVE {
             fatal: logToTransport,
         });
         // check if disk space is greater than 0
-        if (+options.batchSize > 0) {
+        if (+options.space > 0) {
             this.space = +options.space;
         }
         else {
