@@ -211,10 +211,9 @@ class KYVE {
                     this.pool.stakers.length > 1 &&
                     +this.pool.total_funds > 0 &&
                     !this.pool.paused) {
-                    if (!(+this.pool.upgrade_plan.scheduted_at > 0 &&
+                    if (!(+this.pool.upgrade_plan.scheduledAt > 0 &&
                         Math.floor(Date.now() / 1000) >=
-                            parseInt(this.pool.upgrade_plan.scheduted_at) +
-                                parseInt(this.pool.upgrade_plan.duration))) {
+                            +this.pool.upgrade_plan.scheduledAt)) {
                         await this.claimUploaderRole();
                         continue;
                     }
