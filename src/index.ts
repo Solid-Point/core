@@ -264,7 +264,8 @@ class KYVE {
             !(
               +this.pool.upgrade_plan.scheduted_at > 0 &&
               Math.floor(Date.now() / 1000) >=
-                +this.pool.upgrade_plan.scheduted_at
+                parseInt(this.pool.upgrade_plan.scheduted_at) +
+                  parseInt(this.pool.upgrade_plan.duration)
             )
           ) {
             await this.claimUploaderRole();
