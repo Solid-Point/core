@@ -162,6 +162,13 @@ class KYVE {
                 await this.verifyNode(false);
                 // save height of bundle proposal
                 const created_at = this.pool.bundle_proposal.created_at;
+                // check if pool is upgrading
+                if (+this.pool.upgrade_plan.scheduled_at > 0 &&
+                    Math.floor(Date.now() / 1000) >= +this.pool.upgrade_plan.scheduled_at) {
+                    this.logger.warn(" Pool is upgrading. Idling ...");
+                    await (0, helpers_1.sleep)(60 * 1000);
+                    continue;
+                }
                 // check if pool is paused
                 if (this.pool.paused) {
                     this.logger.warn(" Pool is paused. Idling ...");
