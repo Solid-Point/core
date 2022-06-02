@@ -563,9 +563,9 @@ arconnect@^0.4.2:
     arweave "^1.10.13"
 
 arweave@^1.10.13, arweave@^1.10.17:
-  version "1.11.2"
-  resolved "https://registry.yarnpkg.com/arweave/-/arweave-1.11.2.tgz#a3ffc670f03f349188a34b12cc4f170e17d12c7e"
-  integrity sha512-KkNwezSvt+Stz78T+UdLNiMyUEehCW33iNDs2mjJdbhYU/4lwwS0k9TcRF1Fk4AbuPX2oq+zYdpjOPCnXNgh7g==
+  version "1.11.3"
+  resolved "https://registry.yarnpkg.com/arweave/-/arweave-1.11.3.tgz#541a3c7a089b7fd443b75369441ce3d17fa5517b"
+  integrity sha512-mzJBEbKNCH5JMib3pyHezUtZWs1p64bNeGsiPoIJwuGx1jiKGnEqzR5hd9qNbswIu1PvRj3sbwSLoX3YN+qc6g==
   dependencies:
     arconnect "^0.4.2"
     asn1.js "^5.4.1"

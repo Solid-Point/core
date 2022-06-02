@@ -359,9 +359,9 @@ class KYVE {
                 `Creating new bundle proposal of type ${KYVE_NO_DATA_BUNDLE}`
               );
 
-              const noDataBundleId = `${KYVE_NO_DATA_BUNDLE}_${Math.floor(
-                Date.now() / 1000
-              )}`;
+              const noDataBundleId = `${KYVE_NO_DATA_BUNDLE}_${
+                this.poolId
+              }_${Math.floor(Date.now() / 1000)}`;
 
               await this.submitBundleProposal(
                 noDataBundleId,

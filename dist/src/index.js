@@ -272,7 +272,8 @@ class KYVE {
                         }
                         else {
                             this.logger.info(`Creating new bundle proposal of type ${constants_1.KYVE_NO_DATA_BUNDLE}`);
-                            await this.submitBundleProposal(constants_1.KYVE_NO_DATA_BUNDLE, 0, uploadBundle.fromHeight, 0);
+                            const noDataBundleId = `${constants_1.KYVE_NO_DATA_BUNDLE}_${this.poolId}_${Math.floor(Date.now() / 1000)}`;
+                            await this.submitBundleProposal(noDataBundleId, 0, uploadBundle.fromHeight, 0);
                         }
                     }
                     else {
