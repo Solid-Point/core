@@ -1,6 +1,10 @@
 export type Bundle = {
   fromHeight: number;
   toHeight: number;
-  bundleSize: number;
-  bundle: Buffer;
+  bundle: any[];
+};
+
+export type Item = {
+  key: string;
+  value: any;
 };

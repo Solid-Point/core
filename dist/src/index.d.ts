@@ -1,6 +1,7 @@
 import Arweave from "arweave";
 import { JWKInterface } from "arweave/node/lib/wallet";
 import { Logger } from "tslog";
+import { Item } from "./faces";
 import { CLI } from "./utils";
 import client from "prom-client";
 import { Database } from "./utils/database";
@@ -22,7 +23,6 @@ declare class KYVE {
     protected name: string;
     protected network: string;
     protected runMetrics: boolean;
-    protected space: number;
     protected db: Database;
     protected logger: Logger;
     protected arweave: Arweave;
@@ -30,14 +30,8 @@ declare class KYVE {
     constructor(cli?: CLI);
     start(): Promise<void>;
     private run;
-    private logCacheHeight;
-    private cache;
-    getDataItem(key: number): Promise<{
-        key: number;
-        value: any;
-    }>;
-    private getDataItemAndSave;
-    private createBundle;
+    private cacheCurrentRound;
+    getDataItem(previousKey: string | null): Promise<Item>;
     private loadBundle;
     private clearFinalizedData;
     private validateProposal;

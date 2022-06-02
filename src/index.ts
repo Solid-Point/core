@@ -3,7 +3,7 @@ import { JWKInterface } from "arweave/node/lib/wallet";
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from "fs";
 import Prando from "prando";
 import { ILogObject, Logger } from "tslog";
-import { Bundle } from "./faces";
+import { Bundle, Item } from "./faces";
 import { CLI } from "./utils";
 import { sleep, toHumanReadable } from "./utils/helpers";
 import { version as coreVersion } from "../package.json";
@@ -12,7 +12,6 @@ import http from "http";
 import url from "url";
 import client, { register } from "prom-client";
 import { Database } from "./utils/database";
-import du from "du";
 import { gzipSync, gunzipSync } from "zlib";
 import axios from "axios";
 import sizeof from "object-sizeof";
@@ -36,21 +35,6 @@ client.collectDefaultMetrics({
   labels: { app: "kyve-core" },
 });
 
-const metricsCacheHeight = new client.Gauge({
-  name: "current_cache_height",
-  help: "The current height the cache has indexed to.",
-});
-
-const metricsDbSize = new client.Gauge({
-  name: "current_db_size",
-  help: "The size of the local database.",
-});
-
-const metricsDbUsed = new client.Gauge({
-  name: "current_db_used",
-  help: "The database usage in percent.",
-});
-
 class KYVE {
   protected poolId: number;
   protected pool: any;
@@ -64,7 +48,6 @@ class KYVE {
   protected name: string;
   protected network: string;
   protected runMetrics: boolean;
-  protected space: number;
   protected db: Database;
   protected logger: Logger;
   protected arweave = new Arweave({
@@ -122,16 +105,6 @@ class KYVE {
       fatal: logToTransport,
     });
 
-    // check if disk space is greater than 0
-    if (+options.space > 0) {
-      this.space = +options.space;
-    } else {
-      this.logger.error(
-        `Disk space has to be greater than 0 bytes. Exiting ...`
-      );
-      process.exit(1);
-    }
-
     // check if network is valid
     if (
       options.network === "alpha" ||
@@ -165,7 +138,6 @@ class KYVE {
     await this.getPool(false);
     await this.verifyNode();
 
-    this.cache();
     this.run();
   }
 
@@ -177,14 +149,12 @@ class KYVE {
         console.log("");
         this.logger.info("Starting new proposal");
 
-        await this.logCacheHeight();
-
         // get current pool state and verify node
         await this.getPool(false);
         await this.verifyNode(false);
 
         // save height of bundle proposal
-        const created_at = this.pool.bundle_proposal.created_at;
+        const created_at = +this.pool.bundle_proposal.created_at;
 
         // check if pool is upgrading
         if (
@@ -221,7 +191,9 @@ class KYVE {
           continue;
         }
 
-        await this.clearFinalizedData();
+        // TODO: delete old data from cache
+        // TODO: start caching from bundle_proposal.to_height to + max_bundle_size
+        this.cacheCurrentRound();
 
         if (this.pool.bundle_proposal.next_uploader === address) {
           this.logger.info("Selected as UPLOADER");
@@ -339,9 +311,12 @@ class KYVE {
               `Creating new bundle proposal of type ${KYVE_ARWEAVE_BUNDLE}`
             );
 
-            const uploadBundle = await this.createBundle();
+            const fromHeight = +this.pool.bundle_proposal.to_height;
+            const toHeight = +this.pool.max_bundle_size + fromHeight;
 
-            if (uploadBundle.bundleSize) {
+            const uploadBundle = await this.loadBundle(fromHeight, toHeight);
+
+            if (uploadBundle.bundle.length) {
               // upload bundle to Arweave
               transaction = await this.uploadBundleToArweave(uploadBundle);
 
@@ -351,7 +326,7 @@ class KYVE {
                   transaction.id,
                   +transaction.data_size,
                   uploadBundle.fromHeight,
-                  uploadBundle.bundleSize
+                  uploadBundle.bundle.length
                 );
               }
             } else {
@@ -383,171 +358,96 @@ class KYVE {
     }
   }
 
-  private async logCacheHeight() {
-    let height: number = 0;
-    let head: number = 0;
-    let tail: number = 0;
+  private async cacheCurrentRound() {
+    const from_height = +this.pool.bundle_proposal.to_height;
+    const to_height = +this.pool.max_bundle_size;
 
-    try {
-      height = parseInt(this.pool.height_archived);
-      head = parseInt(await this.db.get("head"));
-      tail = parseInt(await this.db.get("tail"));
+    for (let height = from_height; height < to_height; height++) {
+      let requests = 1;
 
-      // reset cache if state is inconsistent and continue with pool height
-      if (height < tail) {
-        this.logger.warn(` Inconsistent state. Resetting cache ...`);
-        await this.db.drop();
-      }
+      // Get previousKey from bundle_proposal.to_key;
+      let previousKey: string | null = null;
 
-      // continue from current cache height
-      if (height < head) {
-        height = head;
-      }
-    } catch {}
+      while (true) {
+        try {
+          const item: Item = await this.getDataItem(previousKey);
+          previousKey = item.key;
+          await this.db.put(height, item);
 
-    this.logger.info(`Cached to height = ${height}`);
-  }
+          break;
+        } catch {
+          this.logger.warn(
+            ` Failed to write data items from height = ${height} to local DB`
+          );
 
-  private async cache() {
-    while (true) {
-      let height: number = 0;
-      let head: number = 0;
-      let tail: number = 0;
+          await sleep(requests * 10 * 1000);
 
-      try {
-        height = parseInt(this.pool.height_archived);
-        head = parseInt(await this.db.get("head"));
-        tail = parseInt(await this.db.get("tail"));
-
-        // reset cache and continue with pool height
-        if (height < tail) {
-          this.logger.debug(`Resetting cache ...`);
-          await this.db.drop();
+          // limit timeout to 5 mins
+          if (requests < 30) {
+            requests++;
+          }
         }
-
-        // continue from current cache height
-        if (height < head) {
-          height = head;
-        }
-      } catch {}
-
-      try {
-        const usedDiskSpace = await du(`./db/${this.name}/`);
-        const usedDiskSpacePercent = parseFloat(
-          ((usedDiskSpace * 100) / this.space).toFixed(2)
-        );
-
-        metricsCacheHeight.set(height);
-        metricsDbSize.set(usedDiskSpace);
-        metricsDbUsed.set(usedDiskSpacePercent);
-
-        if (usedDiskSpace > this.space) {
-          this.logger.debug(`Used disk space: ${usedDiskSpacePercent}%`);
-          await sleep(60 * 1000);
-          continue;
-        }
-
-        await this.getDataItemAndSave(height);
-        await this.db.put("head", height + 1);
-      } catch (error) {
-        this.logger.warn(
-          ` Failed to write data items from height = ${height} to local DB`
-        );
-        await sleep(10 * 1000);
       }
     }
   }
 
-  public async getDataItem(key: number): Promise<{ key: number; value: any }> {
+  public async getDataItem(previousKey: string | null): Promise<Item> {
     this.logger.error(
       `mandatory "getDataItem" method not implemented. Exiting ...`
     );
     process.exit(1);
   }
 
-  private async getDataItemAndSave(height: number): Promise<void> {
-    let requests = 1;
+  // private async createBundle(): Promise<Bundle> {
+  //   this.logger.debug(
+  //     `Creating bundle from height = ${this.pool.bundle_proposal.to_height} ...`
+  //   );
 
-    while (true) {
-      try {
-        const { key, value } = await this.getDataItem(height);
-        await this.db.put(key, value);
-        break;
-      } catch {
-        await sleep(requests * 10 * 1000);
+  //   const bundle: any[] = [];
+  //   const to_height =
+  //     parseInt(this.pool.bundle_proposal.to_height) +
+  //     parseInt(this.pool.max_bundle_size);
 
-        // limit timeout to 5 mins
-        if (requests < 30) {
-          requests++;
-        }
-      }
-    }
-  }
+  //   for (
+  //     let height = +this.pool.bundle_proposal.to_height;
+  //     height < to_height;
+  //     height++
+  //   ) {
+  //     try {
+  //       const item = await this.db.get(height);
+  //       bundle.push(item);
+  //     } catch {
+  //       break;
+  //     }
+  //   }
 
-  private async createBundle(): Promise<Bundle> {
-    const bundleDataSizeLimit = 20 * 1000 * 1000; // 20 MB
+  //   return {
+  //     fromHeight: +this.pool.bundle_proposal.to_height,
+  //     toHeight: +this.pool.bundle_proposal.to_height + bundle.length,
+  //     bundleSize: bundle.length,
+  //     bundle: Buffer.from(JSON.stringify(bundle)),
+  //   };
+  // }
+
+  private async loadBundle(
+    fromHeight: number,
+    toHeight: number
+  ): Promise<Bundle> {
     const bundle: any[] = [];
 
-    let currentDataSize = 0;
-    let h = +this.pool.bundle_proposal.to_height;
-
-    this.logger.debug(
-      `Creating bundle from height = ${this.pool.bundle_proposal.to_height} ...`
-    );
-
-    while (true) {
+    for (let height = fromHeight; height < toHeight; height++) {
       try {
-        const entry = {
-          key: +h,
-          value: await this.db.get(h),
-        };
-
-        currentDataSize += sizeof(entry);
-
-        // break if over data size limit
-        if (currentDataSize >= bundleDataSizeLimit) {
-          break;
-        }
-
-        // break if bundle item size limit is reached
-        if (bundle.length >= +this.pool.max_bundle_size) {
-          break;
-        }
-
-        bundle.push(entry);
-        h++;
+        bundle.push(await this.db.get(height));
       } catch {
         break;
       }
     }
 
     return {
-      fromHeight: +this.pool.bundle_proposal.to_height,
-      toHeight: +this.pool.bundle_proposal.to_height + bundle.length,
-      bundleSize: bundle.length,
-      bundle: Buffer.from(JSON.stringify(bundle)),
+      fromHeight,
+      toHeight,
+      bundle,
     };
-  }
-
-  private async loadBundle(): Promise<any[] | null> {
-    const bundle: any[] = [];
-    let h: number = +this.pool.bundle_proposal.from_height;
-
-    while (h < +this.pool.bundle_proposal.to_height) {
-      try {
-        const entry = {
-          key: +h,
-          value: await this.db.get(h),
-        };
-
-        bundle.push(entry);
-        h++;
-      } catch {
-        return null;
-      }
-    }
-
-    return bundle;
   }
 
   private async clearFinalizedData() {
@@ -569,7 +469,7 @@ class KYVE {
   }
 
   private async validateProposal(
-    created_at: string,
+    created_at: number,
     abstain: boolean
   ): Promise<void> {
     this.logger.info(
@@ -583,7 +483,7 @@ class KYVE {
 
       const remaining = this.remainingUploadInterval();
 
-      if (+this.pool.bundle_proposal.created_at > +created_at) {
+      if (+this.pool.bundle_proposal.created_at > created_at) {
         // check if new proposal is available in the meantime
         break;
       } else if (remaining.isZero()) {
@@ -600,20 +500,24 @@ class KYVE {
 
       if (arweaveBundle) {
         this.logger.debug(`Successfully downloaded bundle from Arweave`);
+
+        const fromHeight = +this.pool.bundle_proposal.from_height;
+        const toHeight = +this.pool.bundle_proposal.to_height;
+
         this.logger.debug(
-          `Loading local bundle from ${this.pool.bundle_proposal.from_height} to ${this.pool.bundle_proposal.to_height} ...`
+          `Loading local bundle from ${fromHeight} to ${toHeight} ...`
         );
 
-        const localBundle = await this.loadBundle();
+        const localBundle = await this.loadBundle(fromHeight, toHeight);
 
-        if (localBundle) {
+        if (localBundle.bundle.length === toHeight - fromHeight) {
           try {
             const uploadBundle = JSON.parse(
               gunzipSync(arweaveBundle).toString()
             );
 
             const support = await this.validate(
-              localBundle,
+              localBundle.bundle,
               +this.pool.bundle_proposal.byte_size,
               uploadBundle,
               +arweaveBundle.byteLength
@@ -725,13 +629,11 @@ class KYVE {
       this.logger.debug("Uploading bundle to Arweave ...");
 
       const transaction = await this.arweave.createTransaction({
-        data: gzipSync(uploadBundle.bundle),
+        data: gzipSync(Buffer.from(JSON.stringify(uploadBundle.bundle))),
       });
 
       this.logger.debug(
-        `Bundle details = bytes: ${transaction.data_size}, items: ${
-          uploadBundle.toHeight - uploadBundle.fromHeight
-        }`
+        `Bundle details = bytes: ${transaction.data_size}, items: ${uploadBundle.bundle.length}`
       );
 
       transaction.addTag("Application", "KYVE");
@@ -848,7 +750,7 @@ class KYVE {
     return remaining;
   }
 
-  private async nextBundleProposal(created_at: string): Promise<void> {
+  private async nextBundleProposal(created_at: number): Promise<void> {
     return new Promise(async (resolve) => {
       this.logger.debug("Waiting for new proposal ...");
 
@@ -856,7 +758,7 @@ class KYVE {
         await this.getPool(false);
 
         // check if new proposal is available in the meantime
-        if (+this.pool.bundle_proposal.created_at > +created_at) {
+        if (+this.pool.bundle_proposal.created_at > created_at) {
           break;
         } else if (this.pool.paused) {
           break;

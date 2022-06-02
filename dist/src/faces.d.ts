@@ -1,7 +1,9 @@
-/// <reference types="node" />
 export declare type Bundle = {
     fromHeight: number;
     toHeight: number;
-    bundleSize: number;
-    bundle: Buffer;
+    bundle: any[];
+};
+export declare type Item = {
+    key: string;
+    value: any;
 };

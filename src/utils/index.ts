@@ -29,13 +29,8 @@ export class CLI extends Command {
       "korellia"
     );
     this.option(
-      "-sp, --space <number>",
-      "The size of disk space in bytes the node is allowed to use. [optional, default = 1000000000 (1 GB)]",
-      "1000000000"
-    );
-    this.option(
       "--metrics",
-      "Run Prometheus metrics server. [optional, default = false]",
+      "Run Prometheus metrics server on localhost. [optional, default = false]",
       false
     );
     this.option(
