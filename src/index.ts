@@ -14,7 +14,6 @@ import client, { register } from "prom-client";
 import { Database } from "./utils/database";
 import { gzipSync, gunzipSync } from "zlib";
 import axios from "axios";
-import sizeof from "object-sizeof";
 import {
   adjectives,
   colors,
@@ -144,10 +143,16 @@ class KYVE {
   private async run() {
     try {
       const address = await this.wallet.getAddress();
+      let cacheInterval: NodeJS.Timer | null = null;
 
       while (true) {
         console.log("");
-        this.logger.info("Starting new proposal");
+        this.logger.info("Starting new bundle proposal");
+
+        // clear cache interval
+        if (cacheInterval) {
+          clearInterval(cacheInterval);
+        }
 
         // get current pool state and verify node
         await this.getPool(false);
@@ -191,15 +196,62 @@ class KYVE {
           continue;
         }
 
-        // TODO: delete old data from cache
-        // TODO: start caching from bundle_proposal.to_height to + max_bundle_size
-        this.cacheCurrentRound();
+        // drop old data items which are not needed anymore
+        try {
+          await this.db.drop();
+        } catch {
+          this.logger.warn(" Failed to drop old data items. Continuing ...");
+        }
 
+        // cache data items from current height to required height
+        let height = +this.pool.bundle_proposal.from_height;
+        let toHeight = +this.pool.bundle_proposal.to_height;
+
+        // add max bundle size if node is the next uploader
         if (this.pool.bundle_proposal.next_uploader === address) {
           this.logger.info("Selected as UPLOADER");
+          toHeight += +this.pool.max_bundle_size;
         } else {
           this.logger.info("Selected as VALIDATOR");
         }
+
+        this.logger.debug(`Caching from height ${height} to ${toHeight} ...`);
+
+        cacheInterval = setInterval(async () => {
+          if (height < toHeight) {
+            let requests = 1;
+
+            // Get previousKey from bundle_proposal.to_key;
+            let previousKey: string | null = null;
+
+            while (true) {
+              try {
+                const item: Item = await this.getDataItem(previousKey);
+                previousKey = item.key;
+                await this.db.put(height, item);
+
+                break;
+              } catch {
+                this.logger.warn(
+                  ` Failed to get data item from height ${height}`
+                );
+
+                await sleep(requests * 10 * 1000);
+
+                // limit timeout to 5 mins
+                if (requests < 30) {
+                  requests++;
+                }
+              }
+            }
+
+            height++;
+          } else {
+            if (cacheInterval) {
+              clearInterval(cacheInterval);
+            }
+          }
+        }, 50);
 
         if (
           this.pool.bundle_proposal.uploader &&
@@ -347,6 +399,11 @@ class KYVE {
             );
           }
         } else {
+          // clear cache interval
+          if (cacheInterval) {
+            clearInterval(cacheInterval);
+          }
+
           // let validators wait for next bundle proposal
           await this.nextBundleProposal(created_at);
         }
@@ -358,37 +415,45 @@ class KYVE {
     }
   }
 
-  private async cacheCurrentRound() {
+  private cacheCurrentRound(): NodeJS.Timer {
     const from_height = +this.pool.bundle_proposal.to_height;
     const to_height = +this.pool.max_bundle_size;
 
-    for (let height = from_height; height < to_height; height++) {
-      let requests = 1;
+    let height = from_height;
 
-      // Get previousKey from bundle_proposal.to_key;
-      let previousKey: string | null = null;
+    const interval = setInterval(async () => {
+      if (height < to_height) {
+        let requests = 1;
 
-      while (true) {
-        try {
-          const item: Item = await this.getDataItem(previousKey);
-          previousKey = item.key;
-          await this.db.put(height, item);
+        // Get previousKey from bundle_proposal.to_key;
+        let previousKey: string | null = null;
 
-          break;
-        } catch {
-          this.logger.warn(
-            ` Failed to write data items from height = ${height} to local DB`
-          );
+        while (true) {
+          try {
+            const item: Item = await this.getDataItem(previousKey);
+            previousKey = item.key;
+            await this.db.put(height, item);
 
-          await sleep(requests * 10 * 1000);
+            break;
+          } catch {
+            this.logger.warn(` Failed to get data item from height ${height}`);
 
-          // limit timeout to 5 mins
-          if (requests < 30) {
-            requests++;
+            await sleep(requests * 10 * 1000);
+
+            // limit timeout to 5 mins
+            if (requests < 30) {
+              requests++;
+            }
           }
         }
+
+        height++;
+      } else {
+        clearInterval(interval);
       }
-    }
+    }, 50);
+
+    return interval;
   }
 
   public async getDataItem(previousKey: string | null): Promise<Item> {
@@ -397,37 +462,6 @@ class KYVE {
     );
     process.exit(1);
   }
-
-  // private async createBundle(): Promise<Bundle> {
-  //   this.logger.debug(
-  //     `Creating bundle from height = ${this.pool.bundle_proposal.to_height} ...`
-  //   );
-
-  //   const bundle: any[] = [];
-  //   const to_height =
-  //     parseInt(this.pool.bundle_proposal.to_height) +
-  //     parseInt(this.pool.max_bundle_size);
-
-  //   for (
-  //     let height = +this.pool.bundle_proposal.to_height;
-  //     height < to_height;
-  //     height++
-  //   ) {
-  //     try {
-  //       const item = await this.db.get(height);
-  //       bundle.push(item);
-  //     } catch {
-  //       break;
-  //     }
-  //   }
-
-  //   return {
-  //     fromHeight: +this.pool.bundle_proposal.to_height,
-  //     toHeight: +this.pool.bundle_proposal.to_height + bundle.length,
-  //     bundleSize: bundle.length,
-  //     bundle: Buffer.from(JSON.stringify(bundle)),
-  //   };
-  // }
 
   private async loadBundle(
     fromHeight: number,
