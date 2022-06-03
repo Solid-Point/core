@@ -416,7 +416,7 @@
 
 "@kyve/sdk@KYVENetwork/sdk#main":
   version "1.0.8"
-  resolved "https://codeload.github.com/KYVENetwork/sdk/tar.gz/9b3a5f8266855a735226daf907312a68bab1b419"
+  resolved "https://codeload.github.com/KYVENetwork/sdk/tar.gz/ad2df7a4e9cb219955196c4fd9ed101c2dbe6cd5"
   dependencies:
     "@cosmjs/amino" "^0.28.3"
     "@cosmjs/crypto" "^0.27.1"
@@ -563,9 +563,9 @@ arconnect@^0.4.2:
     arweave "^1.10.13"
 
 arweave@^1.10.13, arweave@^1.10.17:
-  version "1.11.3"
-  resolved "https://registry.yarnpkg.com/arweave/-/arweave-1.11.3.tgz#541a3c7a089b7fd443b75369441ce3d17fa5517b"
-  integrity sha512-mzJBEbKNCH5JMib3pyHezUtZWs1p64bNeGsiPoIJwuGx1jiKGnEqzR5hd9qNbswIu1PvRj3sbwSLoX3YN+qc6g==
+  version "1.11.4"
+  resolved "https://registry.yarnpkg.com/arweave/-/arweave-1.11.4.tgz#19e5850d3b9f655cacb0953b36a12ac6596b195c"
+  integrity sha512-EPUms1OMet/VFmYMefgxIpj17PIlIZzIteiHAn0tetN+d/LRV6N9CCsrg/t22hL6yLGdGRHrYlDEdsWqjwSSYg==
   dependencies:
     arconnect "^0.4.2"
     asn1.js "^5.4.1"
