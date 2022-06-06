@@ -32,7 +32,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const arweave_1 = __importDefault(require("arweave"));
 const fs_1 = require("fs");
 const prando_1 = __importDefault(require("prando"));
-const semver_1 = require("semver");
 const tslog_1 = require("tslog");
 const utils_1 = require("./utils");
 const helpers_1 = require("./utils/helpers");
@@ -71,7 +70,6 @@ const metricsDbUsed = new prom_client_1.default.Gauge({
 });
 class KYVE {
     constructor(cli) {
-        var _a;
         this.arweave = new arweave_1.default({
             host: "arweave.net",
             protocol: "https",
@@ -87,7 +85,7 @@ class KYVE {
         this.stake = options.initialStake || "0";
         this.keyfile = JSON.parse((0, fs_1.readFileSync)(options.keyfile, "utf-8"));
         this.runMetrics = options.metrics;
-        this.name = (_a = options === null || options === void 0 ? void 0 : options.name) !== null && _a !== void 0 ? _a : this.generateRandomName(options.mnemonic);
+        this.name = this.generateRandomName(options.mnemonic);
         this.chainVersion = "v1beta1";
         this.wallet = new sdk_1.KyveWallet(options.network, options.mnemonic);
         this.sdk = new sdk_1.KyveSDK(this.wallet);
@@ -115,19 +113,11 @@ class KYVE {
             fatal: logToTransport,
         });
         // check if disk space is greater than 0
-        if (+options.batchSize > 0) {
+        if (+options.space > 0) {
             this.space = +options.space;
         }
         else {
             this.logger.error(`Disk space has to be greater than 0 bytes. Exiting ...`);
-            process.exit(1);
-        }
-        // check if batch size is greater than 0
-        if (+options.batchSize > 0) {
-            this.batchSize = +options.batchSize;
-        }
-        else {
-            this.logger.error(`Batch size has to be greater than 0. Exiting ...`);
             process.exit(1);
         }
         // check if network is valid
@@ -172,6 +162,13 @@ class KYVE {
                 await this.verifyNode(false);
                 // save height of bundle proposal
                 const created_at = this.pool.bundle_proposal.created_at;
+                // check if pool is upgrading
+                if (+this.pool.upgrade_plan.scheduled_at > 0 &&
+                    Math.floor(Date.now() / 1000) >= +this.pool.upgrade_plan.scheduled_at) {
+                    this.logger.warn(" Pool is upgrading. Idling ...");
+                    await (0, helpers_1.sleep)(60 * 1000);
+                    continue;
+                }
                 // check if pool is paused
                 if (this.pool.paused) {
                     this.logger.warn(" Pool is paused. Idling ...");
@@ -197,28 +194,6 @@ class KYVE {
                 else {
                     this.logger.info("Selected as VALIDATOR");
                 }
-                // handle resubmit of NO_DATA_BUNDLES
-                if (this.pool.bundle_proposal.bundle_id === constants_1.NO_DATA_BUNDLE &&
-                    this.pool.bundle_proposal.uploader === address) {
-                    const remaining = this.remainingUploadInterval();
-                    if (!remaining.isZero()) {
-                        const uploadBundle = await this.createBundle();
-                        if (uploadBundle.bundleSize) {
-                            this.logger.debug(`Trying to resubmit bundle proposal with data.`);
-                            // upload bundle to Arweave
-                            const transaction = await this.uploadBundleToArweave(uploadBundle);
-                            // submit bundle proposal
-                            if (transaction) {
-                                await this.submitBundleProposal(transaction.id, +transaction.data_size, uploadBundle.fromHeight, uploadBundle.bundleSize);
-                            }
-                        }
-                        else {
-                            this.logger.debug(`Could not resubmit bundle proposal with data. Retrying in 10s ...`);
-                        }
-                        await (0, helpers_1.sleep)(10 * 1000);
-                        continue;
-                    }
-                }
                 if (this.pool.bundle_proposal.uploader &&
                     this.pool.bundle_proposal.uploader !== address) {
                     let canVote = {
@@ -231,7 +206,7 @@ class KYVE {
                     }
                     catch { }
                     if (canVote.possible) {
-                        await this.validateProposal(created_at);
+                        await this.validateProposal(created_at, canVote.reason === "KYVE_VOTE_NO_ABSTAIN_ALLOWED");
                         await this.getPool(false);
                     }
                     else {
@@ -243,8 +218,12 @@ class KYVE {
                     this.pool.stakers.length > 1 &&
                     +this.pool.total_funds > 0 &&
                     !this.pool.paused) {
-                    await this.claimUploaderRole();
-                    continue;
+                    if (!(+this.pool.upgrade_plan.scheduled_at > 0 &&
+                        Math.floor(Date.now() / 1000) >=
+                            +this.pool.upgrade_plan.scheduled_at)) {
+                        await this.claimUploaderRole();
+                        continue;
+                    }
                 }
                 // submit bundle proposals if node is next uploader
                 if (this.pool.bundle_proposal.next_uploader === address) {
@@ -264,7 +243,7 @@ class KYVE {
                     };
                     while (true) {
                         try {
-                            const { data } = await axios_1.default.get(`${this.wallet.getRestEndpoint()}/kyve/registry/${this.chainVersion}/can_propose/${this.poolId}/${address}`);
+                            const { data } = await axios_1.default.get(`${this.wallet.getRestEndpoint()}/kyve/registry/${this.chainVersion}/can_propose/${this.poolId}/${address}/${this.pool.bundle_proposal.to_height}`);
                             canPropose = data;
                             if (!canPropose.possible &&
                                 canPropose.reason === "Upload interval not surpassed") {
@@ -276,29 +255,25 @@ class KYVE {
                             }
                         }
                         catch {
+                            await (0, helpers_1.sleep)(10 * 1000);
                             break;
                         }
                     }
                     if (canPropose.possible) {
-                        if (canPropose.reason === constants_1.NO_QUORUM_BUNDLE) {
-                            this.logger.info(`Creating new bundle proposal of type ${constants_1.NO_QUORUM_BUNDLE}`);
-                            await this.submitBundleProposal(constants_1.NO_QUORUM_BUNDLE, 0, +this.pool.bundle_proposal.to_height, 0);
+                        this.logger.info(`Creating new bundle proposal of type ${constants_1.KYVE_ARWEAVE_BUNDLE}`);
+                        const uploadBundle = await this.createBundle();
+                        if (uploadBundle.bundleSize) {
+                            // upload bundle to Arweave
+                            transaction = await this.uploadBundleToArweave(uploadBundle);
+                            // submit bundle proposal
+                            if (transaction) {
+                                await this.submitBundleProposal(transaction.id, +transaction.data_size, uploadBundle.fromHeight, uploadBundle.bundleSize);
+                            }
                         }
                         else {
-                            this.logger.info(`Creating new bundle proposal of type ${constants_1.ARWEAVE_BUNDLE}`);
-                            const uploadBundle = await this.createBundle();
-                            if (uploadBundle.bundleSize) {
-                                // upload bundle to Arweave
-                                transaction = await this.uploadBundleToArweave(uploadBundle);
-                                // submit bundle proposal
-                                if (transaction) {
-                                    await this.submitBundleProposal(transaction.id, +transaction.data_size, uploadBundle.fromHeight, uploadBundle.bundleSize);
-                                }
-                            }
-                            else {
-                                this.logger.info(`Creating new bundle proposal of type ${constants_1.NO_DATA_BUNDLE}`);
-                                await this.submitBundleProposal(constants_1.NO_DATA_BUNDLE, 0, uploadBundle.fromHeight, 0);
-                            }
+                            this.logger.info(`Creating new bundle proposal of type ${constants_1.KYVE_NO_DATA_BUNDLE}`);
+                            const noDataBundleId = `${constants_1.KYVE_NO_DATA_BUNDLE}_${this.poolId}_${Math.floor(Date.now() / 1000)}`;
+                            await this.submitBundleProposal(noDataBundleId, 0, uploadBundle.fromHeight, 0);
                         }
                     }
                     else {
@@ -358,7 +333,6 @@ class KYVE {
                 }
             }
             catch { }
-            const targetHeight = height + this.batchSize;
             try {
                 const usedDiskSpace = await (0, du_1.default)(`./db/${this.name}/`);
                 const usedDiskSpacePercent = parseFloat(((usedDiskSpace * 100) / this.space).toFixed(2));
@@ -370,16 +344,11 @@ class KYVE {
                     await (0, helpers_1.sleep)(60 * 1000);
                     continue;
                 }
-                const batch = [];
-                for (let h = height; h < targetHeight; h++) {
-                    batch.push(this.getDataItemAndSave(h));
-                    await (0, helpers_1.sleep)(10);
-                }
-                await Promise.all(batch);
-                await this.db.put("head", targetHeight);
+                await this.getDataItemAndSave(height);
+                await this.db.put("head", height + 1);
             }
             catch (error) {
-                this.logger.warn(` Failed to write data items from height = ${height} to ${targetHeight} to local DB`);
+                this.logger.warn(` Failed to write data items from height = ${height} to local DB`);
                 await (0, helpers_1.sleep)(10 * 1000);
             }
         }
@@ -407,7 +376,6 @@ class KYVE {
     }
     async createBundle() {
         const bundleDataSizeLimit = 20 * 1000 * 1000; // 20 MB
-        const bundleItemSizeLimit = 1000;
         const bundle = [];
         let currentDataSize = 0;
         let h = +this.pool.bundle_proposal.to_height;
@@ -424,7 +392,7 @@ class KYVE {
                     break;
                 }
                 // break if bundle item size limit is reached
-                if (bundle.length >= bundleItemSizeLimit) {
+                if (bundle.length >= +this.pool.max_bundle_size) {
                     break;
                 }
                 bundle.push(entry);
@@ -454,13 +422,7 @@ class KYVE {
                 h++;
             }
             catch {
-                await (0, helpers_1.sleep)(1000);
-                const unixNow = new bignumber_js_1.default(Math.floor(Date.now() / 1000));
-                const uploadTime = new bignumber_js_1.default(this.pool.bundle_proposal.created_at).plus(this.pool.upload_interval);
-                // check if upload interval was reached in the meantime
-                if (unixNow.gte(uploadTime)) {
-                    return null;
-                }
+                return null;
             }
         }
         return bundle;
@@ -481,57 +443,23 @@ class KYVE {
         }
         await this.db.put("tail", parseInt(this.pool.height_archived));
     }
-    async validateProposal(created_at) {
+    async validateProposal(created_at, abstain) {
         this.logger.info(`Validating bundle ${this.pool.bundle_proposal.bundle_id}`);
-        // try to fetch bundle
+        let alreadyVotedWithAbstain = abstain;
         while (true) {
             await this.getPool(false);
-            const unixNow = new bignumber_js_1.default(Math.floor(Date.now() / 1000));
-            const uploadTime = new bignumber_js_1.default(this.pool.bundle_proposal.created_at).plus(this.pool.upload_interval);
+            const remaining = this.remainingUploadInterval();
             if (+this.pool.bundle_proposal.created_at > +created_at) {
                 // check if new proposal is available in the meantime
                 break;
             }
-            else if (unixNow.gte(uploadTime)) {
+            else if (remaining.isZero()) {
                 // check if upload interval was reached in the meantime
+                this.logger.debug(`Reached upload interval. Skipping vote ...`);
                 break;
             }
             else if (this.pool.paused) {
                 // check if pool got paused in the meantime
-                break;
-            }
-            // check if NO_DATA_BUNDLE
-            if (this.pool.bundle_proposal.bundle_id === constants_1.NO_DATA_BUNDLE) {
-                this.logger.debug(`Found bundle of type ${constants_1.NO_DATA_BUNDLE}. Validating if data is available ...`);
-                const bundle = await this.createBundle();
-                if (bundle.bundleSize === 0) {
-                    // vote valid because no bundle could be recreated
-                    await this.vote({
-                        transaction: constants_1.NO_DATA_BUNDLE,
-                        valid: true,
-                    });
-                }
-                else {
-                    // check if datasource is online
-                    try {
-                        const item = await this.getDataItem(+this.pool.bundle_proposal.to_height);
-                        if (item.key === +this.pool.bundle_proposal.to_height &&
-                            item.value) {
-                            // vote invalid because at least one data item could be fetched
-                            await this.vote({
-                                transaction: constants_1.NO_DATA_BUNDLE,
-                                valid: false,
-                            });
-                        }
-                    }
-                    catch {
-                        // vote valid because not even one data item could be fetched
-                        await this.vote({
-                            transaction: constants_1.NO_DATA_BUNDLE,
-                            valid: true,
-                        });
-                    }
-                }
                 break;
             }
             this.logger.debug(`Downloading bundle from Arweave ...`);
@@ -543,30 +471,48 @@ class KYVE {
                 if (localBundle) {
                     try {
                         const uploadBundle = JSON.parse((0, zlib_1.gunzipSync)(arweaveBundle).toString());
-                        await this.vote({
-                            transaction: this.pool.bundle_proposal.bundle_id,
-                            valid: await this.validate(localBundle, +this.pool.bundle_proposal.byte_size, uploadBundle, +arweaveBundle.byteLength),
-                        });
+                        const support = await this.validate(localBundle, +this.pool.bundle_proposal.byte_size, uploadBundle, +arweaveBundle.byteLength);
+                        if (support) {
+                            await this.vote(this.pool.bundle_proposal.bundle_id, 0);
+                        }
+                        else {
+                            await this.vote(this.pool.bundle_proposal.bundle_id, 1);
+                        }
                     }
                     catch {
                         this.logger.warn(` Could not gunzip bundle ...`);
-                        await this.vote({
-                            transaction: this.pool.bundle_proposal.bundle_id,
-                            valid: false,
-                        });
+                        await this.vote(this.pool.bundle_proposal.bundle_id, 1);
                     }
                     finally {
                         break;
                     }
                 }
                 else {
-                    this.logger.debug(`Reached upload interval. Skipping ...`);
-                    break;
+                    if (alreadyVotedWithAbstain) {
+                        this.logger.warn(` Could not load local bundle from ${this.pool.bundle_proposal.from_height} to ${this.pool.bundle_proposal.to_height}. Retrying in 10s ...`);
+                        await (0, helpers_1.sleep)(10 * 1000);
+                    }
+                    else {
+                        this.logger.warn(` Could not load local bundle from ${this.pool.bundle_proposal.from_height} to ${this.pool.bundle_proposal.to_height}`);
+                        // vote with abstain if local bundle could not be loaded
+                        await this.vote(this.pool.bundle_proposal.bundle_id, 2);
+                        alreadyVotedWithAbstain = true;
+                        await (0, helpers_1.sleep)(10 * 1000);
+                    }
                 }
             }
             else {
-                this.logger.warn(` Failed to fetch bundle from Arweave. Retrying in 30s ...`);
-                await (0, helpers_1.sleep)(30 * 1000);
+                if (alreadyVotedWithAbstain) {
+                    this.logger.warn(` Could not download bundle from Arweave. Retrying in 10s ...`);
+                    await (0, helpers_1.sleep)(10 * 1000);
+                }
+                else {
+                    this.logger.warn(` Could not download bundle from Arweave`);
+                    // vote with abstain if arweave bundle could not be downloaded
+                    await this.vote(this.pool.bundle_proposal.bundle_id, 2);
+                    alreadyVotedWithAbstain = true;
+                    await (0, helpers_1.sleep)(10 * 1000);
+                }
             }
         }
     }
@@ -581,7 +527,7 @@ class KYVE {
         const localHash = (0, object_hash_1.default)(localBundle);
         const uploadHash = (0, object_hash_1.default)(uploadBundle);
         console.log("");
-        this.logger.debug("Comparing bundles by hash:");
+        this.logger.debug("Comparing by hash:");
         this.logger.debug(`Local bundle: \t${localHash}`);
         this.logger.debug(`Upload bundle: \t${uploadHash}`);
         console.log("");
@@ -610,11 +556,11 @@ class KYVE {
                 data: (0, zlib_1.gzipSync)(uploadBundle.bundle),
             });
             this.logger.debug(`Bundle details = bytes: ${transaction.data_size}, items: ${uploadBundle.toHeight - uploadBundle.fromHeight}`);
-            transaction.addTag("Application", "KYVE - Testnet");
+            transaction.addTag("Application", "KYVE");
+            transaction.addTag("Network", this.network);
             transaction.addTag("Pool", this.poolId.toString());
             transaction.addTag("@kyve/core", package_json_1.version);
             transaction.addTag(this.runtime, this.version);
-            transaction.addTag("Network", this.network);
             transaction.addTag("Uploader", this.pool.bundle_proposal.next_uploader);
             transaction.addTag("FromHeight", uploadBundle.fromHeight.toString());
             transaction.addTag("ToHeight", uploadBundle.toHeight.toString());
@@ -675,7 +621,7 @@ class KYVE {
         }
         catch (error) {
             this.logger.error("Failed to claim uploader role. Skipping ...");
-            this.logger.debug(error);
+            await (0, helpers_1.sleep)(10 * 1000);
         }
     }
     remainingUploadInterval() {
@@ -706,14 +652,27 @@ class KYVE {
             resolve();
         });
     }
-    async vote(vote) {
+    async vote(bundleId, vote) {
         try {
-            this.logger.debug(`Voting ${vote.valid ? "valid" : "invalid"} on bundle ${vote.transaction} ...`);
-            const { transactionHash, transactionBroadcast } = await this.sdk.voteProposal(this.poolId, vote.transaction, vote.valid);
+            let voteMessage = "";
+            if (vote === 0) {
+                voteMessage = "valid";
+            }
+            else if (vote === 1) {
+                voteMessage = "invalid";
+            }
+            else if (vote === 2) {
+                voteMessage = "abstain";
+            }
+            else {
+                throw Error(`Invalid vote: ${vote}`);
+            }
+            this.logger.debug(`Voting ${voteMessage} on bundle ${bundleId} ...`);
+            const { transactionHash, transactionBroadcast } = await this.sdk.voteProposal(this.poolId, bundleId, vote);
             this.logger.debug(`Transaction = ${transactionHash}`);
             const res = await transactionBroadcast;
             if (res.code === 0) {
-                this.logger.info(`Voted ${vote.valid ? "valid" : "invalid"} on bundle ${vote.transaction}`);
+                this.logger.info(`Voted ${voteMessage} on bundle ${bundleId}`);
             }
             else {
                 this.logger.warn(` Could not vote on proposal. Skipping ...`);
@@ -748,7 +707,7 @@ class KYVE {
             this.logger.debug("Attempting to fetch pool state.");
         }
         return new Promise(async (resolve) => {
-            var _a, _b;
+            var _a;
             let requests = 1;
             while (true) {
                 try {
@@ -763,6 +722,7 @@ class KYVE {
                         }
                         this.pool.config = {};
                     }
+                    // Validate runtime
                     if (this.pool.runtime === this.runtime) {
                         if (logs) {
                             this.logger.info(`Running node on runtime ${this.runtime}.`);
@@ -772,20 +732,14 @@ class KYVE {
                         this.logger.error("Specified pool does not match the integration runtime");
                         process.exit(1);
                     }
-                    try {
-                        if ((0, semver_1.satisfies)(this.version, this.pool.versions || this.version)) {
-                            if (logs) {
-                                this.logger.info("Pool version requirements met");
-                            }
-                        }
-                        else {
-                            this.logger.error(`Running an invalid version for the specified pool. Version requirements are ${this.pool.versions}`);
-                            process.exit(1);
+                    // Validate version
+                    if (this.pool.protocol.version === this.version) {
+                        if (logs) {
+                            this.logger.info("Pool version requirements met");
                         }
                     }
-                    catch (error) {
-                        this.logger.error(`Failed to parse the node version: ${(_b = this.pool) === null || _b === void 0 ? void 0 : _b.versions}`);
-                        this.logger.debug(error);
+                    else {
+                        this.logger.error(`Running an invalid version. Version requirements are ${this.pool.protocol.version}`);
                         process.exit(1);
                     }
                     break;

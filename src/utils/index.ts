@@ -7,10 +7,6 @@ export class CLI extends Command {
   ) {
     super(runtime);
 
-    this.option(
-      "--name <string>",
-      "The identifier name of the node. [optional, default = auto generated]"
-    );
     this.requiredOption(
       "-p, --poolId <number>",
       "The id of the pool you want to run on."
@@ -36,11 +32,6 @@ export class CLI extends Command {
       "-sp, --space <number>",
       "The size of disk space in bytes the node is allowed to use. [optional, default = 1000000000 (1 GB)]",
       "1000000000"
-    );
-    this.option(
-      "-b, --batchSize <number>",
-      "The batch size of fetching items from datasource. For synchronous fetching enter 1. [optional, default = 1]",
-      "1"
     );
     this.option(
       "--metrics",
