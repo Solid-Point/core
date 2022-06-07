@@ -234,6 +234,8 @@ class KYVE {
 
                 console.log(`Fetchted item with key = ${item.key}`);
 
+                await sleep(3000);
+
                 break;
               } catch {
                 this.logger.warn(
