@@ -30,7 +30,6 @@ declare class KYVE {
     constructor(cli?: CLI);
     start(): Promise<void>;
     private run;
-    private cacheCurrentRound;
     getDataItem(previousKey: string | null): Promise<Item>;
     private loadBundle;
     private clearFinalizedData;

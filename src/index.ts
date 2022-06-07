@@ -222,7 +222,10 @@ class KYVE {
             let requests = 1;
 
             // Get previousKey from bundle_proposal.to_key;
-            let previousKey: string | null = null;
+            // let previousKey: string | null = null;
+            // TODO: only for testing
+            let previousKey: string | null =
+              this.pool.bundle_proposal.from_height;
 
             while (true) {
               try {
@@ -413,47 +416,6 @@ class KYVE {
       this.logger.debug(error);
       process.exit(1);
     }
-  }
-
-  private cacheCurrentRound(): NodeJS.Timer {
-    const from_height = +this.pool.bundle_proposal.to_height;
-    const to_height = +this.pool.max_bundle_size;
-
-    let height = from_height;
-
-    const interval = setInterval(async () => {
-      if (height < to_height) {
-        let requests = 1;
-
-        // Get previousKey from bundle_proposal.to_key;
-        let previousKey: string | null = null;
-
-        while (true) {
-          try {
-            const item: Item = await this.getDataItem(previousKey);
-            previousKey = item.key;
-            await this.db.put(height, item);
-
-            break;
-          } catch {
-            this.logger.warn(` Failed to get data item from height ${height}`);
-
-            await sleep(requests * 10 * 1000);
-
-            // limit timeout to 5 mins
-            if (requests < 30) {
-              requests++;
-            }
-          }
-        }
-
-        height++;
-      } else {
-        clearInterval(interval);
-      }
-    }, 50);
-
-    return interval;
   }
 
   public async getDataItem(previousKey: string | null): Promise<Item> {
