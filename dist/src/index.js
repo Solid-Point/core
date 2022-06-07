@@ -199,6 +199,7 @@ class KYVE {
                                 const item = await this.getDataItem(previousKey);
                                 previousKey = item.key;
                                 await this.db.put(height, item);
+                                console.log(`Fetchted item with key = ${item.key}`);
                                 break;
                             }
                             catch {

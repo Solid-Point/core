@@ -233,6 +233,8 @@ class KYVE {
                 previousKey = item.key;
                 await this.db.put(height, item);
 
+                console.log(`Fetchted item with key = ${item.key}`);
+
                 break;
               } catch {
                 this.logger.warn(
