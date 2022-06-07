@@ -228,13 +228,12 @@ class KYVE {
 
             while (true) {
               try {
+                await sleep(3000);
                 const item: Item = await this.getDataItem(previousKey);
                 previousKey = item.key;
                 await this.db.put(height, item);
 
                 console.log(`Fetchted item with key = ${item.key}`);
-
-                await sleep(3000);
 
                 break;
               } catch {
