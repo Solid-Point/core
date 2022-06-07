@@ -217,15 +217,14 @@ class KYVE {
 
         this.logger.debug(`Caching from height ${height} to ${toHeight} ...`);
 
+        // Get previousKey from bundle_proposal.to_key;
+        // let previousKey: string | null = null;
+        // TODO: only for testing
+        let previousKey: string | null = this.pool.bundle_proposal.from_height;
+
         cacheInterval = setInterval(async () => {
           if (height < toHeight) {
             let requests = 1;
-
-            // Get previousKey from bundle_proposal.to_key;
-            // let previousKey: string | null = null;
-            // TODO: only for testing
-            let previousKey: string | null =
-              this.pool.bundle_proposal.from_height;
 
             while (true) {
               try {
