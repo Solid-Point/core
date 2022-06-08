@@ -76,6 +76,7 @@ class KYVE {
         this.wallet = new sdk_1.KyveWallet(options.network, options.mnemonic);
         this.sdk = new sdk_1.KyveSDK(this.wallet);
         this.db = new database_1.Database(this.name);
+        this.caching = true;
         if (!(0, fs_1.existsSync)("./logs")) {
             (0, fs_1.mkdirSync)("./logs");
         }
@@ -130,14 +131,10 @@ class KYVE {
     async run() {
         try {
             const address = await this.wallet.getAddress();
-            let cacheInterval = null;
             while (true) {
                 console.log("");
                 this.logger.info("Starting new bundle proposal");
-                // clear cache interval
-                if (cacheInterval) {
-                    clearInterval(cacheInterval);
-                }
+                this.caching = false;
                 // get current pool state and verify node
                 await this.getPool(false);
                 await this.verifyNode(false);
@@ -175,51 +172,7 @@ class KYVE {
                 catch {
                     this.logger.warn(" Failed to drop old data items. Continuing ...");
                 }
-                // cache data items from current height to required height
-                let height = +this.pool.bundle_proposal.from_height;
-                let toHeight = +this.pool.bundle_proposal.to_height;
-                // add max bundle size if node is the next uploader
-                if (this.pool.bundle_proposal.next_uploader === address) {
-                    this.logger.info("Selected as UPLOADER");
-                    toHeight += +this.pool.max_bundle_size;
-                }
-                else {
-                    this.logger.info("Selected as VALIDATOR");
-                }
-                this.logger.debug(`Caching from height ${height} to ${toHeight} ...`);
-                // Get previousKey from bundle_proposal.to_key;
-                // let previousKey: string | null = null;
-                // TODO: only for testing
-                let previousKey = this.pool.bundle_proposal.from_height;
-                cacheInterval = setInterval(async () => {
-                    if (height < toHeight) {
-                        let requests = 1;
-                        while (true) {
-                            try {
-                                await (0, helpers_1.sleep)(3000);
-                                const item = await this.getDataItem(previousKey);
-                                previousKey = item.key;
-                                await this.db.put(height, item);
-                                console.log(`Fetchted item with key = ${item.key}`);
-                                break;
-                            }
-                            catch {
-                                this.logger.warn(` Failed to get data item from height ${height}`);
-                                await (0, helpers_1.sleep)(requests * 10 * 1000);
-                                // limit timeout to 5 mins
-                                if (requests < 30) {
-                                    requests++;
-                                }
-                            }
-                        }
-                        height++;
-                    }
-                    else {
-                        if (cacheInterval) {
-                            clearInterval(cacheInterval);
-                        }
-                    }
-                }, 50);
+                this.cacheCurrentRound(address);
                 if (this.pool.bundle_proposal.uploader &&
                     this.pool.bundle_proposal.uploader !== address) {
                     let canVote = {
@@ -308,10 +261,8 @@ class KYVE {
                     }
                 }
                 else {
-                    // clear cache interval
-                    if (cacheInterval) {
-                        clearInterval(cacheInterval);
-                    }
+                    // stop caching for round
+                    this.caching = false;
                     // let validators wait for next bundle proposal
                     await this.nextBundleProposal(created_at);
                 }
@@ -321,6 +272,53 @@ class KYVE {
             this.logger.error(`Runtime error. Exiting ...`);
             this.logger.debug(error);
             process.exit(1);
+        }
+    }
+    async cacheCurrentRound(address) {
+        this.caching = true;
+        // cache data items from current height to required height
+        let fromHeight = +this.pool.bundle_proposal.from_height;
+        let toHeight = +this.pool.bundle_proposal.to_height;
+        // add max bundle size if node is the next uploader
+        if (this.pool.bundle_proposal.next_uploader === address) {
+            this.logger.info("Selected as UPLOADER");
+            toHeight += +this.pool.max_bundle_size;
+        }
+        else {
+            this.logger.info("Selected as VALIDATOR");
+        }
+        this.logger.debug(`Caching from height ${fromHeight} to ${toHeight} ...`);
+        // Get previousKey from bundle_proposal.to_key;
+        // let previousKey: string | null = null;
+        // TODO: only for testing
+        let previousKey = this.pool.bundle_proposal.from_height;
+        for (let height = fromHeight; height < toHeight; height++) {
+            if (!this.caching) {
+                break;
+            }
+            let requests = 1;
+            while (true) {
+                // stop caching immediately
+                if (!this.caching) {
+                    break;
+                }
+                try {
+                    const item = await this.getDataItem(previousKey);
+                    previousKey = item.key;
+                    await this.db.put(height, item);
+                    console.log(`height = ${height} - key = ${item.key}`);
+                    await (0, helpers_1.sleep)(50);
+                    break;
+                }
+                catch {
+                    this.logger.warn(` Failed to get data item from height ${height}`);
+                    await (0, helpers_1.sleep)(requests * 10 * 1000);
+                    // limit timeout to 5 mins
+                    if (requests < 30) {
+                        requests++;
+                    }
+                }
+            }
         }
     }
     async getDataItem(previousKey) {

@@ -24,12 +24,14 @@ declare class KYVE {
     protected network: string;
     protected runMetrics: boolean;
     protected db: Database;
+    protected caching: boolean;
     protected logger: Logger;
     protected arweave: Arweave;
     static metrics: typeof client;
     constructor(cli?: CLI);
     start(): Promise<void>;
     private run;
+    private cacheCurrentRound;
     getDataItem(previousKey: string | null): Promise<Item>;
     private loadBundle;
     private clearFinalizedData;
