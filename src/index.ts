@@ -194,12 +194,12 @@ class KYVE {
           continue;
         }
 
-        // drop old data items which are not needed anymore
-        try {
-          await this.db.drop();
-        } catch {
-          this.logger.warn(" Failed to drop old data items. Continuing ...");
-        }
+        // // drop old data items which are not needed anymore
+        // try {
+        //   await this.db.drop();
+        // } catch {
+        //   this.logger.warn(" Failed to drop old data items. Continuing ...");
+        // }
 
         this.cacheCurrentRound(address);
 
@@ -367,22 +367,23 @@ class KYVE {
     this.caching = true;
 
     // cache data items from current height to required height
-    let fromHeight = +this.pool.bundle_proposal.from_height;
-    let toHeight = +this.pool.bundle_proposal.to_height;
+    let fromHeight = +this.pool.bundle_proposal.to_height;
+    let toHeight = +this.pool.max_bundle_size + fromHeight;
 
     // add max bundle size if node is the next uploader
     if (this.pool.bundle_proposal.next_uploader === address) {
       this.logger.info("Selected as UPLOADER");
-      toHeight += +this.pool.max_bundle_size;
+      // toHeight += +this.pool.max_bundle_size;
     } else {
       this.logger.info("Selected as VALIDATOR");
     }
 
     this.logger.debug(`Caching from height ${fromHeight} to ${toHeight} ...`);
+
     // Get previousKey from bundle_proposal.to_key;
     // let previousKey: string | null = null;
     // TODO: only for testing
-    let previousKey: string | null = this.pool.bundle_proposal.from_height;
+    let previousKey: string | null = this.pool.bundle_proposal.to_height;
 
     for (let height = fromHeight; height < toHeight; height++) {
       if (!this.caching) {
