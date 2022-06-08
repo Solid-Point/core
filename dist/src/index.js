@@ -260,8 +260,6 @@ class KYVE {
                     }
                 }
                 else {
-                    // stop caching for round
-                    this.caching = false;
                     // let validators wait for next bundle proposal
                     await this.nextBundleProposal(created_at);
                 }
