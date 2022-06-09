@@ -48,7 +48,6 @@ class KYVE {
   protected network: string;
   protected runMetrics: boolean;
   protected db: Database;
-  protected caching: boolean;
   protected logger: Logger;
   protected arweave = new Arweave({
     host: "arweave.net",
@@ -77,7 +76,6 @@ class KYVE {
     this.wallet = new KyveWallet(options.network, options.mnemonic);
     this.sdk = new KyveSDK(this.wallet);
     this.db = new Database(this.name);
-    this.caching = true;
 
     if (!existsSync("./logs")) {
       mkdirSync("./logs");
@@ -140,6 +138,7 @@ class KYVE {
     await this.verifyNode();
 
     this.run();
+    this.cache();
   }
 
   private async run() {
@@ -149,8 +148,6 @@ class KYVE {
       while (true) {
         console.log("");
         this.logger.info("Starting new bundle proposal");
-
-        this.caching = false;
 
         // get current pool state and verify node
         await this.getPool(false);
@@ -194,14 +191,11 @@ class KYVE {
           continue;
         }
 
-        // // drop old data items which are not needed anymore
-        // try {
-        //   await this.db.drop();
-        // } catch {
-        //   this.logger.warn(" Failed to drop old data items. Continuing ...");
-        // }
-
-        this.cacheCurrentRound(address);
+        if (this.pool.bundle_proposal.next_uploader === address) {
+          this.logger.info("Selected as UPLOADER");
+        } else {
+          this.logger.info("Selected as VALIDATOR");
+        }
 
         if (
           this.pool.bundle_proposal.uploader &&
@@ -360,60 +354,70 @@ class KYVE {
     }
   }
 
-  private async cacheCurrentRound(address: string) {
-    this.caching = true;
+  private async cache() {
+    let createdAt = 0;
+    let fromHeight = 0;
+    let toHeight = 0;
+    let maxHeight = 0;
 
-    // cache data items from current height to required height
-    let fromHeight = +this.pool.bundle_proposal.to_height;
-    let toHeight = +this.pool.max_bundle_size + fromHeight;
-
-    // add max bundle size if node is the next uploader
-    if (this.pool.bundle_proposal.next_uploader === address) {
-      this.logger.info("Selected as UPLOADER");
-      // toHeight += +this.pool.max_bundle_size;
-    } else {
-      this.logger.info("Selected as VALIDATOR");
-    }
-
-    this.logger.debug(`Caching from height ${fromHeight} to ${toHeight} ...`);
-
-    // Get previousKey from bundle_proposal.to_key;
-    // let previousKey: string | null = null;
-    // TODO: only for testing
-    let previousKey: string | null = this.pool.bundle_proposal.to_height;
-
-    for (let height = fromHeight; height < toHeight; height++) {
-      if (!this.caching) {
-        break;
+    while (true) {
+      // a smaller to_height means a bundle got dropped or invalidated
+      // resetting cache
+      if (+this.pool.bundle_proposal.to_height < toHeight) {
+        try {
+          this.logger.debug(`Resetting cache ...`);
+          await this.db.drop();
+          this.logger.debug(`Successfully resetted cache ...`);
+        } catch {
+          this.logger.warn(" Failed to reset cache. Continuing ...");
+        }
       }
 
-      let requests = 1;
+      // cache data items from current height to required height
+      createdAt = +this.pool.bundle_proposal.created_at;
+      fromHeight = +this.pool.bundle_proposal.from_height;
+      toHeight = +this.pool.bundle_proposal.to_height;
+      maxHeight = +this.pool.max_bundle_size + toHeight;
 
-      while (true) {
-        // stop caching immediately
-        if (!this.caching) {
-          break;
-        }
+      // Get previousKey from bundle_proposal.to_key;
+      // let previousKey: string | null = null;
+      // TODO: only for testing
+      let previousKey: string | null;
+      let startHeight: number;
 
-        try {
-          const item: Item = await this.getDataItem(previousKey);
-          previousKey = item.key;
-          await this.db.put(height, item);
+      if (await this.db.exists(toHeight)) {
+        previousKey = this.pool.bundle_proposal.to_height;
+        startHeight = +this.pool.bundle_proposal.to_height;
+      } else {
+        previousKey = this.pool.bundle_proposal.from_height;
+        startHeight = +this.pool.bundle_proposal.from_height;
+      }
 
-          console.log(`height = ${height} - key = ${item.key}`);
+      this.logger.debug(
+        `Caching from height ${startHeight} to ${maxHeight} ...`
+      );
 
-          await sleep(50);
-          break;
-        } catch {
-          this.logger.warn(` Failed to get data item from height ${height}`);
+      for (let height = startHeight; height < maxHeight; height++) {
+        for (let requests = 1; requests < 30; requests++) {
+          try {
+            const item: Item = await this.getDataItem(previousKey);
+            previousKey = item.key;
+            await this.db.put(height, item);
 
-          await sleep(requests * 10 * 1000);
+            console.log(`height = ${height} - key = ${item.key}`);
 
-          // limit timeout to 5 mins
-          if (requests < 30) {
-            requests++;
+            await sleep(50);
+            break;
+          } catch {
+            this.logger.warn(` Failed to get data item from height ${height}`);
+            await sleep(requests * 10 * 1000);
           }
         }
+      }
+
+      // wait until new bundle proposal gets created
+      while (createdAt === +this.pool.bundle_proposal.created_at) {
+        await sleep(1000);
       }
     }
   }

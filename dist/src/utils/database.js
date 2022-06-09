@@ -29,5 +29,8 @@ class Database {
     async drop() {
         await fs_extra_1.default.emptyDir(`./db/${this.path}/`);
     }
+    async exists(key) {
+        return await fs_extra_1.default.pathExists(`./db/${this.path}/${key}.json`);
+    }
 }
 exports.Database = Database;

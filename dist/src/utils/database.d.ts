@@ -5,4 +5,5 @@ export declare class Database {
     get(key: string | number): Promise<any>;
     del(key: string | number): Promise<void>;
     drop(): Promise<void>;
+    exists(key: string | number): Promise<boolean>;
 }

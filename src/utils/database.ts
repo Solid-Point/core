@@ -32,4 +32,8 @@ export class Database {
   public async drop(): Promise<void> {
     await fse.emptyDir(`./db/${this.path}/`);
   }
+
+  public async exists(key: string | number): Promise<boolean> {
+    return await fse.pathExists(`./db/${this.path}/${key}.json`);
+  }
 }
