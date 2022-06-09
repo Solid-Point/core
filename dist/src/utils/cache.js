@@ -3,11 +3,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Database = void 0;
+exports.Cache = void 0;
 const fs_1 = require("fs");
 const jsonfile_1 = require("jsonfile");
 const fs_extra_1 = __importDefault(require("fs-extra"));
-class Database {
+class Cache {
     constructor(path) {
         this.path = path;
         if (!(0, fs_1.existsSync)("./db")) {
@@ -33,4 +33,4 @@ class Database {
         return await fs_extra_1.default.pathExists(`./db/${this.path}/${key}.json`);
     }
 }
-exports.Database = Database;
+exports.Cache = Cache;

@@ -40,7 +40,7 @@ const object_hash_1 = __importDefault(require("object-hash"));
 const http_1 = __importDefault(require("http"));
 const url_1 = __importDefault(require("url"));
 const prom_client_1 = __importStar(require("prom-client"));
-const database_1 = require("./utils/database");
+const cache_1 = require("./utils/cache");
 const zlib_1 = require("zlib");
 const axios_1 = __importDefault(require("axios"));
 const unique_names_generator_1 = require("unique-names-generator");
@@ -50,7 +50,7 @@ const constants_1 = require("./utils/constants");
 __exportStar(require("./utils"), exports);
 __exportStar(require("./faces"), exports);
 __exportStar(require("./utils/helpers"), exports);
-__exportStar(require("./utils/database"), exports);
+__exportStar(require("./utils/cache"), exports);
 prom_client_1.default.collectDefaultMetrics({
     labels: { app: "kyve-core" },
 });
@@ -75,7 +75,7 @@ class KYVE {
         this.chainVersion = "v1beta1";
         this.wallet = new sdk_1.KyveWallet(options.network, options.mnemonic);
         this.sdk = new sdk_1.KyveSDK(this.wallet);
-        this.db = new database_1.Database(this.name);
+        this.cache = new cache_1.Cache(this.name);
         if (!(0, fs_1.existsSync)("./logs")) {
             (0, fs_1.mkdirSync)("./logs");
         }
@@ -127,7 +127,7 @@ class KYVE {
         await this.verifyNode();
         await this.resetCache();
         this.run();
-        this.cache();
+        this.cacheData();
     }
     async run() {
         try {
@@ -270,7 +270,7 @@ class KYVE {
             process.exit(1);
         }
     }
-    async cache() {
+    async cacheData() {
         let createdAt = 0;
         let fromHeight = 0;
         let toHeight = 0;
@@ -290,7 +290,7 @@ class KYVE {
             while (current > 0) {
                 current--;
                 try {
-                    await this.db.del(current);
+                    await this.cache.del(current);
                     console.log(`Deleted at height = ${current}`);
                 }
                 catch {
@@ -303,7 +303,7 @@ class KYVE {
             let previousKey;
             let startHeight;
             // get previous key and current head by checking latest height in cache
-            if (await this.db.exists(toHeight - 1)) {
+            if (await this.cache.exists(toHeight - 1)) {
                 previousKey = this.pool.bundle_proposal.to_height;
                 startHeight = toHeight;
             }
@@ -317,7 +317,7 @@ class KYVE {
                     try {
                         const item = await this.getDataItem(previousKey);
                         previousKey = item.key;
-                        await this.db.put(height, item);
+                        await this.cache.put(height, item);
                         console.log(`height = ${height} - key = ${item.key}`);
                         await (0, helpers_1.sleep)(50);
                         break;
@@ -342,7 +342,7 @@ class KYVE {
         // reset cache
         try {
             this.logger.debug(`Resetting cache ...`);
-            await this.db.drop();
+            await this.cache.drop();
             this.logger.debug(`Successfully resetted cache ...`);
         }
         catch {
@@ -353,7 +353,7 @@ class KYVE {
         const bundle = [];
         for (let height = fromHeight; height < toHeight; height++) {
             try {
-                bundle.push(await this.db.get(height));
+                bundle.push(await this.cache.get(height));
             }
             catch {
                 break;
@@ -368,6 +368,7 @@ class KYVE {
     async validateProposal(created_at, abstain) {
         this.logger.info(`Validating bundle ${this.pool.bundle_proposal.bundle_id}`);
         let alreadyVotedWithAbstain = abstain;
+        let arweaveBundle;
         while (true) {
             await this.getPool(false);
             const remaining = this.remainingUploadInterval();
@@ -384,59 +385,55 @@ class KYVE {
                 // check if pool got paused in the meantime
                 break;
             }
-            this.logger.debug(`Downloading bundle from Arweave ...`);
-            const arweaveBundle = await this.downloadBundleFromArweave();
-            if (arweaveBundle) {
-                this.logger.debug(`Successfully downloaded bundle from Arweave`);
-                const fromHeight = +this.pool.bundle_proposal.from_height;
-                const toHeight = +this.pool.bundle_proposal.to_height;
-                this.logger.debug(`Loading local bundle from ${fromHeight} to ${toHeight} ...`);
-                const localBundle = await this.loadBundle(fromHeight, toHeight);
-                if (localBundle.bundle.length === toHeight - fromHeight) {
-                    try {
-                        const uploadBundle = JSON.parse((0, zlib_1.gunzipSync)(arweaveBundle).toString());
-                        const support = await this.validate(localBundle.bundle, +this.pool.bundle_proposal.byte_size, uploadBundle, +arweaveBundle.byteLength);
-                        if (support) {
-                            await this.vote(this.pool.bundle_proposal.bundle_id, 0);
-                        }
-                        else {
-                            await this.vote(this.pool.bundle_proposal.bundle_id, 1);
-                        }
-                    }
-                    catch {
-                        this.logger.warn(` Could not gunzip bundle ...`);
-                        await this.vote(this.pool.bundle_proposal.bundle_id, 1);
-                    }
-                    finally {
-                        break;
-                    }
+            // try to download bundle from arweave
+            if (!arweaveBundle) {
+                this.logger.debug(`Downloading bundle from Arweave ...`);
+                arweaveBundle = await this.downloadBundleFromArweave();
+                if (arweaveBundle) {
+                    this.logger.debug(`Successfully downloaded bundle from Arweave`);
                 }
                 else {
-                    if (alreadyVotedWithAbstain) {
-                        this.logger.warn(` Could not load local bundle from ${this.pool.bundle_proposal.from_height} to ${this.pool.bundle_proposal.to_height}. Retrying in 10s ...`);
-                        await (0, helpers_1.sleep)(10 * 1000);
-                    }
-                    else {
-                        this.logger.warn(` Could not load local bundle from ${this.pool.bundle_proposal.from_height} to ${this.pool.bundle_proposal.to_height}`);
-                        // vote with abstain if local bundle could not be loaded
+                    this.logger.warn(` Could not download bundle from Arweave. Retrying in 10s ...`);
+                    if (!alreadyVotedWithAbstain) {
                         await this.vote(this.pool.bundle_proposal.bundle_id, 2);
                         alreadyVotedWithAbstain = true;
-                        await (0, helpers_1.sleep)(10 * 1000);
                     }
+                    await (0, helpers_1.sleep)(10 * 1000);
+                    continue;
                 }
             }
-            else {
-                if (alreadyVotedWithAbstain) {
-                    this.logger.warn(` Could not download bundle from Arweave. Retrying in 10s ...`);
-                    await (0, helpers_1.sleep)(10 * 1000);
-                }
-                else {
-                    this.logger.warn(` Could not download bundle from Arweave`);
-                    // vote with abstain if arweave bundle could not be downloaded
+            // try to load local bundle
+            const fromHeight = +this.pool.bundle_proposal.from_height;
+            const toHeight = +this.pool.bundle_proposal.to_height;
+            this.logger.debug(`Loading local bundle from ${fromHeight} to ${toHeight} ...`);
+            const localBundle = await this.loadBundle(fromHeight, toHeight);
+            // check if bundle length is equal to request bundle
+            if (localBundle.bundle.length !== toHeight - fromHeight) {
+                this.logger.warn(` Could not load local bundle from ${this.pool.bundle_proposal.from_height} to ${this.pool.bundle_proposal.to_height}. Retrying in 10s ...`);
+                if (!alreadyVotedWithAbstain) {
                     await this.vote(this.pool.bundle_proposal.bundle_id, 2);
                     alreadyVotedWithAbstain = true;
-                    await (0, helpers_1.sleep)(10 * 1000);
                 }
+                await (0, helpers_1.sleep)(10 * 1000);
+                continue;
+            }
+            // validate bundle if local bundle and arweave bundle was found
+            try {
+                const uploadBundle = JSON.parse((0, zlib_1.gunzipSync)(arweaveBundle).toString());
+                const support = await this.validate(localBundle.bundle, +this.pool.bundle_proposal.byte_size, uploadBundle, +arweaveBundle.byteLength);
+                if (support) {
+                    await this.vote(this.pool.bundle_proposal.bundle_id, 0);
+                }
+                else {
+                    await this.vote(this.pool.bundle_proposal.bundle_id, 1);
+                }
+            }
+            catch {
+                this.logger.warn(` Could not gunzip bundle ...`);
+                await this.vote(this.pool.bundle_proposal.bundle_id, 1);
+            }
+            finally {
+                break;
             }
         }
     }

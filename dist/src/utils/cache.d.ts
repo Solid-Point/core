@@ -1,4 +1,4 @@
-export declare class Database {
+export declare class Cache {
     path: string;
     constructor(path: string);
     put(key: string | number, value: any): Promise<void>;
