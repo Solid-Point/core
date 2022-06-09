@@ -385,7 +385,7 @@ class KYVE {
       let previousKey: string | null;
       let startHeight: number;
 
-      if (await this.db.exists(toHeight)) {
+      if (await this.db.exists(toHeight - 1)) {
         previousKey = this.pool.bundle_proposal.to_height;
         startHeight = +this.pool.bundle_proposal.to_height;
       } else {

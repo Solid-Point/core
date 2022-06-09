@@ -297,7 +297,7 @@ class KYVE {
             // TODO: only for testing
             let previousKey;
             let startHeight;
-            if (await this.db.exists(toHeight)) {
+            if (await this.db.exists(toHeight - 1)) {
                 previousKey = this.pool.bundle_proposal.to_height;
                 startHeight = +this.pool.bundle_proposal.to_height;
             }
