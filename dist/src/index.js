@@ -276,8 +276,8 @@ class KYVE {
         let maxHeight = 0;
         while (true) {
             // a smaller to_height means a bundle got dropped or invalidated
-            // resetting cache
-            if (+this.pool.bundle_proposal.to_height < toHeight) {
+            if (!toHeight || +this.pool.bundle_proposal.to_height <= toHeight) {
+                // reset cache
                 try {
                     this.logger.debug(`Resetting cache ...`);
                     await this.db.drop();
@@ -297,6 +297,7 @@ class KYVE {
             // TODO: only for testing
             let previousKey;
             let startHeight;
+            // get previous key and current head by checking latest height in cache
             if (await this.db.exists(toHeight - 1)) {
                 previousKey = this.pool.bundle_proposal.to_height;
                 startHeight = +this.pool.bundle_proposal.to_height;
