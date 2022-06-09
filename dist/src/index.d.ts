@@ -33,7 +33,6 @@ declare class KYVE {
     private cache;
     getDataItem(previousKey: string | null): Promise<Item>;
     private loadBundle;
-    private clearFinalizedData;
     private validateProposal;
     validate(localBundle: any[], localBytes: number, uploadBundle: any[], uploadBytes: number): Promise<boolean>;
     private downloadBundleFromArweave;

@@ -379,6 +379,20 @@ class KYVE {
       toHeight = +this.pool.bundle_proposal.to_height;
       maxHeight = +this.pool.max_bundle_size + toHeight;
 
+      // clear finalized items
+      let current = fromHeight;
+
+      while (current > 0) {
+        current--;
+
+        try {
+          await this.db.del(current);
+          console.log(`Deleted at height = ${current}`);
+        } catch {
+          break;
+        }
+      }
+
       // Get previousKey from bundle_proposal.to_key;
       // let previousKey: string | null = null;
       // TODO: only for testing
@@ -388,10 +402,10 @@ class KYVE {
       // get previous key and current head by checking latest height in cache
       if (await this.db.exists(toHeight - 1)) {
         previousKey = this.pool.bundle_proposal.to_height;
-        startHeight = +this.pool.bundle_proposal.to_height;
+        startHeight = toHeight;
       } else {
         previousKey = this.pool.bundle_proposal.from_height;
-        startHeight = +this.pool.bundle_proposal.from_height;
+        startHeight = fromHeight;
       }
 
       this.logger.debug(
@@ -449,24 +463,6 @@ class KYVE {
       toHeight,
       bundle,
     };
-  }
-
-  private async clearFinalizedData() {
-    let tail: number;
-
-    try {
-      tail = parseInt(await this.db.get("tail"));
-    } catch {
-      tail = parseInt(this.pool.height_archived);
-    }
-
-    for (let key = tail; key < parseInt(this.pool.height_archived); key++) {
-      try {
-        await this.db.del(key);
-      } catch {}
-    }
-
-    await this.db.put("tail", parseInt(this.pool.height_archived));
   }
 
   private async validateProposal(
