@@ -125,6 +125,7 @@ class KYVE {
         await this.setupStake();
         await this.getPool(false);
         await this.verifyNode();
+        await this.resetCache();
         this.run();
         this.cache();
     }
@@ -276,16 +277,8 @@ class KYVE {
         let maxHeight = 0;
         while (true) {
             // a smaller to_height means a bundle got dropped or invalidated
-            if (!toHeight || +this.pool.bundle_proposal.to_height <= toHeight) {
-                // reset cache
-                try {
-                    this.logger.debug(`Resetting cache ...`);
-                    await this.db.drop();
-                    this.logger.debug(`Successfully resetted cache ...`);
-                }
-                catch {
-                    this.logger.warn(" Failed to reset cache. Continuing ...");
-                }
+            if (toHeight && +this.pool.bundle_proposal.to_height <= toHeight) {
+                await this.resetCache();
             }
             // cache data items from current height to required height
             createdAt = +this.pool.bundle_proposal.created_at;
@@ -344,6 +337,17 @@ class KYVE {
     async getDataItem(previousKey) {
         this.logger.error(`mandatory "getDataItem" method not implemented. Exiting ...`);
         process.exit(1);
+    }
+    async resetCache() {
+        // reset cache
+        try {
+            this.logger.debug(`Resetting cache ...`);
+            await this.db.drop();
+            this.logger.debug(`Successfully resetted cache ...`);
+        }
+        catch {
+            this.logger.warn(" Failed to reset cache. Continuing ...");
+        }
     }
     async loadBundle(fromHeight, toHeight) {
         const bundle = [];

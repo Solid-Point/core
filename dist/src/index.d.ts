@@ -32,6 +32,7 @@ declare class KYVE {
     private run;
     private cache;
     getDataItem(previousKey: string | null): Promise<Item>;
+    private resetCache;
     private loadBundle;
     private validateProposal;
     validate(localBundle: any[], localBytes: number, uploadBundle: any[], uploadBytes: number): Promise<boolean>;
