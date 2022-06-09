@@ -364,7 +364,7 @@ class KYVE {
 
     while (true) {
       // a smaller to_height means a bundle got dropped or invalidated
-      if (toHeight && +this.pool.bundle_proposal.to_height <= toHeight) {
+      if (+this.pool.bundle_proposal.to_height < toHeight) {
         await this.resetCache();
       }
 
