@@ -291,7 +291,6 @@ class KYVE {
                 current--;
                 try {
                     await this.cache.del(current);
-                    console.log(`Deleted at height = ${current}`);
                 }
                 catch {
                     break;
