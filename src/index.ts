@@ -388,18 +388,12 @@ class KYVE {
         }
       }
 
-      // Get previousKey from bundle_proposal.to_key;
-      // let previousKey: string | null = null;
-      // TODO: only for testing
-      let previousKey: string | null;
       let startHeight: number;
 
-      // get previous key and current head by checking latest height in cache
+      // determine from which height to continue caching
       if (await this.cache.exists(toHeight - 1)) {
-        previousKey = this.pool.bundle_proposal.to_height;
         startHeight = toHeight;
       } else {
-        previousKey = this.pool.bundle_proposal.from_height;
         startHeight = fromHeight;
       }
 
@@ -410,8 +404,7 @@ class KYVE {
       for (let height = startHeight; height < maxHeight; height++) {
         for (let requests = 1; requests < 30; requests++) {
           try {
-            const item: Item = await this.getDataItem(previousKey);
-            previousKey = item.key;
+            const item: Item = await this.getDataItem(height.toString());
             await this.cache.put(height, item);
 
             console.log(`height = ${height} - key = ${item.key}`);
@@ -432,7 +425,7 @@ class KYVE {
     }
   }
 
-  public async getDataItem(previousKey: string | null): Promise<Item> {
+  public async getDataItem(key: string): Promise<Item> {
     this.logger.error(
       `mandatory "getDataItem" method not implemented. Exiting ...`
     );
@@ -709,7 +702,6 @@ class KYVE {
       this.logger.error(
         "Failed to submit bundle proposal. Retrying in 30s ..."
       );
-      console.log(error);
       await sleep(30 * 1000);
     }
   }
