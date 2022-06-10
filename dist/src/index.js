@@ -309,9 +309,8 @@ class KYVE {
             for (let height = startHeight; height < maxHeight; height++) {
                 for (let requests = 1; requests < 30; requests++) {
                     try {
-                        const item = await this.getDataItem(height.toString());
+                        const item = await this.getDataItem(height);
                         await this.cache.put(height, item);
-                        console.log(`height = ${height} - key = ${item.key}`);
                         await (0, helpers_1.sleep)(50);
                         break;
                     }
@@ -327,7 +326,7 @@ class KYVE {
             }
         }
     }
-    async getDataItem(key) {
+    async getDataItem(height) {
         this.logger.error(`mandatory "getDataItem" method not implemented. Exiting ...`);
         process.exit(1);
     }
