@@ -458,7 +458,9 @@ class KYVE {
                 if (localValue !== uploadValue) {
                     support = false;
                 }
-                support = await this.validate(localBundle.bundle, uploadBundle);
+                if (support) {
+                    support = await this.validate(localBundle.bundle, uploadBundle);
+                }
                 if (support) {
                     await this.vote(this.pool.bundle_proposal.bundle_id, 0);
                 }
