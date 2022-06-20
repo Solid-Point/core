@@ -392,7 +392,8 @@ class KYVE {
       }
 
       let startHeight: number;
-      let previousKey: string = this.pool.bundle_proposal.latest_key;
+      let previousKey: string =
+        this.pool.bundle_proposal.latest_key || this.pool.current_key;
 
       // determine from which height to continue caching
       if (await this.cache.exists(toHeight - 1)) {
@@ -404,7 +405,6 @@ class KYVE {
       this.logger.debug(
         `Caching from height ${startHeight} to ${maxHeight} ...`
       );
-      console.log(`Current previous key = ${previousKey}`);
 
       for (let height = startHeight; height < maxHeight; height++) {
         for (let requests = 1; requests < 30; requests++) {
