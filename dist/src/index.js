@@ -220,7 +220,8 @@ class KYVE {
                     };
                     while (true) {
                         try {
-                            const { data } = await axios_1.default.get(`${this.wallet.getRestEndpoint()}/kyve/registry/${this.chainVersion}/can_propose/${this.poolId}/${address}/${this.pool.bundle_proposal.to_height}`);
+                            const { data } = await axios_1.default.get(`${this.wallet.getRestEndpoint()}/kyve/registry/${this.chainVersion}/can_propose/${this.poolId}/${address}/${this.pool.bundle_proposal.to_height ||
+                                this.pool.current_height}`);
                             canPropose = data;
                             if (!canPropose.possible &&
                                 canPropose.reason === "Upload interval not surpassed") {
@@ -238,7 +239,7 @@ class KYVE {
                     }
                     if (canPropose.possible) {
                         this.logger.info(`Creating new bundle proposal of type ${constants_1.KYVE_ARWEAVE_BUNDLE}`);
-                        const fromHeight = +this.pool.bundle_proposal.to_height;
+                        const fromHeight = +this.pool.bundle_proposal.to_height || +this.pool.current_height;
                         const toHeight = +this.pool.max_bundle_size + fromHeight;
                         const uploadBundle = await this.loadBundle(fromHeight, toHeight);
                         if (uploadBundle.bundle.length) {
@@ -272,21 +273,23 @@ class KYVE {
     }
     async cacheData() {
         let createdAt = 0;
-        let fromHeight = 0;
+        let currentHeight = 0;
         let toHeight = 0;
         let maxHeight = 0;
         while (true) {
             // a smaller to_height means a bundle got dropped or invalidated
-            if (+this.pool.bundle_proposal.to_height < toHeight) {
+            if (+this.pool.bundle_proposal.to_height ||
+                +this.pool.current_height < toHeight) {
                 await this.resetCache();
             }
             // cache data items from current height to required height
             createdAt = +this.pool.bundle_proposal.created_at;
-            fromHeight = +this.pool.bundle_proposal.from_height;
-            toHeight = +this.pool.bundle_proposal.to_height;
+            currentHeight = +this.pool.current_height;
+            toHeight =
+                +this.pool.bundle_proposal.to_height || +this.pool.current_height;
             maxHeight = +this.pool.max_bundle_size + toHeight;
             // clear finalized items
-            let current = fromHeight;
+            let current = currentHeight;
             while (current > 0) {
                 current--;
                 try {
@@ -297,16 +300,15 @@ class KYVE {
                 }
             }
             let startHeight;
-            let previousKey = this.pool.bundle_proposal.latest_key;
+            let previousKey = this.pool.bundle_proposal.latest_key || this.pool.current_key;
             // determine from which height to continue caching
             if (await this.cache.exists(toHeight - 1)) {
                 startHeight = toHeight;
             }
             else {
-                startHeight = fromHeight;
+                startHeight = currentHeight;
             }
             this.logger.debug(`Caching from height ${startHeight} to ${maxHeight} ...`);
-            console.log(`Current previous key = ${previousKey}`);
             for (let height = startHeight; height < maxHeight; height++) {
                 for (let requests = 1; requests < 30; requests++) {
                     try {
@@ -415,13 +417,13 @@ class KYVE {
                 }
             }
             // try to load local bundle
-            const fromHeight = +this.pool.bundle_proposal.from_height;
-            const toHeight = +this.pool.bundle_proposal.to_height;
-            this.logger.debug(`Loading local bundle from ${fromHeight} to ${toHeight} ...`);
-            const localBundle = await this.loadBundle(fromHeight, toHeight);
+            const currentHeight = +this.pool.current_height;
+            const toHeight = +this.pool.bundle_proposal.to_height || +this.pool.current_height;
+            this.logger.debug(`Loading local bundle from ${currentHeight} to ${toHeight} ...`);
+            const localBundle = await this.loadBundle(currentHeight, toHeight);
             // check if bundle length is equal to request bundle
-            if (localBundle.bundle.length !== toHeight - fromHeight) {
-                this.logger.warn(` Could not load local bundle from ${this.pool.bundle_proposal.from_height} to ${this.pool.bundle_proposal.to_height}. Retrying in 10s ...`);
+            if (localBundle.bundle.length !== toHeight - currentHeight) {
+                this.logger.warn(` Could not load local bundle from ${currentHeight} to ${toHeight}. Retrying in 10s ...`);
                 if (!alreadyVotedWithAbstain) {
                     await this.vote(this.pool.bundle_proposal.bundle_id, 2);
                     alreadyVotedWithAbstain = true;
