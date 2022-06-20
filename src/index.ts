@@ -399,7 +399,7 @@ class KYVE {
 
       let startHeight: number;
       let previousKey: string =
-        this.pool.bundle_proposal.latest_key || this.pool.current_key;
+        this.pool.bundle_proposal.to_key || this.pool.current_key;
 
       // determine from which height to continue caching
       if (await this.cache.exists(toHeight - 1)) {
@@ -597,7 +597,7 @@ class KYVE {
           support = false;
         }
 
-        const localKey = this.pool.bundle_proposal.latest_key;
+        const localKey = this.pool.bundle_proposal.to_key;
         const uploadKey = uploadBundle[uploadBundle.length - 1].key;
 
         console.log("");
@@ -609,7 +609,7 @@ class KYVE {
           support = false;
         }
 
-        const localValue = this.pool.bundle_proposal.latest_value;
+        const localValue = this.pool.bundle_proposal.to_value;
         const uploadValue = await this.formatValue(
           uploadBundle[uploadBundle.length - 1].value
         );
