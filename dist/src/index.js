@@ -337,8 +337,8 @@ class KYVE {
         this.logger.error(`mandatory "getNextKey" method not implemented. Exiting ...`);
         process.exit(1);
     }
-    async formatLatestValue(value) {
-        this.logger.error(`mandatory "formatLatestValue" method not implemented. Exiting ...`);
+    async formatValue(value) {
+        this.logger.error(`mandatory "formatValue" method not implemented. Exiting ...`);
         process.exit(1);
     }
     async resetCache() {
@@ -367,7 +367,7 @@ class KYVE {
         if (bundle.length) {
             const latestItem = bundle[bundle.length - 1];
             latestKey = latestItem.key;
-            latestValue = await this.formatLatestValue(latestItem.value);
+            latestValue = await this.formatValue(latestItem.value);
         }
         return {
             fromHeight,
@@ -440,20 +440,22 @@ class KYVE {
                 if (+this.pool.bundle_proposal.byte_size !== +arweaveBundle.byteLength) {
                     support = false;
                 }
+                const localKey = this.pool.bundle_proposal.latest_key;
+                const uploadKey = uploadBundle[uploadBundle.length - 1].key;
                 console.log("");
                 this.logger.debug("Comparing by key:");
-                this.logger.debug(`Local key: \t${this.pool.bundle_proposal.latest_key}`);
-                this.logger.debug(`Upload key: \t${uploadBundle[uploadBundle.length - 1].key}`);
-                if (this.pool.bundle_proposal.latest_key !==
-                    uploadBundle[uploadBundle.length - 1].key) {
+                this.logger.debug(`Local key: \t${localKey}`);
+                this.logger.debug(`Upload key: \t${uploadKey}`);
+                if (localKey !== uploadKey) {
                     support = false;
                 }
+                const localValue = this.pool.bundle_proposal.latest_value;
+                const uploadValue = await this.formatValue(uploadBundle[uploadBundle.length - 1].value);
                 console.log("");
                 this.logger.debug("Comparing by value:");
-                this.logger.debug(`Local value: \t${this.pool.bundle_proposal.latest_value}`);
-                this.logger.debug(`Upload value: \t${uploadBundle[uploadBundle.length - 1].value}`);
-                if (this.pool.bundle_proposal.latest_value !==
-                    uploadBundle[uploadBundle.length - 1].value) {
+                this.logger.debug(`Local value: \t${localValue}`);
+                this.logger.debug(`Upload value: \t${uploadValue}`);
+                if (localValue !== uploadValue) {
                     support = false;
                 }
                 support = await this.validate(localBundle.bundle, uploadBundle);
