@@ -404,6 +404,7 @@ class KYVE {
       this.logger.debug(
         `Caching from height ${startHeight} to ${maxHeight} ...`
       );
+      console.log(`Current previous key = ${previousKey}`);
 
       for (let height = startHeight; height < maxHeight; height++) {
         for (let requests = 1; requests < 30; requests++) {
