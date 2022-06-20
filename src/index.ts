@@ -575,12 +575,54 @@ class KYVE {
       try {
         const uploadBundle = JSON.parse(gunzipSync(arweaveBundle).toString());
 
-        const support = await this.validate(
-          localBundle.bundle,
-          +this.pool.bundle_proposal.byte_size,
-          uploadBundle,
-          +arweaveBundle.byteLength
+        let support = true;
+
+        console.log("");
+        this.logger.debug("Comparing by byte size:");
+        this.logger.debug(
+          `Local bundle: \t${this.pool.bundle_proposal.byte_size}`
         );
+        this.logger.debug(`Upload bundle: \t${arweaveBundle.byteLength}`);
+
+        if (
+          +this.pool.bundle_proposal.byte_size !== +arweaveBundle.byteLength
+        ) {
+          support = false;
+        }
+
+        console.log("");
+        this.logger.debug("Comparing by key:");
+        this.logger.debug(
+          `Local key: \t${this.pool.bundle_proposal.latest_key}`
+        );
+        this.logger.debug(
+          `Upload key: \t${uploadBundle[uploadBundle.length - 1].key}`
+        );
+
+        if (
+          this.pool.bundle_proposal.latest_key !==
+          uploadBundle[uploadBundle.length - 1].key
+        ) {
+          support = false;
+        }
+
+        console.log("");
+        this.logger.debug("Comparing by value:");
+        this.logger.debug(
+          `Local value: \t${this.pool.bundle_proposal.latest_value}`
+        );
+        this.logger.debug(
+          `Upload value: \t${uploadBundle[uploadBundle.length - 1].value}`
+        );
+
+        if (
+          this.pool.bundle_proposal.latest_value !==
+          uploadBundle[uploadBundle.length - 1].value
+        ) {
+          support = false;
+        }
+
+        support = await this.validate(localBundle.bundle, uploadBundle);
 
         if (support) {
           await this.vote(this.pool.bundle_proposal.bundle_id, 0);
@@ -598,19 +640,8 @@ class KYVE {
 
   public async validate(
     localBundle: any[],
-    localBytes: number,
-    uploadBundle: any[],
-    uploadBytes: number
+    uploadBundle: any[]
   ): Promise<boolean> {
-    console.log("");
-    this.logger.debug("Comparing by byte size:");
-    this.logger.debug(`Local bundle: \t${localBytes}`);
-    this.logger.debug(`Upload bundle: \t${uploadBytes}`);
-
-    if (localBytes !== uploadBytes) {
-      return false;
-    }
-
     const localHash = hash(localBundle);
     const uploadHash = hash(uploadBundle);
 
