@@ -246,12 +246,12 @@ class KYVE {
                             transaction = await this.uploadBundleToArweave(uploadBundle);
                             // submit bundle proposal
                             if (transaction) {
-                                await this.submitBundleProposal(transaction.id, +transaction.data_size, uploadBundle.fromHeight, uploadBundle.bundle.length);
+                                await this.submitBundleProposal(transaction.id, +transaction.data_size, uploadBundle.fromHeight, uploadBundle.bundle.length, uploadBundle.latestKey, uploadBundle.latestValue);
                             }
                         }
                         else {
                             this.logger.info(`Creating new bundle proposal of type ${constants_1.KYVE_NO_DATA_BUNDLE}`);
-                            await this.submitBundleProposal(constants_1.KYVE_NO_DATA_BUNDLE, 0, uploadBundle.fromHeight, 0);
+                            await this.submitBundleProposal(constants_1.KYVE_NO_DATA_BUNDLE, 0, uploadBundle.fromHeight, 0, "", "");
                         }
                     }
                     else {
@@ -297,6 +297,7 @@ class KYVE {
                 }
             }
             let startHeight;
+            let previousKey = this.pool.current_key;
             // determine from which height to continue caching
             if (await this.cache.exists(toHeight - 1)) {
                 startHeight = toHeight;
@@ -308,9 +309,11 @@ class KYVE {
             for (let height = startHeight; height < maxHeight; height++) {
                 for (let requests = 1; requests < 30; requests++) {
                     try {
-                        const item = await this.getDataItem(height);
+                        const key = await this.getNextKey(previousKey);
+                        const item = await this.getDataItem(key);
                         await this.cache.put(height, item);
                         await (0, helpers_1.sleep)(50);
+                        previousKey = key;
                         break;
                     }
                     catch {
@@ -325,8 +328,12 @@ class KYVE {
             }
         }
     }
-    async getDataItem(height) {
+    async getDataItem(key) {
         this.logger.error(`mandatory "getDataItem" method not implemented. Exiting ...`);
+        process.exit(1);
+    }
+    async getNextKey(previousKey) {
+        this.logger.error(`mandatory "getNextKey" method not implemented. Exiting ...`);
         process.exit(1);
     }
     async resetCache() {
@@ -354,6 +361,8 @@ class KYVE {
             fromHeight,
             toHeight,
             bundle,
+            latestKey: bundle[bundle.length - 1].key,
+            latestValue: `block height = ${bundle[bundle.length - 1].key}`,
         };
     }
     async validateProposal(created_at, abstain) {
@@ -499,10 +508,10 @@ class KYVE {
             return null;
         }
     }
-    async submitBundleProposal(bundleId, byteSize, fromHeight, bundleSize) {
+    async submitBundleProposal(bundleId, byteSize, fromHeight, bundleSize, latestKey, latestValue) {
         try {
             this.logger.debug(`Submitting bundle proposal ...`);
-            const { transactionHash, transactionBroadcast } = await this.sdk.submitBundleProposal(this.poolId, bundleId, byteSize, fromHeight, bundleSize);
+            const { transactionHash, transactionBroadcast } = await this.sdk.submitBundleProposal(this.poolId, bundleId, byteSize, fromHeight, bundleSize, latestKey, latestValue);
             this.logger.debug(`Transaction = ${transactionHash}`);
             const res = await transactionBroadcast;
             if (res.code === 0) {

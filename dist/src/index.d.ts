@@ -31,7 +31,8 @@ declare class KYVE {
     start(): Promise<void>;
     private run;
     private cacheData;
-    getDataItem(height: number): Promise<Item>;
+    getDataItem(key: string): Promise<Item>;
+    getNextKey(previousKey: string): Promise<string>;
     private resetCache;
     private loadBundle;
     private validateProposal;

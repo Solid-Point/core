@@ -324,7 +324,9 @@ class KYVE {
                   transaction.id,
                   +transaction.data_size,
                   uploadBundle.fromHeight,
-                  uploadBundle.bundle.length
+                  uploadBundle.bundle.length,
+                  uploadBundle.latestKey,
+                  uploadBundle.latestValue
                 );
               }
             } else {
@@ -336,7 +338,9 @@ class KYVE {
                 KYVE_NO_DATA_BUNDLE,
                 0,
                 uploadBundle.fromHeight,
-                0
+                0,
+                "",
+                ""
               );
             }
           } else {
@@ -388,6 +392,7 @@ class KYVE {
       }
 
       let startHeight: number;
+      let previousKey: string = this.pool.current_key;
 
       // determine from which height to continue caching
       if (await this.cache.exists(toHeight - 1)) {
@@ -403,10 +408,13 @@ class KYVE {
       for (let height = startHeight; height < maxHeight; height++) {
         for (let requests = 1; requests < 30; requests++) {
           try {
-            const item: Item = await this.getDataItem(height);
-            await this.cache.put(height, item);
+            const key = await this.getNextKey(previousKey);
+            const item = await this.getDataItem(key);
 
+            await this.cache.put(height, item);
             await sleep(50);
+
+            previousKey = key;
             break;
           } catch {
             this.logger.warn(` Failed to get data item from height ${height}`);
@@ -422,9 +430,16 @@ class KYVE {
     }
   }
 
-  public async getDataItem(height: number): Promise<Item> {
+  public async getDataItem(key: string): Promise<Item> {
     this.logger.error(
       `mandatory "getDataItem" method not implemented. Exiting ...`
+    );
+    process.exit(1);
+  }
+
+  public async getNextKey(previousKey: string): Promise<string> {
+    this.logger.error(
+      `mandatory "getNextKey" method not implemented. Exiting ...`
     );
     process.exit(1);
   }
@@ -458,6 +473,8 @@ class KYVE {
       fromHeight,
       toHeight,
       bundle,
+      latestKey: bundle[bundle.length - 1].key,
+      latestValue: `block height = ${bundle[bundle.length - 1].key}`,
     };
   }
 
@@ -672,7 +689,9 @@ class KYVE {
     bundleId: string,
     byteSize: number,
     fromHeight: number,
-    bundleSize: number
+    bundleSize: number,
+    latestKey: string,
+    latestValue: string
   ) {
     try {
       this.logger.debug(`Submitting bundle proposal ...`);
@@ -683,7 +702,9 @@ class KYVE {
           bundleId,
           byteSize,
           fromHeight,
-          bundleSize
+          bundleSize,
+          latestKey,
+          latestValue
         );
 
       this.logger.debug(`Transaction = ${transactionHash}`);
