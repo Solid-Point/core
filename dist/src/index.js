@@ -337,6 +337,10 @@ class KYVE {
         this.logger.error(`mandatory "getNextKey" method not implemented. Exiting ...`);
         process.exit(1);
     }
+    async formatLatestValue(value) {
+        this.logger.error(`mandatory "formatLatestValue" method not implemented. Exiting ...`);
+        process.exit(1);
+    }
     async resetCache() {
         // reset cache
         try {
@@ -358,12 +362,19 @@ class KYVE {
                 break;
             }
         }
+        let latestKey = "";
+        let latestValue = "";
+        if (bundle.length) {
+            const latestItem = bundle[bundle.length - 1];
+            latestKey = latestItem.key;
+            latestValue = await this.formatLatestValue(latestItem.value);
+        }
         return {
             fromHeight,
             toHeight,
             bundle,
-            latestKey: bundle[bundle.length - 1].key,
-            latestValue: `block height = ${bundle[bundle.length - 1].key}`,
+            latestKey,
+            latestValue,
         };
     }
     async validateProposal(created_at, abstain) {
