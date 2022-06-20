@@ -772,6 +772,7 @@ class KYVE {
       this.logger.error(
         "Failed to submit bundle proposal. Retrying in 30s ..."
       );
+      this.logger.error(error);
       await sleep(30 * 1000);
     }
   }
