@@ -326,7 +326,7 @@ class KYVE {
                   transaction.id,
                   +transaction.data_size,
                   uploadBundle.fromHeight,
-                  uploadBundle.bundle.length,
+                  uploadBundle.fromHeight + uploadBundle.bundle.length,
                   uploadBundle.latestKey,
                   uploadBundle.latestValue
                 );
@@ -340,7 +340,7 @@ class KYVE {
                 KYVE_NO_DATA_BUNDLE,
                 0,
                 uploadBundle.fromHeight,
-                0,
+                uploadBundle.fromHeight,
                 "",
                 ""
               );
@@ -741,9 +741,9 @@ class KYVE {
     bundleId: string,
     byteSize: number,
     fromHeight: number,
-    bundleSize: number,
-    latestKey: string,
-    latestValue: string
+    toHeight: number,
+    toKey: string,
+    toValue: string
   ) {
     try {
       this.logger.debug(`Submitting bundle proposal ...`);
@@ -754,9 +754,9 @@ class KYVE {
           bundleId,
           byteSize,
           fromHeight,
-          bundleSize,
-          latestKey,
-          latestValue
+          toHeight,
+          toKey,
+          toValue
         );
 
       this.logger.debug(`Transaction = ${transactionHash}`);

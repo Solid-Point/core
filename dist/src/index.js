@@ -247,12 +247,12 @@ class KYVE {
                             transaction = await this.uploadBundleToArweave(uploadBundle);
                             // submit bundle proposal
                             if (transaction) {
-                                await this.submitBundleProposal(transaction.id, +transaction.data_size, uploadBundle.fromHeight, uploadBundle.bundle.length, uploadBundle.latestKey, uploadBundle.latestValue);
+                                await this.submitBundleProposal(transaction.id, +transaction.data_size, uploadBundle.fromHeight, uploadBundle.fromHeight + uploadBundle.bundle.length, uploadBundle.latestKey, uploadBundle.latestValue);
                             }
                         }
                         else {
                             this.logger.info(`Creating new bundle proposal of type ${constants_1.KYVE_NO_DATA_BUNDLE}`);
-                            await this.submitBundleProposal(constants_1.KYVE_NO_DATA_BUNDLE, 0, uploadBundle.fromHeight, 0, "", "");
+                            await this.submitBundleProposal(constants_1.KYVE_NO_DATA_BUNDLE, 0, uploadBundle.fromHeight, uploadBundle.fromHeight, "", "");
                         }
                     }
                     else {
@@ -543,10 +543,10 @@ class KYVE {
             return null;
         }
     }
-    async submitBundleProposal(bundleId, byteSize, fromHeight, bundleSize, latestKey, latestValue) {
+    async submitBundleProposal(bundleId, byteSize, fromHeight, toHeight, toKey, toValue) {
         try {
             this.logger.debug(`Submitting bundle proposal ...`);
-            const { transactionHash, transactionBroadcast } = await this.sdk.submitBundleProposal(this.poolId, bundleId, byteSize, fromHeight, bundleSize, latestKey, latestValue);
+            const { transactionHash, transactionBroadcast } = await this.sdk.submitBundleProposal(this.poolId, bundleId, byteSize, fromHeight, toHeight, toKey, toValue);
             this.logger.debug(`Transaction = ${transactionHash}`);
             const res = await transactionBroadcast;
             if (res.code === 0) {
