@@ -392,7 +392,7 @@ class KYVE {
       }
 
       let startHeight: number;
-      let previousKey: string = this.pool.current_key;
+      let previousKey: string = this.pool.bundle_proposal.latest_key;
 
       // determine from which height to continue caching
       if (await this.cache.exists(toHeight - 1)) {
