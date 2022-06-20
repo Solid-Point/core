@@ -327,8 +327,8 @@ class KYVE {
                   +transaction.data_size,
                   uploadBundle.fromHeight,
                   uploadBundle.fromHeight + uploadBundle.bundle.length,
-                  uploadBundle.latestKey,
-                  uploadBundle.latestValue
+                  uploadBundle.toKey,
+                  uploadBundle.toValue
                 );
               }
             } else {
@@ -483,22 +483,22 @@ class KYVE {
       }
     }
 
-    let latestKey = "";
-    let latestValue = "";
+    let toKey = "";
+    let toValue = "";
 
     if (bundle.length) {
       const latestItem = bundle[bundle.length - 1];
 
-      latestKey = latestItem.key;
-      latestValue = await this.formatValue(latestItem.value);
+      toKey = latestItem.key;
+      toValue = await this.formatValue(latestItem.value);
     }
 
     return {
       fromHeight,
       toHeight,
       bundle,
-      latestKey,
-      latestValue,
+      toKey,
+      toValue,
     };
   }
 

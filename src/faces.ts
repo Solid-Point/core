@@ -2,8 +2,8 @@ export type Bundle = {
   fromHeight: number;
   toHeight: number;
   bundle: any[];
-  latestKey: string;
-  latestValue: string;
+  toKey: string;
+  toValue: string;
 };
 
 export type Item = {

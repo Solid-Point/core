@@ -247,7 +247,7 @@ class KYVE {
                             transaction = await this.uploadBundleToArweave(uploadBundle);
                             // submit bundle proposal
                             if (transaction) {
-                                await this.submitBundleProposal(transaction.id, +transaction.data_size, uploadBundle.fromHeight, uploadBundle.fromHeight + uploadBundle.bundle.length, uploadBundle.latestKey, uploadBundle.latestValue);
+                                await this.submitBundleProposal(transaction.id, +transaction.data_size, uploadBundle.fromHeight, uploadBundle.fromHeight + uploadBundle.bundle.length, uploadBundle.toKey, uploadBundle.toValue);
                             }
                         }
                         else {
@@ -364,19 +364,19 @@ class KYVE {
                 break;
             }
         }
-        let latestKey = "";
-        let latestValue = "";
+        let toKey = "";
+        let toValue = "";
         if (bundle.length) {
             const latestItem = bundle[bundle.length - 1];
-            latestKey = latestItem.key;
-            latestValue = await this.formatValue(latestItem.value);
+            toKey = latestItem.key;
+            toValue = await this.formatValue(latestItem.value);
         }
         return {
             fromHeight,
             toHeight,
             bundle,
-            latestKey,
-            latestValue,
+            toKey,
+            toValue,
         };
     }
     async validateProposal(created_at, abstain) {
