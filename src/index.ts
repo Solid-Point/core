@@ -403,7 +403,7 @@ class KYVE {
       }
 
       let startHeight: number;
-      let previousKey: string =
+      let key: string =
         this.pool.bundle_proposal.to_key || this.pool.current_key;
 
       // determine from which height to continue caching
@@ -420,13 +420,12 @@ class KYVE {
       for (let height = startHeight; height < maxHeight; height++) {
         for (let requests = 1; requests < 30; requests++) {
           try {
-            const key = await this.getNextKey(previousKey);
             const item = await this.getDataItem(key);
 
             await this.cache.put(height, item);
             await sleep(50);
 
-            previousKey = key;
+            key = await this.getNextKey(key);
             break;
           } catch {
             this.logger.warn(` Failed to get data item from height ${height}`);
