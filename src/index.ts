@@ -581,30 +581,8 @@ class KYVE {
 
         let support = true;
 
-        console.log("");
-        this.logger.debug("Comparing by byte size:");
-        this.logger.debug(
-          `Local bundle: \t${this.pool.bundle_proposal.byte_size}`
-        );
-        this.logger.debug(`Upload bundle: \t${arweaveBundle.byteLength}`);
-
-        if (
-          +this.pool.bundle_proposal.byte_size !== +arweaveBundle.byteLength
-        ) {
-          support = false;
-        }
-
         const localKey = this.pool.bundle_proposal.to_key;
         const uploadKey = uploadBundle[uploadBundle.length - 1].key;
-
-        console.log("");
-        this.logger.debug("Comparing by key:");
-        this.logger.debug(`Local key: \t${localKey}`);
-        this.logger.debug(`Upload key: \t${uploadKey}`);
-
-        if (localKey !== uploadKey) {
-          support = false;
-        }
 
         const localValue = this.pool.bundle_proposal.to_value;
         const uploadValue = await this.formatValue(
@@ -612,11 +590,19 @@ class KYVE {
         );
 
         console.log("");
-        this.logger.debug("Comparing by value:");
-        this.logger.debug(`Local value: \t${localValue}`);
-        this.logger.debug(`Upload value: \t${uploadValue}`);
+        this.logger.debug("Comparing by metadata:");
+        this.logger.debug(
+          `Local bundle: \t${this.pool.bundle_proposal.byte_size}\t${localKey}\t${localValue}`
+        );
+        this.logger.debug(
+          `Upload bundle: \t${arweaveBundle.byteLength}\t${uploadKey}\t${uploadValue}`
+        );
 
-        if (localValue !== uploadValue) {
+        if (
+          +this.pool.bundle_proposal.byte_size !== +arweaveBundle.byteLength ||
+          localKey !== uploadKey ||
+          localValue !== uploadValue
+        ) {
           support = false;
         }
 

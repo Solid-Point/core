@@ -434,29 +434,17 @@ class KYVE {
             try {
                 const uploadBundle = JSON.parse((0, zlib_1.gunzipSync)(arweaveBundle).toString());
                 let support = true;
-                console.log("");
-                this.logger.debug("Comparing by byte size:");
-                this.logger.debug(`Local bundle: \t${this.pool.bundle_proposal.byte_size}`);
-                this.logger.debug(`Upload bundle: \t${arweaveBundle.byteLength}`);
-                if (+this.pool.bundle_proposal.byte_size !== +arweaveBundle.byteLength) {
-                    support = false;
-                }
                 const localKey = this.pool.bundle_proposal.to_key;
                 const uploadKey = uploadBundle[uploadBundle.length - 1].key;
-                console.log("");
-                this.logger.debug("Comparing by key:");
-                this.logger.debug(`Local key: \t${localKey}`);
-                this.logger.debug(`Upload key: \t${uploadKey}`);
-                if (localKey !== uploadKey) {
-                    support = false;
-                }
                 const localValue = this.pool.bundle_proposal.to_value;
                 const uploadValue = await this.formatValue(uploadBundle[uploadBundle.length - 1].value);
                 console.log("");
-                this.logger.debug("Comparing by value:");
-                this.logger.debug(`Local value: \t${localValue}`);
-                this.logger.debug(`Upload value: \t${uploadValue}`);
-                if (localValue !== uploadValue) {
+                this.logger.debug("Comparing by metadata:");
+                this.logger.debug(`Local bundle: \t${this.pool.bundle_proposal.byte_size}\t${localKey}\t${localValue}`);
+                this.logger.debug(`Upload bundle: \t${arweaveBundle.byteLength}\t${uploadKey}\t${uploadValue}`);
+                if (+this.pool.bundle_proposal.byte_size !== +arweaveBundle.byteLength ||
+                    localKey !== uploadKey ||
+                    localValue !== uploadValue) {
                     support = false;
                 }
                 if (support) {
