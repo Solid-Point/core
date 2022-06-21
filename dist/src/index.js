@@ -278,8 +278,7 @@ class KYVE {
         let maxHeight = 0;
         while (true) {
             // a smaller to_height means a bundle got dropped or invalidated
-            if (+this.pool.bundle_proposal.to_height ||
-                +this.pool.current_height < toHeight) {
+            if (+this.pool.bundle_proposal.to_height < toHeight) {
                 await this.resetCache();
             }
             // cache data items from current height to required height
