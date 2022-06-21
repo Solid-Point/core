@@ -241,18 +241,20 @@ class KYVE {
                         this.logger.info(`Creating new bundle proposal of type ${constants_1.KYVE_ARWEAVE_BUNDLE}`);
                         const fromHeight = +this.pool.bundle_proposal.to_height || +this.pool.current_height;
                         const toHeight = +this.pool.max_bundle_size + fromHeight;
+                        const fromKey = this.pool.bundle_proposal.to_key || this.pool.current_key;
                         const uploadBundle = await this.loadBundle(fromHeight, toHeight);
                         if (uploadBundle.bundle.length) {
                             // upload bundle to Arweave
                             transaction = await this.uploadBundleToArweave(uploadBundle);
                             // submit bundle proposal
                             if (transaction) {
-                                await this.submitBundleProposal(transaction.id, +transaction.data_size, uploadBundle.fromHeight, uploadBundle.fromHeight + uploadBundle.bundle.length, uploadBundle.toKey, uploadBundle.toValue);
+                                await this.submitBundleProposal(transaction.id, +transaction.data_size, fromHeight, fromHeight + uploadBundle.bundle.length, fromKey, uploadBundle.toKey, uploadBundle.toValue);
                             }
                         }
                         else {
                             this.logger.info(`Creating new bundle proposal of type ${constants_1.KYVE_NO_DATA_BUNDLE}`);
-                            await this.submitBundleProposal(constants_1.KYVE_NO_DATA_BUNDLE, 0, uploadBundle.fromHeight, uploadBundle.fromHeight, "", "");
+                            const bundleId = `KYVE_NO_DATA_BUNDLE_${this.poolId}_${Math.floor(Date.now() / 1000)}`;
+                            await this.submitBundleProposal(bundleId, 0, fromHeight, fromHeight, fromKey, "", "");
                         }
                     }
                     else {
@@ -439,7 +441,7 @@ class KYVE {
                 const localValue = this.pool.bundle_proposal.to_value;
                 const uploadValue = await this.formatValue(uploadBundle[uploadBundle.length - 1].value);
                 console.log("");
-                this.logger.debug("Comparing by metadata:");
+                this.logger.debug("Comparing by byte size / key / value:");
                 this.logger.debug(`Local bundle: \t${this.pool.bundle_proposal.byte_size}\t${localKey}\t${localValue}`);
                 this.logger.debug(`Upload bundle: \t${arweaveBundle.byteLength}\t${uploadKey}\t${uploadValue}`);
                 if (+this.pool.bundle_proposal.byte_size !== +arweaveBundle.byteLength ||
@@ -530,10 +532,10 @@ class KYVE {
             return null;
         }
     }
-    async submitBundleProposal(bundleId, byteSize, fromHeight, toHeight, toKey, toValue) {
+    async submitBundleProposal(bundleId, byteSize, fromHeight, toHeight, fromKey, toKey, toValue) {
         try {
             this.logger.debug(`Submitting bundle proposal ...`);
-            const { transactionHash, transactionBroadcast } = await this.sdk.submitBundleProposal(this.poolId, bundleId, byteSize, fromHeight, toHeight, toKey, toValue);
+            const { transactionHash, transactionBroadcast } = await this.sdk.submitBundleProposal(this.poolId, bundleId, byteSize, fromHeight, toHeight, fromKey, toKey, toValue);
             this.logger.debug(`Transaction = ${transactionHash}`);
             const res = await transactionBroadcast;
             if (res.code === 0) {

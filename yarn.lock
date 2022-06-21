@@ -457,7 +457,7 @@
 
 "@kyve/sdk@KYVENetwork/sdk#v0.5.0":
   version "1.1.0"
-  resolved "https://codeload.github.com/KYVENetwork/sdk/tar.gz/fb915057a43bf27bdc650e1e58356b875271397a"
+  resolved "https://codeload.github.com/KYVENetwork/sdk/tar.gz/681bccaa6a5e5dc1701d3c6d7cf19394ee78163c"
   dependencies:
     "@cosmjs/amino" "0.28.3"
     "@cosmjs/crypto" "0.27.1"

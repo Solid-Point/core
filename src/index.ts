@@ -313,6 +313,8 @@ class KYVE {
             const fromHeight =
               +this.pool.bundle_proposal.to_height || +this.pool.current_height;
             const toHeight = +this.pool.max_bundle_size + fromHeight;
+            const fromKey =
+              this.pool.bundle_proposal.to_key || this.pool.current_key;
 
             const uploadBundle = await this.loadBundle(fromHeight, toHeight);
 
@@ -325,8 +327,9 @@ class KYVE {
                 await this.submitBundleProposal(
                   transaction.id,
                   +transaction.data_size,
-                  uploadBundle.fromHeight,
-                  uploadBundle.fromHeight + uploadBundle.bundle.length,
+                  fromHeight,
+                  fromHeight + uploadBundle.bundle.length,
+                  fromKey,
                   uploadBundle.toKey,
                   uploadBundle.toValue
                 );
@@ -336,11 +339,16 @@ class KYVE {
                 `Creating new bundle proposal of type ${KYVE_NO_DATA_BUNDLE}`
               );
 
+              const bundleId = `KYVE_NO_DATA_BUNDLE_${this.poolId}_${Math.floor(
+                Date.now() / 1000
+              )}`;
+
               await this.submitBundleProposal(
-                KYVE_NO_DATA_BUNDLE,
+                bundleId,
                 0,
-                uploadBundle.fromHeight,
-                uploadBundle.fromHeight,
+                fromHeight,
+                fromHeight,
+                fromKey,
                 "",
                 ""
               );
@@ -590,7 +598,7 @@ class KYVE {
         );
 
         console.log("");
-        this.logger.debug("Comparing by metadata:");
+        this.logger.debug("Comparing by byte size / key / value:");
         this.logger.debug(
           `Local bundle: \t${this.pool.bundle_proposal.byte_size}\t${localKey}\t${localValue}`
         );
@@ -725,6 +733,7 @@ class KYVE {
     byteSize: number,
     fromHeight: number,
     toHeight: number,
+    fromKey: string,
     toKey: string,
     toValue: string
   ) {
@@ -738,6 +747,7 @@ class KYVE {
           byteSize,
           fromHeight,
           toHeight,
+          fromKey,
           toKey,
           toValue
         );
