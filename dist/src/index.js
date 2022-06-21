@@ -310,13 +310,13 @@ class KYVE {
                 startHeight = currentHeight;
             }
             this.logger.debug(`Caching from height ${startHeight} to ${maxHeight} ...`);
-            for (let height = startHeight; height < maxHeight; height++) {
+            for (let height = startHeight; height < maxHeight; ++height) {
                 for (let requests = 1; requests < 30; requests++) {
                     try {
+                        key = await this.getNextKey(key);
                         const item = await this.getDataItem(key);
                         await this.cache.put(height, item);
                         await (0, helpers_1.sleep)(50);
-                        key = await this.getNextKey(key);
                         break;
                     }
                     catch {
@@ -335,7 +335,7 @@ class KYVE {
         this.logger.error(`mandatory "getDataItem" method not implemented. Exiting ...`);
         process.exit(1);
     }
-    async getNextKey(previousKey) {
+    async getNextKey(key) {
         this.logger.error(`mandatory "getNextKey" method not implemented. Exiting ...`);
         process.exit(1);
     }

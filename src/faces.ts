@@ -8,5 +8,6 @@ export type Bundle = {
 
 export type Item = {
   key: string;
+  previousKey: string;
   value: any;
 };

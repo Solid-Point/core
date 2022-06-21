@@ -32,7 +32,7 @@ declare class KYVE {
     private run;
     private cacheData;
     getDataItem(key: string): Promise<Item>;
-    getNextKey(previousKey: string): Promise<string>;
+    getNextKey(key: string): Promise<string>;
     formatValue(value: any): Promise<string>;
     private resetCache;
     private loadBundle;

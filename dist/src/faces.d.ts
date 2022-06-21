@@ -7,5 +7,6 @@ export declare type Bundle = {
 };
 export declare type Item = {
     key: string;
+    previousKey: string;
     value: any;
 };

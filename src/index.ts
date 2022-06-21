@@ -417,15 +417,15 @@ class KYVE {
         `Caching from height ${startHeight} to ${maxHeight} ...`
       );
 
-      for (let height = startHeight; height < maxHeight; height++) {
+      for (let height = startHeight; height < maxHeight; ++height) {
         for (let requests = 1; requests < 30; requests++) {
           try {
+            key = await this.getNextKey(key);
             const item = await this.getDataItem(key);
 
             await this.cache.put(height, item);
             await sleep(50);
 
-            key = await this.getNextKey(key);
             break;
           } catch {
             this.logger.warn(` Failed to get data item from height ${height}`);
@@ -448,7 +448,7 @@ class KYVE {
     process.exit(1);
   }
 
-  public async getNextKey(previousKey: string): Promise<string> {
+  public async getNextKey(key: string): Promise<string> {
     this.logger.error(
       `mandatory "getNextKey" method not implemented. Exiting ...`
     );
