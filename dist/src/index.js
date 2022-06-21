@@ -313,10 +313,7 @@ class KYVE {
             for (let height = startHeight; height < maxHeight; height++) {
                 for (let requests = 1; requests < 30; requests++) {
                     try {
-                        let key = previousKey;
-                        if (this.pool.current_value) {
-                            key = await this.getNextKey(previousKey);
-                        }
+                        const key = await this.getNextKey(previousKey);
                         const item = await this.getDataItem(key);
                         await this.cache.put(height, item);
                         await (0, helpers_1.sleep)(50);
