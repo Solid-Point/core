@@ -24,6 +24,11 @@ export class CLI extends Command {
       "Your initial stake the node should start with. Flag is ignored node is already staked [unit = $KYVE]."
     );
     this.option(
+      "--space <string>",
+      "How much bytes the node can occupy [deprecated]. [optional, default = 1000000000]",
+      "1000000000"
+    );
+    this.option(
       "-n, --network <string>",
       "The chain id of the network. [optional, default = korellia]",
       "korellia"
