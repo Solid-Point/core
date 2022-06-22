@@ -310,7 +310,7 @@ class KYVE {
                 startHeight = currentHeight;
             }
             this.logger.debug(`Caching from height ${startHeight} to ${maxHeight} ...`);
-            for (let height = startHeight; height < maxHeight; ++height) {
+            for (let height = startHeight; height < maxHeight; height++) {
                 for (let requests = 1; requests < 30; requests++) {
                     try {
                         if (key) {
