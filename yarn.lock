@@ -455,9 +455,10 @@
     big-integer "^1.6.48"
     utility-types "^3.10.0"
 
-"@kyve/sdk@KYVENetwork/sdk#v0.5.0":
-  version "1.1.0"
-  resolved "https://codeload.github.com/KYVENetwork/sdk/tar.gz/c028693fafef53e277efe04a1a7de5577d4fa6b0"
+"@kyve/sdk@1.2.0":
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/@kyve/sdk/-/sdk-1.2.0.tgz#c8d373e92028b62888965fd5fafd73e843bcda52"
+  integrity sha512-b+SAtpnnqs5V6HLZWVdY7jETOwy4oWi0cDRdte4CxwvtYFcUwcoy/XbGb2oNWXyJCnycXarpkm9pigAk2xyakA==
   dependencies:
     "@cosmjs/amino" "0.28.3"
     "@cosmjs/crypto" "0.27.1"
@@ -469,6 +470,7 @@
     axios "0.25.0"
     bech32 "2.0.0"
     bignumber.js "9.0.2"
+    cosmjs-types "^0.5.0"
     humanize-number "0.0.2"
     protobufjs "6.11.2"
 
@@ -845,6 +847,14 @@ cosmjs-types@^0.4.0:
   version "0.4.1"
   resolved "https://registry.yarnpkg.com/cosmjs-types/-/cosmjs-types-0.4.1.tgz#3b2a53ba60d33159dd075596ce8267cfa7027063"
   integrity sha512-I7E/cHkIgoJzMNQdFF0YVqPlaTqrqKHrskuSTIqlEyxfB5Lf3WKCajSXVK2yHOfOFfSux/RxEdpMzw/eO4DIog==
+  dependencies:
+    long "^4.0.0"
+    protobufjs "~6.11.2"
+
+cosmjs-types@^0.5.0:
+  version "0.5.0"
+  resolved "https://registry.yarnpkg.com/cosmjs-types/-/cosmjs-types-0.5.0.tgz#2497a2c5ddf62a8e8dea03e0725b8cd763d4ab4f"
+  integrity sha512-Qy2yxDp5HasBUnBV5OL9EOuTJw94LAbCWfiRb5QcW1sqh93KSSY5PpNMB3rTsxwuPcf/k3CNRY02DeQMjrsJuA==
   dependencies:
     long "^4.0.0"
     protobufjs "~6.11.2"
