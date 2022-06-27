@@ -24,18 +24,18 @@ export class CLI extends Command {
       "Your initial stake the node should start with. Flag is ignored node is already staked [unit = $KYVE]."
     );
     this.option(
+      "--space",
+      "How much bytes the node can occupy [deprecated]. [optional, default = 1000000000]",
+      "1000000000"
+    );
+    this.option(
       "-n, --network <string>",
       "The chain id of the network. [optional, default = korellia]",
       "korellia"
     );
     this.option(
-      "-sp, --space <number>",
-      "The size of disk space in bytes the node is allowed to use. [optional, default = 1000000000 (1 GB)]",
-      "1000000000"
-    );
-    this.option(
       "--metrics",
-      "Run Prometheus metrics server. [optional, default = false]",
+      "Run Prometheus metrics server on localhost. [optional, default = false]",
       false
     );
     this.option(

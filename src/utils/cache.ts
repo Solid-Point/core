@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, promises as fs } from "fs";
 import { readFile, writeFile } from "jsonfile";
 import fse from "fs-extra";
 
-export class Database {
+export class Cache {
   public path: string;
 
   constructor(path: string) {
@@ -31,5 +31,9 @@ export class Database {
 
   public async drop(): Promise<void> {
     await fse.emptyDir(`./db/${this.path}/`);
+  }
+
+  public async exists(key: string | number): Promise<boolean> {
+    return await fse.pathExists(`./db/${this.path}/${key}.json`);
   }
 }
