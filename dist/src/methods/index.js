@@ -16,4 +16,5 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 __exportStar(require("./setupLogger"), exports);
 __exportStar(require("./setupName"), exports);
-__exportStar(require("./loadBundle"), exports);
+__exportStar(require("./logNodeInfo"), exports);
+__exportStar(require("./getPool"), exports);

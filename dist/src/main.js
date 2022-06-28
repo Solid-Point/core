@@ -14,7 +14,8 @@ class Node {
         // register core methods
         this.setupLogger = methods_1.setupLogger;
         this.setupName = methods_1.setupName;
-        this.validate = methods_1.validate;
+        this.logNodeInfo = methods_1.logNodeInfo;
+        this.getPool = methods_1.getPool;
         // define program
         const options = commander_1.default
             .name("@kyve/core")
@@ -34,7 +35,7 @@ class Node {
         this.query = this.sdk.createLCDClient();
         this.coreVersion = package_json_1.version;
         this.name = this.setupName();
-        this.setupLogger();
+        this.logger = this.setupLogger();
     }
     addRuntime(runtime) {
         this.runtime = runtime;
@@ -53,13 +54,9 @@ class Node {
     // main method wait execution thread should be very abstract and easy to understand
     async run() {
         this.client = await this.sdk.fromMnemonic(this.mnemonic);
-        const tags = [["Application", "KYVE"]];
-        this.storageProvider.saveBundle(Buffer.from("test"), tags);
-        this.logger.info(this.client.account.address);
-        this.logger.info(this.poolId.toString());
-        this.logger.info(this.name);
-        this.logger.info(this.network);
-        this.logger.info(this.initialStake);
+        this.logNodeInfo();
+        await this.getPool();
+        // console.log(this.pool);
     }
 }
 // integration runtime should be implemented on the integration repo

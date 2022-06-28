@@ -4,13 +4,11 @@ import Arweave from "./storage/Arweave";
 import JsonFileCache from "./cache/JsonFileCache";
 
 import { version as coreVersion } from "../package.json";
-import { setupLogger, setupName, validate } from "./methods";
+import { setupLogger, setupName, logNodeInfo, syncPoolState } from "./methods";
 import program from "./commander";
-import KyveSDK from "@kyve/sdk";
+import KyveSDK, { KyveClient, KyveLCDClientType } from "@kyve/sdk";
 import { kyve } from "@kyve/proto";
 import { KYVE_NETWORK } from "@kyve/sdk/dist/constants";
-import KyveClient from "@kyve/sdk/dist/clients/rpc-client/client";
-import { KyveLCDClientType } from "@kyve/sdk/dist/clients/lcd-client/client";
 import { Logger } from "tslog";
 
 class Node {
@@ -43,7 +41,8 @@ class Node {
   // register core methods
   protected setupLogger = setupLogger;
   protected setupName = setupName;
-  protected validate = validate;
+  protected logNodeInfo = logNodeInfo;
+  protected syncPoolState = syncPoolState;
 
   constructor() {
     // define program
@@ -95,16 +94,11 @@ class Node {
   public async run(): Promise<void> {
     this.client = await this.sdk.fromMnemonic(this.mnemonic);
 
-    const tags: [string, string][] = [["Application", "KYVE"]];
+    this.logNodeInfo();
 
-    this.storageProvider.saveBundle(Buffer.from("test"), tags);
+    await this.syncPoolState();
 
-    this.logger.info(this.client.account.address);
-
-    this.logger.info(this.poolId.toString());
-    this.logger.info(this.name);
-    this.logger.info(this.network);
-    this.logger.info(this.initialStake);
+    // console.log(this.pool);
   }
 }
 

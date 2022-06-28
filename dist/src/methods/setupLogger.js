@@ -26,7 +26,6 @@ function setupLogger() {
         error: logToTransport,
         fatal: logToTransport,
     });
-    this.logger = logger;
     return logger;
 }
 exports.setupLogger = setupLogger;

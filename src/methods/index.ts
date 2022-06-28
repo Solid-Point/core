@@ -1,3 +1,4 @@
 export * from "./setupLogger";
 export * from "./setupName";
-export * from "./loadBundle";
+export * from "./logNodeInfo";
+export * from "./syncPoolState";

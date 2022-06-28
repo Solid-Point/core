@@ -1,8 +1,6 @@
 import { Runtime, StorageProvider, Cache } from "./types";
-import { setupLogger, setupName, validate } from "./methods";
-import KyveSDK from "@kyve/sdk";
-import KyveClient from "@kyve/sdk/dist/clients/rpc-client/client";
-import { KyveLCDClientType } from "@kyve/sdk/dist/clients/lcd-client/client";
+import { setupLogger, setupName, logNodeInfo, getPool } from "./methods";
+import KyveSDK, { KyveClient, KyveLCDClientType } from "@kyve/sdk";
 import { Logger } from "tslog";
 declare class Node {
     protected runtime: Runtime;
@@ -23,7 +21,8 @@ declare class Node {
     protected verbose: boolean;
     protected setupLogger: typeof setupLogger;
     protected setupName: typeof setupName;
-    protected validate: typeof validate;
+    protected logNodeInfo: typeof logNodeInfo;
+    protected getPool: typeof getPool;
     constructor();
     addRuntime(runtime: Runtime): this;
     addStorageProvider(storageProvider: StorageProvider): this;

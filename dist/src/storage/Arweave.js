@@ -27,7 +27,7 @@ class Arweave {
         await this.arweaveClient.transactions.sign(transaction, this.wallet);
         const balance = await this.arweaveClient.wallets.getBalance(await this.arweaveClient.wallets.getAddress(this.wallet));
         if (+transaction.reward > +balance) {
-            throw Error(`Not enough funds in Arweave wallet. Balance = ${balance} Required = ${transaction.reward}`);
+            throw Error(`Not enough funds in Arweave wallet. Found = ${balance} required = ${transaction.reward}`);
         }
         await this.arweaveClient.transactions.post(transaction);
         return transaction.id;

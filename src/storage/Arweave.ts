@@ -34,7 +34,7 @@ export default class Arweave implements StorageProvider {
 
     if (+transaction.reward > +balance) {
       throw Error(
-        `Not enough funds in Arweave wallet. Balance = ${balance} Required = ${transaction.reward}`
+        `Not enough funds in Arweave wallet. Found = ${balance} required = ${transaction.reward}`
       );
     }
 
