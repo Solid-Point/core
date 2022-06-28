@@ -1,2 +1,2 @@
-import { Core } from "../core";
-export declare function validate(this: Core): Promise<void>;
+import KyveCore from "../main";
+export declare function validate(this: KyveCore): Promise<void>;

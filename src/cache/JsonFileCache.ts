@@ -1,10 +1,21 @@
 import { readFile, writeFile } from "jsonfile";
-import { promises as fs } from "fs";
+import { existsSync, mkdirSync, promises as fs } from "fs";
 import fse from "fs-extra";
 
-import { Cache } from ".";
+import { Cache } from "../types";
 
-export default class JsonFileCache extends Cache {
+export default class JsonFileCache implements Cache {
+  public name = "JsonFileCache";
+  public path!: string;
+
+  init(path: string): void {
+    this.path = path;
+
+    if (!existsSync(this.path)) {
+      mkdirSync(this.path, { recursive: true });
+    }
+  }
+
   public async put(key: string | number, value: any): Promise<void> {
     await writeFile(`${this.path}/${key}.json`, value);
   }

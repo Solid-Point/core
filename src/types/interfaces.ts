@@ -9,8 +9,23 @@ export interface Runtime {
 }
 
 export interface StorageProvider {
-  saveBundle(bundle: Buffer): Promise<string>;
+  name: string;
+
+  init(wallet: string): void;
+  saveBundle(bundle: Buffer, tags: [string, string][]): Promise<string>;
   retrieveBundle(bundleId: string): Promise<Buffer>;
+}
+
+export interface Cache {
+  name: string;
+  path: string;
+
+  init(path: string): void;
+  put(key: string, value: any): Promise<void>;
+  get(key: string): Promise<any>;
+  exists(key: string): Promise<boolean>;
+  del(key: string): Promise<void>;
+  drop(): Promise<void>;
 }
 
 export interface Logger {

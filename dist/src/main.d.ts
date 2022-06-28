@@ -1,6 +1,30 @@
-import { Core } from "./core";
-declare class ProtocolNode extends Core {
-    key: string;
+import { Runtime, StorageProvider, Cache, Logger } from "./types";
+import { validate } from "./methods";
+import KyveSDK from "@kyve/sdk";
+import KyveClient from "@kyve/sdk/dist/clients/rpc-client/client";
+import { KyveLCDClientType } from "@kyve/sdk/dist/clients/lcd-client/client";
+declare class Node {
+    logger: Logger;
+    runtime: Runtime;
+    storageProvider: StorageProvider;
+    cache: Cache;
+    sdk: KyveSDK;
+    client: KyveClient;
+    query: KyveLCDClientType;
+    coreVersion: string;
+    pool: any;
+    name: string;
+    poolId: number;
+    mnemonic: string;
+    keyfile: string;
+    initialStake: string;
+    network: string;
+    verbose: boolean;
+    validate: typeof validate;
+    constructor(logger?: Logger);
+    addRuntime(runtime: Runtime): this;
+    addStorageProvider(storageProvider: StorageProvider): this;
+    addCache(cache: Cache): this;
     run(): Promise<void>;
 }
-export default ProtocolNode;
+export default Node;

@@ -6,8 +6,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const jsonfile_1 = require("jsonfile");
 const fs_1 = require("fs");
 const fs_extra_1 = __importDefault(require("fs-extra"));
-const _1 = require(".");
-class JsonFileCache extends _1.Cache {
+class JsonFileCache {
+    constructor() {
+        this.name = "JsonFileCache";
+    }
+    init(path) {
+        this.path = path;
+        if (!(0, fs_1.existsSync)(this.path)) {
+            (0, fs_1.mkdirSync)(this.path, { recursive: true });
+        }
+    }
     async put(key, value) {
         await (0, jsonfile_1.writeFile)(`${this.path}/${key}.json`, value);
     }

@@ -20,7 +20,7 @@ import {
   animals,
   uniqueNamesGenerator,
 } from "unique-names-generator";
-import { KyveSDK, KyveWallet } from "@kyve/sdk";
+import KyveSDK from "@kyve/sdk";
 import Transaction from "arweave/node/lib/transaction";
 import BigNumber from "bignumber.js";
 import { KYVE_ARWEAVE_BUNDLE, KYVE_NO_DATA_BUNDLE } from "./utils/constants";
