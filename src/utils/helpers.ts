@@ -1,12 +1,5 @@
 import base64url from "base64url";
 import { BigNumber } from "bignumber.js";
-import Prando from "prando";
-import {
-  adjectives,
-  animals,
-  colors,
-  uniqueNamesGenerator,
-} from "unique-names-generator";
 
 export const toBN = (amount: string) => {
   return new BigNumber(amount);
@@ -44,22 +37,6 @@ export const dataSizeOfString = (string: string): number => {
 
 export const dataSizeOfBinary = (binary: ArrayBuffer): number => {
   return new Uint8Array(binary).byteLength || 0;
-};
-
-export const generateName = (
-  poolId: number,
-  mnemonic: string,
-  version: string
-) => {
-  const r = new Prando(`${poolId}${mnemonic}${version}`);
-
-  return uniqueNamesGenerator({
-    dictionaries: [adjectives, colors, animals],
-    separator: "-",
-    length: 3,
-    style: "lowerCase",
-    seed: r.nextInt(0, adjectives.length * colors.length * animals.length),
-  }).replace(" ", "-");
 };
 
 export const callWithExponentialBackoff = async (

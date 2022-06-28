@@ -1,46 +1,51 @@
-import { Runtime, StorageProvider, Cache, Logger } from "./types";
-import { generateName } from "./utils/helpers";
+import { Runtime, StorageProvider, Cache } from "./types";
 
 import Arweave from "./storage/Arweave";
 import JsonFileCache from "./cache/JsonFileCache";
 
 import { version as coreVersion } from "../package.json";
-import { validate } from "./methods";
+import { setupLogger, setupName, validate } from "./methods";
 import program from "./commander";
 import KyveSDK from "@kyve/sdk";
 import { kyve } from "@kyve/proto";
 import { KYVE_NETWORK } from "@kyve/sdk/dist/constants";
 import KyveClient from "@kyve/sdk/dist/clients/rpc-client/client";
 import { KyveLCDClientType } from "@kyve/sdk/dist/clients/lcd-client/client";
+import { Logger } from "tslog";
 
 class Node {
   // register dependency attributes
-  public runtime!: Runtime;
-  public storageProvider!: StorageProvider;
-  public cache!: Cache;
+  protected runtime!: Runtime;
+  protected storageProvider!: StorageProvider;
+  protected cache!: Cache;
 
   // register sdk attributes
-  public sdk: KyveSDK;
-  public client!: KyveClient;
-  public query: KyveLCDClientType;
+  protected sdk: KyveSDK;
+  protected client!: KyveClient;
+  protected query: KyveLCDClientType;
+
+  // logger attributes
+  protected logger: Logger;
 
   // register attributes
-  public coreVersion: string;
-  public pool: any;
-  public name: string;
+  protected coreVersion: string;
+  protected pool: any;
+  protected name: string;
 
   // options
-  public poolId: number;
-  public mnemonic: string;
-  public keyfile: string;
-  public initialStake: string;
-  public network: string;
-  public verbose: boolean;
+  protected poolId: number;
+  protected mnemonic: string;
+  protected keyfile: string;
+  protected initialStake: string;
+  protected network: string;
+  protected verbose: boolean;
 
   // register core methods
-  public validate = validate;
+  protected setupLogger = setupLogger;
+  protected setupName = setupName;
+  protected validate = validate;
 
-  constructor(public logger: Logger = console) {
+  constructor() {
     // define program
     const options = program
       .name("@kyve/core")
@@ -62,11 +67,9 @@ class Node {
     this.query = this.sdk.createLCDClient();
 
     this.coreVersion = coreVersion;
-    this.name = generateName(
-      options.poolId,
-      options.mnemonic,
-      options.coreVersion
-    );
+
+    this.name = this.setupName();
+    this.logger = this.setupLogger();
   }
 
   public addRuntime(runtime: Runtime): this {
@@ -96,12 +99,12 @@ class Node {
 
     this.storageProvider.saveBundle(Buffer.from("test"), tags);
 
-    this.logger.log(this.client.account.address);
+    this.logger.info(this.client.account.address);
 
-    this.logger.log(this.poolId.toString());
-    this.logger.log(this.name);
-    this.logger.log(this.network);
-    this.logger.log(this.initialStake);
+    this.logger.info(this.poolId.toString());
+    this.logger.info(this.name);
+    this.logger.info(this.network);
+    this.logger.info(this.initialStake);
   }
 }
 

@@ -27,7 +27,3 @@ export interface Cache {
   del(key: string): Promise<void>;
   drop(): Promise<void>;
 }
-
-export interface Logger {
-  log(message: string): void;
-}

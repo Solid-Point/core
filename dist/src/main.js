@@ -3,7 +3,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const helpers_1 = require("./utils/helpers");
 const Arweave_1 = __importDefault(require("./storage/Arweave"));
 const JsonFileCache_1 = __importDefault(require("./cache/JsonFileCache"));
 const package_json_1 = require("../package.json");
@@ -11,9 +10,10 @@ const methods_1 = require("./methods");
 const commander_1 = __importDefault(require("./commander"));
 const sdk_1 = __importDefault(require("@kyve/sdk"));
 class Node {
-    constructor(logger = console) {
-        this.logger = logger;
+    constructor() {
         // register core methods
+        this.setupLogger = methods_1.setupLogger;
+        this.setupName = methods_1.setupName;
         this.validate = methods_1.validate;
         // define program
         const options = commander_1.default
@@ -33,7 +33,8 @@ class Node {
         this.sdk = new sdk_1.default(this.network);
         this.query = this.sdk.createLCDClient();
         this.coreVersion = package_json_1.version;
-        this.name = (0, helpers_1.generateName)(options.poolId, options.mnemonic, options.coreVersion);
+        this.name = this.setupName();
+        this.setupLogger();
     }
     addRuntime(runtime) {
         this.runtime = runtime;
@@ -54,11 +55,11 @@ class Node {
         this.client = await this.sdk.fromMnemonic(this.mnemonic);
         const tags = [["Application", "KYVE"]];
         this.storageProvider.saveBundle(Buffer.from("test"), tags);
-        this.logger.log(this.client.account.address);
-        this.logger.log(this.poolId.toString());
-        this.logger.log(this.name);
-        this.logger.log(this.network);
-        this.logger.log(this.initialStake);
+        this.logger.info(this.client.account.address);
+        this.logger.info(this.poolId.toString());
+        this.logger.info(this.name);
+        this.logger.info(this.network);
+        this.logger.info(this.initialStake);
     }
 }
 // integration runtime should be implemented on the integration repo
