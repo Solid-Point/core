@@ -13,6 +13,9 @@ import {
   setupStake,
   run,
   asyncSetup,
+  shouldIdle,
+  claimUploaderRole,
+  canVote,
 } from "./methods";
 import program from "./commander";
 import KyveSDK, { KyveClient, KyveLCDClientType } from "@kyve/sdk";
@@ -70,7 +73,9 @@ class Node {
   protected validateVersion = validateVersion;
   protected validateActiveNode = validateActiveNode;
   protected setupStake = setupStake;
-
+  protected shouldIdle = shouldIdle;
+  protected claimUploaderRole = claimUploaderRole;
+  protected canVote = canVote;
   protected run = run;
 
   /**

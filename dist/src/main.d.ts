@@ -1,5 +1,5 @@
 import { IRuntime, IStorageProvider, ICache } from "./types";
-import { setupLogger, setupName, logNodeInfo, syncPoolState, validateRuntime, validateVersion, validateActiveNode, setupStake, run, asyncSetup } from "./methods";
+import { setupLogger, setupName, logNodeInfo, syncPoolState, validateRuntime, validateVersion, validateActiveNode, setupStake, run, asyncSetup, shouldIdle, claimUploaderRole } from "./methods";
 import KyveSDK, { KyveClient, KyveLCDClientType } from "@kyve/sdk";
 import { Logger } from "tslog";
 import { kyve } from "@kyve/proto";
@@ -43,6 +43,8 @@ declare class Node {
     protected validateVersion: typeof validateVersion;
     protected validateActiveNode: typeof validateActiveNode;
     protected setupStake: typeof setupStake;
+    protected shouldIdle: typeof shouldIdle;
+    protected claimUploaderRole: typeof claimUploaderRole;
     protected run: typeof run;
     /**
      * Defines node options for CLI and initializes those inputs

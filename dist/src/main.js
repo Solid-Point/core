@@ -33,6 +33,8 @@ class Node {
         this.validateVersion = methods_1.validateVersion;
         this.validateActiveNode = methods_1.validateActiveNode;
         this.setupStake = methods_1.setupStake;
+        this.shouldIdle = methods_1.shouldIdle;
+        this.claimUploaderRole = methods_1.claimUploaderRole;
         this.run = methods_1.run;
         // define program
         const options = commander_1.default
