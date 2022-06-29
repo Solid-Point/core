@@ -24,4 +24,6 @@ __exportStar(require("./setupStake"), exports);
 __exportStar(require("./shouldIdle"), exports);
 __exportStar(require("./claimUploaderRole"), exports);
 __exportStar(require("./canVote"), exports);
-__exportStar(require("./run"), exports);
+__exportStar(require("./validateBundleProposal"), exports);
+__exportStar(require("./runNode"), exports);
+__exportStar(require("./runCache"), exports);

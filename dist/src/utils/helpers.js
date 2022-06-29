@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseBundle = exports.formatBundle = exports.callWithLinearBackoff = exports.callWithExponentialBackoff = exports.dataSizeOfBinary = exports.dataSizeOfString = exports.fromBytes = exports.toBytes = exports.retryer = exports.sleep = exports.toHumanReadable = exports.toBN = void 0;
+exports.parseBundle = exports.formatBundle = exports.dataSizeOfBinary = exports.dataSizeOfString = exports.fromBytes = exports.toBytes = exports.callWithBackoffStrategy = exports.sleep = exports.toHumanReadable = exports.toBN = void 0;
 const base64url_1 = __importDefault(require("base64url"));
 const bignumber_js_1 = require("bignumber.js");
 const toBN = (amount) => {
@@ -49,7 +49,7 @@ function humanInterval(str) {
     }
     throw errorConvert;
 }
-async function retryer(execution, option, onEachError) {
+async function callWithBackoffStrategy(execution, option, onEachError) {
     const limitTimeout = typeof option.limitTimeout === "string"
         ? humanInterval(option.limitTimeout)
         : option.limitTimeout;
@@ -86,7 +86,7 @@ async function retryer(execution, option, onEachError) {
         }
     });
 }
-exports.retryer = retryer;
+exports.callWithBackoffStrategy = callWithBackoffStrategy;
 const toBytes = (input) => {
     return Buffer.from(base64url_1.default.decode(input, "hex"), "hex");
 };
@@ -103,29 +103,6 @@ const dataSizeOfBinary = (binary) => {
     return new Uint8Array(binary).byteLength || 0;
 };
 exports.dataSizeOfBinary = dataSizeOfBinary;
-const callWithExponentialBackoff = async (depth = 0, fn, args = []) => {
-    try {
-        return await fn(...args);
-    }
-    catch (err) {
-        console.log(err);
-        await (0, exports.sleep)(2 ** depth * 10);
-        return depth > 12
-            ? await (0, exports.callWithExponentialBackoff)(depth, fn, args)
-            : await (0, exports.callWithExponentialBackoff)(depth + 1, fn, args);
-    }
-};
-exports.callWithExponentialBackoff = callWithExponentialBackoff;
-const callWithLinearBackoff = async (duration = 1000, fn, args = []) => {
-    try {
-        return await fn(...args);
-    }
-    catch {
-        await (0, exports.sleep)(duration);
-        return await (0, exports.callWithLinearBackoff)(duration, fn, args);
-    }
-};
-exports.callWithLinearBackoff = callWithLinearBackoff;
 // Inspired by https://github.com/Bundlr-Network/arbundles/blob/f3e8e1df09e68e33f3a51af33127999566ab3e37/src/utils.ts#L41-L85.
 const longTo32ByteArray = (long) => {
     const byteArray = Buffer.alloc(32, 0);

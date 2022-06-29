@@ -1,0 +1,76 @@
+import KyveCore from "../main";
+import { sleep } from "../utils/helpers";
+
+export async function runCache(this: KyveCore): Promise<void> {
+  let createdAt = 0;
+  let currentHeight = 0;
+  let toHeight = 0;
+  let maxHeight = 0;
+
+  while (true) {
+    // a smaller to_height means a bundle got dropped or invalidated
+    if (+this.pool.bundle_proposal!.to_height < toHeight) {
+      await this.cache.drop();
+    }
+
+    // cache data items from current height to required height
+    createdAt = +this.pool.bundle_proposal!.created_at;
+    currentHeight = +this.pool.current_height;
+    toHeight =
+      +this.pool.bundle_proposal!.to_height || +this.pool.current_height;
+    maxHeight = +this.pool.max_bundle_size + toHeight;
+
+    // clear finalized items
+    let current = currentHeight;
+
+    while (current > 0) {
+      current--;
+
+      try {
+        await this.cache.del(current.toString());
+      } catch {
+        break;
+      }
+    }
+
+    let startHeight: number;
+    let key: string =
+      this.pool.bundle_proposal!.to_key || this.pool.current_key;
+
+    // determine from which height to continue caching
+    if (await this.cache.exists((toHeight - 1).toString())) {
+      startHeight = toHeight;
+    } else {
+      startHeight = currentHeight;
+    }
+
+    this.logger.debug(`Caching from height ${startHeight} to ${maxHeight} ...`);
+
+    for (let height = startHeight; height < maxHeight; height++) {
+      for (let requests = 1; requests < 30; requests++) {
+        try {
+          if (key) {
+            key = await this.runtime.getNextKey(key);
+          } else {
+            key = this.pool.start_key;
+          }
+
+          const item = await this.runtime.getDataItem(key);
+
+          await this.cache.put(height.toString(), item);
+          await sleep(50);
+
+          break;
+        } catch {
+          this.logger.warn(` Failed to get data item from height ${height}`);
+          await sleep(requests * 10 * 1000);
+        }
+      }
+    }
+
+    // wait until new bundle proposal gets created
+    while (createdAt === +this.pool.bundle_proposal!.created_at) {
+      await sleep(1000);
+    }
+  }
+}

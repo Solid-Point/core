@@ -11,7 +11,8 @@ import {
   validateVersion,
   validateActiveNode,
   setupStake,
-  run,
+  runNode,
+  runCache,
   asyncSetup,
   shouldIdle,
   claimUploaderRole,
@@ -76,7 +77,8 @@ class Node {
   protected shouldIdle = shouldIdle;
   protected claimUploaderRole = claimUploaderRole;
   protected canVote = canVote;
-  protected run = run;
+  protected runNode = runNode;
+  protected runCache = runCache;
 
   /**
    * Defines node options for CLI and initializes those inputs
@@ -184,7 +186,8 @@ class Node {
 
     this.validateActiveNode();
 
-    await this.run();
+    this.runNode();
+    this.runCache();
   }
 }
 

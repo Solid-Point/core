@@ -5,7 +5,6 @@ import { callWithBackoffStrategy, toHumanReadable } from "../utils/helpers";
 export async function setupStake(this: KyveCore): Promise<void> {
   let initialStake = new BigNumber(0);
 
-  const retryOptions = { limitTimeout: "5m", increaseBy: "10s" };
   const { balance, currentStake, minimumStake } = await callWithBackoffStrategy(
     async () => {
       const data = await this.query.kyve.registry.v1beta1.stakeInfo({
@@ -19,7 +18,7 @@ export async function setupStake(this: KyveCore): Promise<void> {
         minimumStake: new BigNumber(data.minimum_stake),
       };
     },
-    retryOptions,
+    { limitTimeout: "5m", increaseBy: "10s" },
     (_, ctx) => {
       this.logger.warn(
         ` Failed to fetch stake info of address. Retrying in ${

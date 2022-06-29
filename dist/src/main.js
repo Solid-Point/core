@@ -36,7 +36,8 @@ class Node {
         this.shouldIdle = methods_1.shouldIdle;
         this.claimUploaderRole = methods_1.claimUploaderRole;
         this.canVote = methods_1.canVote;
-        this.run = methods_1.run;
+        this.runNode = methods_1.runNode;
+        this.runCache = methods_1.runCache;
         // define program
         const options = commander_1.default
             .name("@kyve/core")
@@ -122,7 +123,8 @@ class Node {
         await this.setupStake();
         await this.syncPoolState();
         this.validateActiveNode();
-        await this.run();
+        this.runNode();
+        this.runCache();
     }
 }
 // integration runtime should be implemented on the integration repo

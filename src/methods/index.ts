@@ -9,5 +9,7 @@ export * from "./setupStake";
 export * from "./shouldIdle";
 export * from "./claimUploaderRole";
 export * from "./canVote";
+export * from "./validateBundleProposal";
 
-export * from "./run";
+export * from "./runNode";
+export * from "./runCache";

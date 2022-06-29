@@ -1,7 +1,7 @@
 import KyveCore from "../main";
 import { sleep } from "../utils/helpers";
 
-export async function run(this: KyveCore): Promise<void> {
+export async function runNode(this: KyveCore): Promise<void> {
   while (true) {
     await this.syncPoolState();
 

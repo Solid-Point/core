@@ -2,8 +2,6 @@ import KyveCore from "../main";
 import { callWithBackoffStrategy } from "../utils/helpers";
 
 export async function syncPoolState(this: KyveCore): Promise<void> {
-  const retryOptions = { limitTimeout: "5m", increaseBy: "10s" };
-
   this.logger.debug(`Attempting to fetch pool state`);
 
   await callWithBackoffStrategy(
@@ -22,7 +20,7 @@ export async function syncPoolState(this: KyveCore): Promise<void> {
         this.poolConfig = {};
       }
     },
-    retryOptions,
+    { limitTimeout: "5m", increaseBy: "10s" },
     (_, ctx) => {
       this.logger.debug(
         `Failed to fetch pool state. Retrying in ${
