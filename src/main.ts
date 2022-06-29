@@ -11,6 +11,8 @@ import {
   validateVersion,
   validateActiveNode,
   setupStake,
+  run,
+  asyncSetup,
 } from "./methods";
 import program from "./commander";
 import KyveSDK, { KyveClient, KyveLCDClientType } from "@kyve/sdk";
@@ -59,6 +61,7 @@ class Node {
   protected verbose: boolean;
 
   // register core methods
+  protected asyncSetup = asyncSetup;
   protected setupLogger = setupLogger;
   protected setupName = setupName;
   protected logNodeInfo = logNodeInfo;
@@ -67,6 +70,8 @@ class Node {
   protected validateVersion = validateVersion;
   protected validateActiveNode = validateActiveNode;
   protected setupStake = setupStake;
+
+  protected run = run;
 
   /**
    * Defines node options for CLI and initializes those inputs
@@ -156,11 +161,11 @@ class Node {
    * This method will run indefinetely and only exits on specific exit conditions like running
    * an incorrect runtime or version.
    *
-   * @method run
+   * @method start
    * @return {Promise<void>}
    */
-  public async run(): Promise<void> {
-    this.client = await this.sdk.fromMnemonic(this.mnemonic);
+  public async start(): Promise<void> {
+    await this.asyncSetup();
 
     this.logNodeInfo();
 
@@ -173,6 +178,8 @@ class Node {
     await this.syncPoolState();
 
     this.validateActiveNode();
+
+    await this.run();
   }
 }
 
@@ -198,6 +205,6 @@ new Node()
   .addRuntime(new EVM())
   .addStorageProvider(new Arweave())
   .addCache(new JsonFileCache())
-  .run();
+  .start();
 
 export default Node;

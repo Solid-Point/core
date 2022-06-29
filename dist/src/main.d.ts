@@ -1,5 +1,5 @@
 import { IRuntime, IStorageProvider, ICache } from "./types";
-import { setupLogger, setupName, logNodeInfo, syncPoolState, validateRuntime, validateVersion, validateActiveNode, setupStake } from "./methods";
+import { setupLogger, setupName, logNodeInfo, syncPoolState, validateRuntime, validateVersion, validateActiveNode, setupStake, run, asyncSetup } from "./methods";
 import KyveSDK, { KyveClient, KyveLCDClientType } from "@kyve/sdk";
 import { Logger } from "tslog";
 import { kyve } from "@kyve/proto";
@@ -34,6 +34,7 @@ declare class Node {
     protected initialStake: string;
     protected network: string;
     protected verbose: boolean;
+    protected asyncSetup: typeof asyncSetup;
     protected setupLogger: typeof setupLogger;
     protected setupName: typeof setupName;
     protected logNodeInfo: typeof logNodeInfo;
@@ -42,6 +43,7 @@ declare class Node {
     protected validateVersion: typeof validateVersion;
     protected validateActiveNode: typeof validateActiveNode;
     protected setupStake: typeof setupStake;
+    protected run: typeof run;
     /**
      * Defines node options for CLI and initializes those inputs
      * Node name is generated here depending on inputs
@@ -92,9 +94,9 @@ declare class Node {
      * This method will run indefinetely and only exits on specific exit conditions like running
      * an incorrect runtime or version.
      *
-     * @method run
+     * @method start
      * @return {Promise<void>}
      */
-    run(): Promise<void>;
+    start(): Promise<void>;
 }
 export default Node;

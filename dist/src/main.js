@@ -24,6 +24,7 @@ class Node {
      */
     constructor() {
         // register core methods
+        this.asyncSetup = methods_1.asyncSetup;
         this.setupLogger = methods_1.setupLogger;
         this.setupName = methods_1.setupName;
         this.logNodeInfo = methods_1.logNodeInfo;
@@ -32,6 +33,7 @@ class Node {
         this.validateVersion = methods_1.validateVersion;
         this.validateActiveNode = methods_1.validateActiveNode;
         this.setupStake = methods_1.setupStake;
+        this.run = methods_1.run;
         // define program
         const options = commander_1.default
             .name("@kyve/core")
@@ -105,11 +107,11 @@ class Node {
      * This method will run indefinetely and only exits on specific exit conditions like running
      * an incorrect runtime or version.
      *
-     * @method run
+     * @method start
      * @return {Promise<void>}
      */
-    async run() {
-        this.client = await this.sdk.fromMnemonic(this.mnemonic);
+    async start() {
+        await this.asyncSetup();
         this.logNodeInfo();
         await this.syncPoolState();
         this.validateRuntime();
@@ -117,6 +119,7 @@ class Node {
         await this.setupStake();
         await this.syncPoolState();
         this.validateActiveNode();
+        await this.run();
     }
 }
 // integration runtime should be implemented on the integration repo
@@ -140,5 +143,5 @@ new Node()
     .addRuntime(new EVM())
     .addStorageProvider(new Arweave_1.default())
     .addCache(new JsonFileCache_1.default())
-    .run();
+    .start();
 exports.default = Node;
