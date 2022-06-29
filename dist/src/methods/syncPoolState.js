@@ -1,24 +1,23 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getPool = void 0;
+exports.syncPoolState = void 0;
 const helpers_1 = require("../utils/helpers");
-async function getPool() {
+async function syncPoolState() {
     this.logger.debug(`Attempting to fetch pool state`);
     return new Promise(async (resolve) => {
-        var _a;
         let requests = 1;
         while (true) {
             try {
                 const { pool } = await this.query.kyve.registry.v1beta1.pool({
                     id: this.poolId.toString(),
                 });
-                this.pool = { ...pool };
+                this.pool = pool;
                 try {
-                    this.pool.config = JSON.parse(this.pool.config);
+                    this.poolConfig = JSON.parse(this.pool.config);
                 }
                 catch (error) {
-                    this.logger.debug(`Failed to parse the pool config: ${(_a = this.pool) === null || _a === void 0 ? void 0 : _a.config}`);
-                    this.pool.config = {};
+                    this.logger.debug(`Failed to parse the pool config: ${this.pool.config}`);
+                    this.poolConfig = {};
                 }
                 // Validate runtime
                 if (this.pool.runtime !== this.runtime.name) {
@@ -30,6 +29,11 @@ async function getPool() {
                 if (this.pool.protocol.version !== this.runtime.version) {
                     this.logger.error(`Running an invalid runtime version! Exiting ...`);
                     this.logger.error(`Found = ${this.runtime.version} required = ${this.pool.protocol.version}`);
+                    process.exit(1);
+                }
+                // Validate staker
+                if (!this.pool.stakers.includes(this.client.account.address)) {
+                    this.logger.error(`Node is not in the active validator set! Exiting ...`);
                     process.exit(1);
                 }
                 break;
@@ -47,4 +51,4 @@ async function getPool() {
         resolve();
     });
 }
-exports.getPool = getPool;
+exports.syncPoolState = syncPoolState;

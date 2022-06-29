@@ -15,7 +15,7 @@ class Node {
         this.setupLogger = methods_1.setupLogger;
         this.setupName = methods_1.setupName;
         this.logNodeInfo = methods_1.logNodeInfo;
-        this.getPool = methods_1.getPool;
+        this.syncPoolState = methods_1.syncPoolState;
         // define program
         const options = commander_1.default
             .name("@kyve/core")
@@ -55,7 +55,7 @@ class Node {
     async run() {
         this.client = await this.sdk.fromMnemonic(this.mnemonic);
         this.logNodeInfo();
-        await this.getPool();
+        await this.syncPoolState();
         // console.log(this.pool);
     }
 }

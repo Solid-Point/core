@@ -2,9 +2,9 @@ import ArweaveClient from "arweave";
 import { JWKInterface } from "arweave/node/lib/wallet";
 import axios from "axios";
 import { readFileSync } from "fs";
-import { StorageProvider } from "../types";
+import { IStorageProvider } from "../types";
 
-export default class Arweave implements StorageProvider {
+export default class Arweave implements IStorageProvider {
   public name = "Arweave";
 
   private wallet!: JWKInterface;
@@ -15,6 +15,8 @@ export default class Arweave implements StorageProvider {
 
   init(wallet: string) {
     this.wallet = JSON.parse(readFileSync(wallet, "utf-8"));
+
+    return this;
   }
 
   async saveBundle(bundle: Buffer, tags: [string, string][]) {

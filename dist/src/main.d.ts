@@ -1,7 +1,8 @@
 import { Runtime, StorageProvider, Cache } from "./types";
-import { setupLogger, setupName, logNodeInfo, getPool } from "./methods";
+import { setupLogger, setupName, logNodeInfo, syncPoolState } from "./methods";
 import KyveSDK, { KyveClient, KyveLCDClientType } from "@kyve/sdk";
 import { Logger } from "tslog";
+import { kyve } from "@kyve/proto";
 declare class Node {
     protected runtime: Runtime;
     protected storageProvider: StorageProvider;
@@ -11,7 +12,8 @@ declare class Node {
     protected query: KyveLCDClientType;
     protected logger: Logger;
     protected coreVersion: string;
-    protected pool: any;
+    protected pool: kyve.registry.v1beta1.kyveRegistry.Pool;
+    protected poolConfig: object;
     protected name: string;
     protected poolId: number;
     protected mnemonic: string;
@@ -22,7 +24,7 @@ declare class Node {
     protected setupLogger: typeof setupLogger;
     protected setupName: typeof setupName;
     protected logNodeInfo: typeof logNodeInfo;
-    protected getPool: typeof getPool;
+    protected syncPoolState: typeof syncPoolState;
     constructor();
     addRuntime(runtime: Runtime): this;
     addStorageProvider(storageProvider: StorageProvider): this;

@@ -17,4 +17,4 @@ Object.defineProperty(exports, "__esModule", { value: true });
 __exportStar(require("./setupLogger"), exports);
 __exportStar(require("./setupName"), exports);
 __exportStar(require("./logNodeInfo"), exports);
-__exportStar(require("./getPool"), exports);
+__exportStar(require("./syncPoolState"), exports);
