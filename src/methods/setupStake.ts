@@ -1,41 +1,33 @@
 import BigNumber from "bignumber.js";
 import KyveCore from "../main";
-import { sleep, toHumanReadable } from "../utils/helpers";
+import { retryer, toHumanReadable } from "../utils/helpers";
 
 export async function setupStake(this: KyveCore): Promise<void> {
-  let balance = new BigNumber(0);
   let initialStake = new BigNumber(0);
-  let currentStake = new BigNumber(0);
-  let minimumStake = new BigNumber(0);
 
-  let requests = 1;
-
-  while (true) {
-    try {
+  const retryOptions = { limitTimeout: "5m", increaseBy: "10s" };
+  const { balance, currentStake, minimumStake } = await retryer(
+    async () => {
       const data = await this.query.kyve.registry.v1beta1.stakeInfo({
         pool_id: this.poolId.toString(),
         staker: this.client.account.address,
       });
 
-      balance = new BigNumber(data.balance);
-      currentStake = new BigNumber(data.current_stake);
-      minimumStake = new BigNumber(data.minimum_stake);
-
-      break;
-    } catch (error) {
+      return {
+        balance: new BigNumber(data.balance),
+        currentStake: new BigNumber(data.current_stake),
+        minimumStake: new BigNumber(data.minimum_stake),
+      };
+    },
+    retryOptions,
+    (_, ctx) => {
       this.logger.warn(
         ` Failed to fetch stake info of address. Retrying in ${
-          requests * 10
+          ctx.nextTimeoutInMs / 1000
         }s ...`
       );
-      await sleep(requests * 10 * 1000);
-
-      // limit timeout to 5 mins
-      if (requests < 30) {
-        requests++;
-      }
     }
-  }
+  );
 
   // check if node has already staked
   if (!currentStake.isZero()) {
