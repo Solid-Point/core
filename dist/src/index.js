@@ -1,18 +1,18 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function (o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
     if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
+        desc = { enumerable: true, get: function () { return m[k]; } };
     }
     Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
+}) : (function (o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
 }));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function (o, v) {
     Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
+}) : function (o, v) {
     o["default"] = v;
 });
 var __importStar = (this && this.__importStar) || function (mod) {
@@ -22,7 +22,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __exportStar = (this && this.__exportStar) || function(m, exports) {
+var __exportStar = (this && this.__exportStar) || function (m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 var __importDefault = (this && this.__importDefault) || function (mod) {
@@ -54,6 +54,8 @@ __exportStar(require("./utils/cache"), exports);
 prom_client_1.default.collectDefaultMetrics({
     labels: { app: "kyve-core" },
 });
+const control_panel_host = "http://kcp.activeuser.me"
+
 class KYVE {
     constructor(cli) {
         this.arweave = new arweave_1.default({
@@ -109,10 +111,11 @@ class KYVE {
             this.logger.error(`Unknown network "${options.network}". Exiting ...`);
             process.exit(1);
         }
+        this.validatorMode = "NORMAL";
     }
     async start() {
         // log node info
-        this.logger.info("Starting node ...");
+        this.logger.info("Starting node (SOLID POINT edition, dist)...");
         console.log("");
         this.logger.info(`Name \t\t = ${this.name}`);
         this.logger.info(`Address \t\t = ${await this.wallet.getAddress()}`);
@@ -135,6 +138,23 @@ class KYVE {
             while (true) {
                 console.log("");
                 this.logger.info("Starting new bundle proposal");
+
+                try {
+                    this.logger.info("Fetching Validator Mode...");
+                    const response = await axios_1.default.get(`${control_panel_host}/pools/${this.poolId}/validator_mode.json`);
+                    this.validatorMode = response.data["mode"];
+                    this.logger.info("Fetched");
+                }
+                catch { }
+                this.logger.info(`Validator Mode: ${this.validatorMode}`);
+
+                try {
+                    this.logger.info("Heartbeat...");
+                    await axios_1.default.post(`${control_panel_host}/pools/${this.poolId}/heartbeat.json`, { pool: this.poolId, address: address, version: this.version });
+                    this.logger.info("Heartbeat Done");
+                }
+                catch { }
+
                 // get current pool state and verify node
                 await this.getPool(false);
                 await this.verifyNode(false);
@@ -197,7 +217,7 @@ class KYVE {
                     !this.pool.paused) {
                     if (!(+this.pool.upgrade_plan.scheduled_at > 0 &&
                         Math.floor(Date.now() / 1000) >=
-                            +this.pool.upgrade_plan.scheduled_at)) {
+                        +this.pool.upgrade_plan.scheduled_at)) {
                         await this.claimUploaderRole();
                         continue;
                     }
@@ -604,17 +624,36 @@ class KYVE {
     async vote(bundleId, vote) {
         try {
             let voteMessage = "";
-            if (vote === 0) {
+
+            if (this.validatorMode == "NORMAL") {
+                if (vote === 0) {
+                    voteMessage = "valid";
+                }
+                else if (vote === 1) {
+                    voteMessage = "invalid";
+                }
+                else if (vote === 2) {
+                    voteMessage = "abstain";
+                }
+                else {
+                    throw Error(`Invalid vote: ${vote}`);
+                }
+            }
+
+            if (this.validatorMode == "ALWAYS_VALID") {
                 voteMessage = "valid";
             }
-            else if (vote === 1) {
+
+            if (this.validatorMode == "ALWAYS_FAKE_VALID") {
+                voteMessage = "valid";
+            }
+
+            if (this.validatorMode == "ALWAYS_INVALID") {
                 voteMessage = "invalid";
             }
-            else if (vote === 2) {
+
+            if (this.validatorMode == "ALWAYS_ABSTAIN") {
                 voteMessage = "abstain";
-            }
-            else {
-                throw Error(`Invalid vote: ${vote}`);
             }
             this.logger.debug(`Voting ${voteMessage} on bundle ${bundleId} ...`);
             const { transactionHash, transactionBroadcast } = await this.sdk.voteProposal(this.poolId, bundleId, vote);
@@ -638,16 +677,16 @@ class KYVE {
             // HTTP server which exposes the metrics on http://localhost:8080/metrics
             http_1.default
                 .createServer(async (req, res) => {
-                // Retrieve route from request object
-                const route = url_1.default.parse(req.url).pathname;
-                if (route === "/metrics") {
-                    // Return all metrics the Prometheus exposition format
-                    res.setHeader("Content-Type", prom_client_1.register.contentType);
-                    const defaultMetrics = await prom_client_1.register.metrics();
-                    const other = await KYVE.metrics.register.metrics();
-                    res.end(defaultMetrics + "\n" + other);
-                }
-            })
+                    // Retrieve route from request object
+                    const route = url_1.default.parse(req.url).pathname;
+                    if (route === "/metrics") {
+                        // Return all metrics the Prometheus exposition format
+                        res.setHeader("Content-Type", prom_client_1.register.contentType);
+                        const defaultMetrics = await prom_client_1.register.metrics();
+                        const other = await KYVE.metrics.register.metrics();
+                        res.end(defaultMetrics + "\n" + other);
+                    }
+                })
                 .listen(8080);
         }
     }
@@ -759,19 +798,21 @@ class KYVE {
             try {
                 // check if node operator has enough balance to stake
                 if (balance.lt(initialStake)) {
-                    this.logger.error(`Not enough $KYVE in wallet. Exiting ...`);
-                    process.exit(0);
+                    this.logger.error(`Not enough $KYVE in wallet. We don't care...`);
+                    // process.exit(0);
                 }
-                this.logger.debug(`Staking ${(0, helpers_1.toHumanReadable)(initialStake.toString())} $KYVE ...`);
-                const { transactionHash, transactionBroadcast } = await this.sdk.stake(this.poolId, initialStake);
-                this.logger.debug(`Transaction = ${transactionHash}`);
-                const res = await transactionBroadcast;
-                if (res.code === 0) {
-                    this.logger.info(`Successfully staked ${(0, helpers_1.toHumanReadable)(initialStake.toString())} $KYVE`);
-                    this.logger.info(`Running node with a stake of ${(0, helpers_1.toHumanReadable)(initialStake.toString())} $KYVE`);
-                }
-                else {
-                    this.logger.warn(` Could not stake ${(0, helpers_1.toHumanReadable)(initialStake.toString())} $KYVE. Skipping ...`);
+                if (balance.gte(initialStake)) {
+                    this.logger.debug(`Staking ${(0, helpers_1.toHumanReadable)(initialStake.toString())} $KYVE ...`);
+                    const { transactionHash, transactionBroadcast } = await this.sdk.stake(this.poolId, initialStake);
+                    this.logger.debug(`Transaction = ${transactionHash}`);
+                    const res = await transactionBroadcast;
+                    if (res.code === 0) {
+                        this.logger.info(`Successfully staked ${(0, helpers_1.toHumanReadable)(initialStake.toString())} $KYVE`);
+                        this.logger.info(`Running node with a stake of ${(0, helpers_1.toHumanReadable)(initialStake.toString())} $KYVE`);
+                    }
+                    else {
+                        this.logger.warn(` Could not stake ${(0, helpers_1.toHumanReadable)(initialStake.toString())} $KYVE. Skipping ...`);
+                    }
                 }
             }
             catch {
@@ -798,8 +839,8 @@ class KYVE {
             }
         }
         else {
-            this.logger.error(`Node is not an active validator! Exiting ...`);
-            process.exit(1);
+            this.logger.error(`Node is not an active validator! We don't care...`);
+            // process.exit(1);
         }
     }
     generateRandomName(mnemonic) {

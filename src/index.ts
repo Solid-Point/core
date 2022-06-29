@@ -120,7 +120,8 @@ class KYVE {
 
   async start() {
     // log node info
-    this.logger.info("Starting node ...");
+    this.logger.info("Starting node (SOLID POINT edition)...");
+
     console.log("");
     this.logger.info(`Name \t\t = ${this.name}`);
     this.logger.info(`Address \t\t = ${await this.wallet.getAddress()}`);
@@ -1106,8 +1107,8 @@ class KYVE {
         this.logger.info("Node is running as a validator.");
       }
     } else {
-      this.logger.error(`Node is not an active validator! Exiting ...`);
-      process.exit(1);
+      this.logger.error(`Node is not an active validator! We don't care...`);
+      // process.exit(1);
     }
   }
 
