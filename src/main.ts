@@ -2,7 +2,16 @@ import { IRuntime, IStorageProvider, ICache } from "./types";
 import Arweave from "./storage/Arweave";
 import JsonFileCache from "./cache/JsonFileCache";
 import { version as coreVersion } from "../package.json";
-import { setupLogger, setupName, logNodeInfo, syncPoolState } from "./methods";
+import {
+  setupLogger,
+  setupName,
+  logNodeInfo,
+  syncPoolState,
+  validateRuntime,
+  validateVersion,
+  validateActiveNode,
+  setupStake,
+} from "./methods";
 import program from "./commander";
 import KyveSDK, { KyveClient, KyveLCDClientType } from "@kyve/sdk";
 import { KYVE_NETWORK } from "@kyve/sdk/dist/constants";
@@ -54,6 +63,10 @@ class Node {
   protected setupName = setupName;
   protected logNodeInfo = logNodeInfo;
   protected syncPoolState = syncPoolState;
+  protected validateRuntime = validateRuntime;
+  protected validateVersion = validateVersion;
+  protected validateActiveNode = validateActiveNode;
+  protected setupStake = setupStake;
 
   /**
    * Defines node options for CLI and initializes those inputs
@@ -152,13 +165,21 @@ class Node {
     this.logNodeInfo();
 
     await this.syncPoolState();
+
+    this.validateRuntime();
+    this.validateVersion();
+
+    await this.setupStake();
+    await this.syncPoolState();
+
+    this.validateActiveNode();
   }
 }
 
 // integration runtime should be implemented on the integration repo
 class EVM implements IRuntime {
   public name = "@kyve/evm";
-  public version = "1.1.0";
+  public version = "1.2.0";
 
   async getDataItem(key: string) {
     return {

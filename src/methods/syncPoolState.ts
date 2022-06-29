@@ -38,7 +38,7 @@ export async function syncPoolState(this: KyveCore): Promise<void> {
       }
     }
 
-    this.logger.debug(`Successfully fetched pool state`);
+    this.logger.debug(`Successfully fetched pool state\n`);
 
     resolve();
   });

@@ -13,7 +13,8 @@ export function validateRuntime(this: KyveCore): void {
     process.exit(1);
   }
 
-  this.logger.debug(`Successfully validated pool runtime`);
+  this.logger.info(`Node running on runtime = ${this.runtime.name}`);
+  this.logger.debug(`Successfully validated pool runtime\n`);
 }
 
 export function validateVersion(this: KyveCore): void {
@@ -29,7 +30,8 @@ export function validateVersion(this: KyveCore): void {
     process.exit(1);
   }
 
-  this.logger.debug(`Successfully validated pool runtime version`);
+  this.logger.info(`Node running on runtime version = ${this.runtime.version}`);
+  this.logger.debug(`Successfully validated pool runtime version\n`);
 }
 
 export function validateActiveNode(this: KyveCore): void {
@@ -40,5 +42,6 @@ export function validateActiveNode(this: KyveCore): void {
     process.exit(1);
   }
 
-  this.logger.debug(`Successfully validated node stake`);
+  this.logger.info(`Node running as validator on pool "${this.pool.name}"`);
+  this.logger.debug(`Successfully validated node stake\n`);
 }
