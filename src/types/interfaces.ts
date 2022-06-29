@@ -48,6 +48,20 @@ export interface IRuntime {
    * @return {Promise<void>}
    */
   getNextKey(key: string): Promise<string>;
+
+  /**
+   * Gets a formatted value string from a data item which gets saved on chain
+   * to enable oracles to use the data.
+   *
+   * String should not be longer than 100 characters, else gas costs might be too expensive.
+   *
+   * Deterministic behavior is required
+   *
+   * @method getFormattedValueFromDataItem
+   * @param {any} item is the last data item in a bundle
+   * @return {Promise<string>} returns a formatted value string
+   */
+  getFormattedValueFromDataItem(item: any): Promise<string>;
 }
 
 /**

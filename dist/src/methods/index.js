@@ -23,4 +23,5 @@ __exportStar(require("./validate"), exports);
 __exportStar(require("./setupStake"), exports);
 __exportStar(require("./shouldIdle"), exports);
 __exportStar(require("./claimUploaderRole"), exports);
+__exportStar(require("./canVote"), exports);
 __exportStar(require("./run"), exports);

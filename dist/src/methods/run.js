@@ -17,6 +17,9 @@ async function run() {
         else {
             this.logger.info(`Starting bundle proposal round ${this.pool.total_bundles} as Validator`);
         }
+        if (await this.canVote()) {
+            // validateBundleProposal
+        }
         await (0, helpers_1.sleep)(10 * 1000);
     }
 }

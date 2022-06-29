@@ -203,6 +203,10 @@ class EVM implements IRuntime {
   async getNextKey(key: string) {
     return `${key}+1`;
   }
+
+  async getFormattedValueFromDataItem(item: any) {
+    return item.hash;
+  }
 }
 
 // inject runtime and storage provider

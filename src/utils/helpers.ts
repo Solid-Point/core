@@ -67,7 +67,7 @@ type onEachErrorRetryerType = (
   }
 ) => void;
 
-export async function retryer<T>(
+export async function callWithBackoffStrategy<T>(
   execution: () => Promise<T>,
   option: OptionsRetryerType,
   onEachError?: onEachErrorRetryerType
@@ -125,35 +125,6 @@ export const dataSizeOfString = (string: string): number => {
 
 export const dataSizeOfBinary = (binary: ArrayBuffer): number => {
   return new Uint8Array(binary).byteLength || 0;
-};
-
-export const callWithExponentialBackoff = async (
-  depth = 0,
-  fn: Function,
-  args: any[] = []
-): Promise<any> => {
-  try {
-    return await fn(...args);
-  } catch (err) {
-    console.log(err);
-    await sleep(2 ** depth * 10);
-    return depth > 12
-      ? await callWithExponentialBackoff(depth, fn, args)
-      : await callWithExponentialBackoff(depth + 1, fn, args);
-  }
-};
-
-export const callWithLinearBackoff = async (
-  duration = 1000,
-  fn: Function,
-  args: any[] = []
-): Promise<any> => {
-  try {
-    return await fn(...args);
-  } catch {
-    await sleep(duration);
-    return await callWithLinearBackoff(duration, fn, args);
-  }
 };
 
 // Inspired by https://github.com/Bundlr-Network/arbundles/blob/f3e8e1df09e68e33f3a51af33127999566ab3e37/src/utils.ts#L41-L85.

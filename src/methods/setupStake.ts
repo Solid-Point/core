@@ -1,12 +1,12 @@
 import BigNumber from "bignumber.js";
 import KyveCore from "../main";
-import { retryer, toHumanReadable } from "../utils/helpers";
+import { callWithBackoffStrategy, toHumanReadable } from "../utils/helpers";
 
 export async function setupStake(this: KyveCore): Promise<void> {
   let initialStake = new BigNumber(0);
 
   const retryOptions = { limitTimeout: "5m", increaseBy: "10s" };
-  const { balance, currentStake, minimumStake } = await retryer(
+  const { balance, currentStake, minimumStake } = await callWithBackoffStrategy(
     async () => {
       const data = await this.query.kyve.registry.v1beta1.stakeInfo({
         pool_id: this.poolId.toString(),

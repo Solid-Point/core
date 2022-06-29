@@ -35,6 +35,7 @@ class Node {
         this.setupStake = methods_1.setupStake;
         this.shouldIdle = methods_1.shouldIdle;
         this.claimUploaderRole = methods_1.claimUploaderRole;
+        this.canVote = methods_1.canVote;
         this.run = methods_1.run;
         // define program
         const options = commander_1.default
@@ -138,6 +139,9 @@ class EVM {
     }
     async getNextKey(key) {
         return `${key}+1`;
+    }
+    async getFormattedValueFromDataItem(item) {
+        return item.hash;
     }
 }
 // inject runtime and storage provider

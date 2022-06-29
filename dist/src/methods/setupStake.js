@@ -7,31 +7,21 @@ exports.setupStake = void 0;
 const bignumber_js_1 = __importDefault(require("bignumber.js"));
 const helpers_1 = require("../utils/helpers");
 async function setupStake() {
-    let balance = new bignumber_js_1.default(0);
     let initialStake = new bignumber_js_1.default(0);
-    let currentStake = new bignumber_js_1.default(0);
-    let minimumStake = new bignumber_js_1.default(0);
-    let requests = 1;
-    while (true) {
-        try {
-            const data = await this.query.kyve.registry.v1beta1.stakeInfo({
-                pool_id: this.poolId.toString(),
-                staker: this.client.account.address,
-            });
-            balance = new bignumber_js_1.default(data.balance);
-            currentStake = new bignumber_js_1.default(data.current_stake);
-            minimumStake = new bignumber_js_1.default(data.minimum_stake);
-            break;
-        }
-        catch (error) {
-            this.logger.warn(` Failed to fetch stake info of address. Retrying in ${requests * 10}s ...`);
-            await (0, helpers_1.sleep)(requests * 10 * 1000);
-            // limit timeout to 5 mins
-            if (requests < 30) {
-                requests++;
-            }
-        }
-    }
+    const retryOptions = { limitTimeout: "5m", increaseBy: "10s" };
+    const { balance, currentStake, minimumStake } = await (0, helpers_1.retryer)(async () => {
+        const data = await this.query.kyve.registry.v1beta1.stakeInfo({
+            pool_id: this.poolId.toString(),
+            staker: this.client.account.address,
+        });
+        return {
+            balance: new bignumber_js_1.default(data.balance),
+            currentStake: new bignumber_js_1.default(data.current_stake),
+            minimumStake: new bignumber_js_1.default(data.minimum_stake),
+        };
+    }, retryOptions, (_, ctx) => {
+        this.logger.warn(` Failed to fetch stake info of address. Retrying in ${ctx.nextTimeoutInMs / 1000}s ...`);
+    });
     // check if node has already staked
     if (!currentStake.isZero()) {
         this.logger.info(`Node running with a stake of ${(0, helpers_1.toHumanReadable)(currentStake.toString())} $KYVE`);
