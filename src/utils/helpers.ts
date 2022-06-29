@@ -18,7 +18,9 @@ export const toHumanReadable = (amount: string, stringDecimals = 4): string => {
 
   return fmt.split(".")[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 };
-
+/**
+ * @param timeout number in milliseconds or string e.g (1m, 3h, 20s)
+ */
 export const sleep = (timeout: number | string) => {
   const timeoutMs =
     typeof timeout === "string" ? humanInterval(timeout) : timeout;
