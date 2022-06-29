@@ -16,6 +16,7 @@ class Arweave {
     }
     init(wallet) {
         this.wallet = JSON.parse((0, fs_1.readFileSync)(wallet, "utf-8"));
+        return this;
     }
     async saveBundle(bundle, tags) {
         const transaction = await this.arweaveClient.createTransaction({

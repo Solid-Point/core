@@ -9,13 +9,31 @@ const package_json_1 = require("../package.json");
 const methods_1 = require("./methods");
 const commander_1 = __importDefault(require("./commander"));
 const sdk_1 = __importDefault(require("@kyve/sdk"));
+/**
+ * Main class of KYVE protocol nodes representing a node.
+ *
+ * @class Node
+ * @constructor
+ */
 class Node {
+    /**
+     * Defines node options for CLI and initializes those inputs
+     * Node name is generated here depending on inputs
+     *
+     * @method constructor
+     */
     constructor() {
         // register core methods
+        this.asyncSetup = methods_1.asyncSetup;
         this.setupLogger = methods_1.setupLogger;
         this.setupName = methods_1.setupName;
         this.logNodeInfo = methods_1.logNodeInfo;
-        this.getPool = methods_1.getPool;
+        this.syncPoolState = methods_1.syncPoolState;
+        this.validateRuntime = methods_1.validateRuntime;
+        this.validateVersion = methods_1.validateVersion;
+        this.validateActiveNode = methods_1.validateActiveNode;
+        this.setupStake = methods_1.setupStake;
+        this.run = methods_1.run;
         // define program
         const options = commander_1.default
             .name("@kyve/core")
@@ -37,33 +55,78 @@ class Node {
         this.name = this.setupName();
         this.logger = this.setupLogger();
     }
+    /**
+     * Set the runtime for the protocol node.
+     * The Runtime implements the custom logic of a pool.
+     *
+     * Required before calling 'run'
+     *
+     * @method addRuntime
+     * @param {IRuntime} runtime which implements the interface IRuntime
+     * @return {Promise<this>} returns this for chained commands
+     * @chainable
+     */
     addRuntime(runtime) {
         this.runtime = runtime;
         return this;
     }
+    /**
+     * Set the storage provider for the protocol node.
+     * The Storage Provider handles data storage and retrieval for a pool.
+     *
+     * Required before calling 'run'
+     *
+     * @method addStorageProvider
+     * @param {IStorageProvider} storageProvider which implements the interface IStorageProvider
+     * @return {Promise<this>} returns this for chained commands
+     * @chainable
+     */
     addStorageProvider(storageProvider) {
-        this.storageProvider = storageProvider;
-        this.storageProvider.init(this.keyfile);
+        this.storageProvider = storageProvider.init(this.keyfile);
         return this;
     }
+    /**
+     * Set the cache for the protocol node.
+     * The Cache is responsible for caching data before its validated and stored on the Storage Provider.
+     *
+     * Required before calling 'run'
+     *
+     * @method addCache
+     * @param {ICache} cache which implements the interface ICache
+     * @return {Promise<this>} returns this for chained commands
+     * @chainable
+     */
     addCache(cache) {
-        this.cache = cache;
-        this.cache.init(`./cache/${this.name}`);
+        this.cache = cache.init(`./cache/${this.name}`);
         return this;
     }
-    // main method wait execution thread should be very abstract and easy to understand
-    async run() {
-        this.client = await this.sdk.fromMnemonic(this.mnemonic);
+    /**
+     * Main method of @kyve/core. By running this method the node will start and run.
+     * For this method to run the Runtime, Storage Provider and the Cache have to be added first.
+     *
+     * This method will run indefinetely and only exits on specific exit conditions like running
+     * an incorrect runtime or version.
+     *
+     * @method start
+     * @return {Promise<void>}
+     */
+    async start() {
+        await this.asyncSetup();
         this.logNodeInfo();
-        await this.getPool();
-        // console.log(this.pool);
+        await this.syncPoolState();
+        this.validateRuntime();
+        this.validateVersion();
+        await this.setupStake();
+        await this.syncPoolState();
+        this.validateActiveNode();
+        await this.run();
     }
 }
 // integration runtime should be implemented on the integration repo
 class EVM {
     constructor() {
         this.name = "@kyve/evm";
-        this.version = "1.1.0";
+        this.version = "1.2.0";
     }
     async getDataItem(key) {
         return {
@@ -80,5 +143,5 @@ new Node()
     .addRuntime(new EVM())
     .addStorageProvider(new Arweave_1.default())
     .addCache(new JsonFileCache_1.default())
-    .run();
+    .start();
 exports.default = Node;

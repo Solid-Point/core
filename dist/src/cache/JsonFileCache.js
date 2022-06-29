@@ -15,6 +15,7 @@ class JsonFileCache {
         if (!(0, fs_1.existsSync)(this.path)) {
             (0, fs_1.mkdirSync)(this.path, { recursive: true });
         }
+        return this;
     }
     async put(key, value) {
         await (0, jsonfile_1.writeFile)(`${this.path}/${key}.json`, value);

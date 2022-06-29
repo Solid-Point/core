@@ -1,6 +1,6 @@
 import KyveCore from "../main";
 
-export function logNodeInfo(this: KyveCore) {
+export function logNodeInfo(this: KyveCore): void {
   this.logger.info("Starting node ...\n");
   this.logger.info(`Name \t\t = ${this.name}`);
   this.logger.info(`Address \t\t = ${this.client.account.address}`);
