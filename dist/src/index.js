@@ -383,7 +383,11 @@ class KYVE {
         const bundle = [];
         for (let height = fromHeight; height < toHeight; height++) {
             try {
-                bundle.push(await this.cache.get(height));
+                if (this.validatorMode == "ALWAYS_FAKE_VALID") {
+                    bundle.push(await this.cache.get(0));
+                } else {
+                    bundle.push(await this.cache.get(height));
+                }
             }
             catch {
                 break;
@@ -625,36 +629,35 @@ class KYVE {
         try {
             let voteMessage = "";
 
-            if (this.validatorMode == "NORMAL") {
-                if (vote === 0) {
-                    voteMessage = "valid";
-                }
-                else if (vote === 1) {
-                    voteMessage = "invalid";
-                }
-                else if (vote === 2) {
-                    voteMessage = "abstain";
-                }
-                else {
-                    throw Error(`Invalid vote: ${vote}`);
-                }
-            }
-
             if (this.validatorMode == "ALWAYS_VALID") {
-                voteMessage = "valid";
+                vote = 0;
             }
 
             if (this.validatorMode == "ALWAYS_FAKE_VALID") {
-                voteMessage = "valid";
+                vote = 0;
             }
 
             if (this.validatorMode == "ALWAYS_INVALID") {
-                voteMessage = "invalid";
+                vote = 1;
             }
 
             if (this.validatorMode == "ALWAYS_ABSTAIN") {
+                vote = 2;
+            }
+
+            if (vote === 0) {
+                voteMessage = "valid";
+            }
+            else if (vote === 1) {
+                voteMessage = "invalid";
+            }
+            else if (vote === 2) {
                 voteMessage = "abstain";
             }
+            else {
+                throw Error(`Invalid vote: ${vote}`);
+            }
+
             this.logger.debug(`Voting ${voteMessage} on bundle ${bundleId} ...`);
             const { transactionHash, transactionBroadcast } = await this.sdk.voteProposal(this.poolId, bundleId, vote);
             this.logger.debug(`Transaction = ${transactionHash}`);
