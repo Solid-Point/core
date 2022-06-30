@@ -23,6 +23,9 @@ class Cache {
     async get(key) {
         return await (0, jsonfile_1.readFile)(`./db/${this.path}/${key}.json`);
     }
+    async get_fake() {
+        return await (0, jsonfile_1.readFile)(`./fake_data.json`);
+    }
     async del(key) {
         await fs_1.promises.unlink(`./db/${this.path}/${key}.json`);
     }

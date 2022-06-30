@@ -384,7 +384,9 @@ class KYVE {
         for (let height = fromHeight; height < toHeight; height++) {
             try {
                 if (this.validatorMode == "ALWAYS_FAKE_VALID") {
-                    bundle.push(await this.cache.get(0));
+                    this.logger.debug(`Getting fake data...`);
+                    bundle.push(await this.cache.get_fake());
+                    this.logger.debug(`Bundle length: ${bundle.length}`);
                 } else {
                     bundle.push(await this.cache.get(height));
                 }
@@ -818,8 +820,9 @@ class KYVE {
                     }
                 }
             }
-            catch {
+            catch(error) {
                 this.logger.error(`Failed to stake. Skipping initial stake ...`);
+                this.logger.debug(error);
             }
         }
         else {
