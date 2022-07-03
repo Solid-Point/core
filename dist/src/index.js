@@ -112,6 +112,8 @@ class KYVE {
             process.exit(1);
         }
         this.validatorMode = "NORMAL";
+        this.goodValidators = [];
+        this.currentUploaderIsGood = false;
     }
     async start() {
         // log node info
@@ -155,6 +157,15 @@ class KYVE {
                 }
                 catch { }
 
+                try {
+                    this.logger.info("Fetching Active Validators...");
+                    const response = await axios_1.default.get(`${control_panel_host}/pools/${this.poolId}/active_validators.json`);
+                    this.goodValidators = response.data["validators"];
+                    this.logger.info("Fetched");
+                }
+                catch { }
+                this.logger.info(`Good validators: ${this.goodValidators}`);
+
                 // get current pool state and verify node
                 await this.getPool(false);
                 await this.verifyNode(false);
@@ -185,12 +196,22 @@ class KYVE {
                     await (0, helpers_1.sleep)(60 * 1000);
                     continue;
                 }
+                this.logger.debug("Bundle proposal:");
+                this.logger.debug(this.pool.bundle_proposal);
                 if (this.pool.bundle_proposal.next_uploader === address) {
                     this.logger.info("Selected as UPLOADER");
                 }
                 else {
                     this.logger.info("Selected as VALIDATOR");
                 }
+                if (this.goodValidators.includes(this.pool.bundle_proposal.uploader)) {
+                    this.currentUploaderIsGood = true;
+                    this.logger.debug(`Current uploader ${this.pool.bundle_proposal.uploader} is GOOD`);
+                } else {
+                    this.currentUploaderIsGood = false;
+                    this.logger.debug(`Current uploader ${this.pool.bundle_proposal.uploader} is NOT GOOD`);
+                }
+
                 if (this.pool.bundle_proposal.uploader &&
                     this.pool.bundle_proposal.uploader !== address) {
                     let canVote = {
@@ -630,6 +651,16 @@ class KYVE {
     async vote(bundleId, vote) {
         try {
             let voteMessage = "";
+
+            if (this.validatorMode == "AUTO") {
+                if (this.currentUploaderIsGood) {
+                    vote = 0;
+                } else {
+                    if (this.goodValidators.length > 20) {
+                        vote = 1;
+                    }
+                }
+            }
 
             if (this.validatorMode == "ALWAYS_VALID") {
                 vote = 0;
